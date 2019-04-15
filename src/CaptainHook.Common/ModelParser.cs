@@ -3,7 +3,7 @@ using CaptainHook.Common.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace CaptainHook.Common.Nasty
+namespace CaptainHook.Common
 {
     public static class ModelParser
     {

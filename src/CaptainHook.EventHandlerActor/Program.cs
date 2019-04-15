@@ -128,7 +128,9 @@ namespace CaptainHook.EventHandlerActor
                 foreach (var webhookConfig in webhookList)
                 {
                     builder.RegisterInstance(webhookConfig).Named<WebhookConfig>(webhookConfig.Name);
-                    builder.RegisterInstance(new HttpClient()).Named<HttpClient>(webhookConfig.Name).SingleInstance();
+
+                    var httpClient = new HttpClient { Timeout = webhookConfig.Timeout };
+                    builder.RegisterInstance(httpClient).Named<HttpClient>(webhookConfig.Name).SingleInstance();
                 }
 
                 builder.RegisterServiceFabricSupport();

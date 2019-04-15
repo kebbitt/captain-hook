@@ -166,6 +166,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
                 }, (result, timeSpan, retryCount, context) =>
                 {
                     report($"retry count {retryCount} of {context.Count}");
+
                 }).ExecuteAsync(makeTheCall.Invoke);
 
             return response;
