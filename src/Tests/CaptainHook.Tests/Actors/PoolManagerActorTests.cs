@@ -2,11 +2,8 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CaptainHook.Common;
-using CaptainHook.Common.Configuration;
-using CaptainHook.EventHandlerActor.Handlers;
 using CaptainHook.Interfaces;
 using Eshopworld.Core;
-using Eshopworld.Telemetry;
 using Eshopworld.Tests.Core;
 using Microsoft.ServiceFabric.Actors;
 using Microsoft.ServiceFabric.Actors.Client;
@@ -32,7 +29,7 @@ namespace CaptainHook.Tests.Actors
 
             var eventReaderActor = CreateMockEventReaderActor(new ActorId("test.type"), bigBrotherMock);
             mockActorProxyFactory.RegisterActor(eventReaderActor);
-            
+
 
             var actor = CreatePoolManagerActor(new ActorId(0), bigBrotherMock, mockActorProxyFactory);
             var stateManager = (MockActorStateManager)actor.StateManager;
