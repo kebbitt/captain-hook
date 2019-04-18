@@ -96,7 +96,7 @@ namespace CaptainHook.PoolManagerActor
         public async Task<Guid> DoWork(string payload, string type)
         {
             // need to handle the possibility of the resources in the pool being all busy!
-
+            var handle = Guid.NewGuid();
             try
             {
                 var handlerId = _free.FirstOrDefault();
@@ -105,7 +105,6 @@ namespace CaptainHook.PoolManagerActor
                     throw new Exception("There are no free handlers in the pool manager to handle this event");
                 }
 
-                var handle = Guid.NewGuid();
                 _free.Remove(handlerId);
                 _busy.Add(handle, new MessageHook
                 {
@@ -123,11 +122,28 @@ namespace CaptainHook.PoolManagerActor
             catch (Exception e)
             {
                 _bigBrother.Publish(e.ToExceptionEvent());
+                await ReleaseHandle(handle);
+
                 throw;
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="handle"></param>
+        /// <returns></returns>
         public async Task CompleteWork(Guid handle)
+        {
+            await ReleaseHandle(handle);
+        }
+
+        /// <summary>
+        /// Releases a handle from the pool manager state.
+        /// </summary>
+        /// <param name="handle"></param>
+        /// <returns></returns>
+        private async Task ReleaseHandle(Guid handle)
         {
             try
             {
@@ -140,7 +156,8 @@ namespace CaptainHook.PoolManagerActor
                     await StateManager.AddOrUpdateStateAsync(nameof(_free), _free, (s, value) => value);
                     await StateManager.AddOrUpdateStateAsync(nameof(_busy), _busy, (s, value) => value);
 
-                    await _actorProxyFactory.CreateActorProxy<IEventReaderActor>(new ActorId(msgHook.Type)).CompleteMessage(handle);
+                    await _actorProxyFactory.CreateActorProxy<IEventReaderActor>(new ActorId(msgHook.Type))
+                        .CompleteMessage(handle);
                 }
                 else
                 {
