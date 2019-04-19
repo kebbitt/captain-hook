@@ -31,7 +31,7 @@ namespace CaptainHook.EventReaderActor
     ///  - Volatile: State is kept in memory only and replicated.
     ///  - None: State is kept in memory only and not replicated.
     /// </remarks>
-    [StatePersistence(StatePersistence.Volatile)]
+    [StatePersistence(StatePersistence.Persisted)]
     public class EventReaderActor : Actor, IEventReaderActor, IRemindable
     {
         private const string SubscriptionName = "captain-hook";
