@@ -27,7 +27,7 @@
   </Parameters>
 
   <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="CaptainHook.BaselinePkg" ServiceManifestVersion="1.0.0" />
+    <ServiceManifestRef ServiceManifestName="CaptainHook.BaselineServicePkg" ServiceManifestVersion="1.0.0" />
     <ConfigOverrides />
     <EnvironmentOverrides CodePackageRef="code">
       <EnvironmentVariable Name="KEYVAULT_BASE_URI" Value="[KeyVault_Base_Uri]" />
@@ -83,8 +83,8 @@
   </ServiceManifestImport>
 
   <DefaultServices>
-    <Service Name="CaptainHook.Baseline" ServicePackageActivationMode="ExclusiveProcess">
-      <StatelessService ServiceTypeName="CaptainHook.BaselineType" InstanceCount="[CaptainHook.Baseline_InstanceCount]">
+    <Service Name="CaptainHook.BaselineService" ServicePackageActivationMode="ExclusiveProcess">
+      <StatelessService ServiceTypeName="CaptainHook.BaselineServiceType" InstanceCount="[CaptainHook.Baseline_InstanceCount]">
         <SingletonPartition />
       </StatelessService>
     </Service>
