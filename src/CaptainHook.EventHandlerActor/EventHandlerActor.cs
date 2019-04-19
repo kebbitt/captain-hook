@@ -54,12 +54,12 @@ namespace CaptainHook.EventHandlerActor
         {
             _bigBrother.Publish(new ActorActivated(this));
 
-            var names = await StateManager.GetStateNamesAsync();
+            var names = (await StateManager.GetStateNamesAsync()).Take(1).ToList();
             if (names.Any())
             {
                 _handleTimer = RegisterTimer(
                     InternalHandle,
-                    null,
+                    names.FirstOrDefault(),
                     TimeSpan.FromMilliseconds(100),
                     TimeSpan.MaxValue);
             }
@@ -67,6 +67,11 @@ namespace CaptainHook.EventHandlerActor
 
         protected override Task OnDeactivateAsync()
         {
+            if (_handleTimer != null)
+            {
+                UnregisterTimer(_handleTimer);
+            }
+
             _bigBrother.Publish(new ActorDeactivated(this));
             return base.OnDeactivateAsync();
         }
@@ -80,39 +85,38 @@ namespace CaptainHook.EventHandlerActor
                 Type = type
             };
 
-            await StateManager.AddOrUpdateStateAsync(messageData.Handle.ToString(), messageData, (s, pair) => pair);
+            await StateManager.AddOrUpdateStateAsync(handle.ToString(), messageData, (s, pair) => pair);
 
             _handleTimer = RegisterTimer(
                 InternalHandle,
-                null,
+                handle.ToString(),
                 TimeSpan.FromMilliseconds(100),
                 TimeSpan.MaxValue);
         }
 
-        /// <remarks>
-        /// Not used in this case, because we are hard-coding all handling logic in this Actor, so there's no need to handle completion in higher actors.
-        /// </remarks>>
-        public async Task CompleteHandle(Guid handle)
+        private async Task InternalHandle(object state)
         {
-            await Task.Yield();
-            throw new NotImplementedException("Not used - nothing above this actor will actually be called in v0");
-        }
-
-        private async Task InternalHandle(object _)
-        {
-            var handle = string.Empty;
+            var handle = Guid.NewGuid();
             try
             {
                 UnregisterTimer(_handleTimer);
 
-                var handleList = (await StateManager.GetStateNamesAsync()).ToList();
-
-                if (!handleList.Any())
+                if (state != null)
                 {
+                    var result = Guid.TryParse(state.ToString(), out handle);
+                    if (!result)
+                    {
+                        _bigBrother.Publish(new WebhookEvent($"{state} could not be parsed to a guid so removing it." ));
+                        return;
+                    }
+                }
+                else
+                {
+                    _bigBrother.Publish(new WebhookEvent($"Timer state was null so cannot process any message"));
                     return;
                 }
 
-                var messageDataConditional = await StateManager.TryGetStateAsync<MessageData>(handleList.First());
+                var messageDataConditional = await StateManager.TryGetStateAsync<MessageData>(handle.ToString());
                 if (!messageDataConditional.HasValue)
                 {
                     _bigBrother.Publish(new WebhookEvent("message was empty"));
@@ -120,36 +124,21 @@ namespace CaptainHook.EventHandlerActor
                 }
 
                 var messageData = messageDataConditional.Value;
-                handle = messageData.Handle.ToString();
+                handle = messageData.Handle;
 
                 var handler = _eventHandlerFactory.CreateEventHandler(messageData.Type);
 
                 await handler.Call(messageData);
-
-                await StateManager.RemoveStateAsync(messageData.Handle.ToString());
-                await ActorProxy.Create<IPoolManagerActor>(new ActorId(0)).CompleteWork(messageData.Handle);
             }
             catch (Exception e)
             {
                 //don't want msg state managed by fabric just yet, let failures be backed by the service bus subscriptions
-                if (handle != string.Empty)
-                {
-                    await StateManager.RemoveStateAsync(handle);
-                }
-
                 BigBrother.Write(e.ToExceptionEvent());
             }
             finally
             {
-                //restarts the timer in case there are more than one msg in the state, if not then let it be restarted in the standard msg population flow.
-                if ((await StateManager.GetStateNamesAsync()).Any())
-                {
-                    _handleTimer = RegisterTimer(
-                        InternalHandle,
-                        null,
-                        TimeSpan.FromMilliseconds(100),
-                        TimeSpan.MaxValue);
-                }
+                await StateManager.RemoveStateAsync(handle.ToString());
+                await ActorProxy.Create<IPoolManagerActor>(new ActorId(0)).CompleteWork(handle);
             }
         }
     }

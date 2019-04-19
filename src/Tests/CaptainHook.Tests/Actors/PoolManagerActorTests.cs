@@ -18,7 +18,7 @@ namespace CaptainHook.Tests.Actors
     {
         [Fact]
         [IsLayer0]
-        public async Task CheckFreeHandlers()
+        public async Task CheckFreeHandlersAfterWorkCompletes()
         {
             //setup the actors
             var bigBrotherMock = new Mock<IBigBrother>().Object;
@@ -47,7 +47,7 @@ namespace CaptainHook.Tests.Actors
 
         [Fact]
         [IsLayer0]
-        public async Task CheckBusyHandlers()
+        public async Task CheckBusyHandlersDuringWork()
         {
             //setup the actors
             var bigBrotherMock = new Mock<IBigBrother>().Object;
@@ -70,6 +70,35 @@ namespace CaptainHook.Tests.Actors
             //get state
             var actual = await stateManager.GetStateAsync<Dictionary<Guid, MessageHook>>("_busy");
             Assert.Equal(2, actual.Count);
+        }
+
+        [Fact]
+        [IsLayer0]
+        public async Task ChecHandlersAfterException()
+        {
+            //setup the actors
+            var bigBrotherMock = new Mock<IBigBrother>().Object;
+
+            var mockActorProxyFactory = new MockActorProxyFactory();
+            var eventHandlerActor1 = CreateMockEventHandlerWithExceptionActor(new ActorId(1), bigBrotherMock);
+            mockActorProxyFactory.RegisterActor(eventHandlerActor1);
+
+            var eventReaderActor = CreateMockEventReaderActor(new ActorId("test.type"), bigBrotherMock);
+            mockActorProxyFactory.RegisterActor(eventReaderActor);
+
+            var actor = CreatePoolManagerActor(new ActorId("test.type"), bigBrotherMock, mockActorProxyFactory);
+            var stateManager = (MockActorStateManager)actor.StateManager;
+            await actor.InvokeOnActivateAsync();
+
+            //create state
+            await Assert.ThrowsAsync<Exception>(async () => await actor.DoWork(string.Empty, "test.type"));
+
+            //get state
+            var actualBusy = await stateManager.GetStateAsync<Dictionary<Guid, MessageHook>>("_busy");
+            Assert.Empty(actualBusy);
+
+            var actualFree = await stateManager.GetStateAsync<HashSet<int>>("_free");
+            Assert.Equal(20, actualFree.Count);
         }
 
         private static PoolManagerActor.PoolManagerActor CreatePoolManagerActor(ActorId id, IBigBrother bb, IActorProxyFactory mockActorProxyFactory)
@@ -96,6 +125,14 @@ namespace CaptainHook.Tests.Actors
             return actor;
         }
 
+        private static IEventHandlerActor CreateMockEventHandlerWithExceptionActor(ActorId id, IBigBrother bb)
+        {
+            ActorBase ActorFactory(ActorService service, ActorId actorId) => new MockEventHandlerActorWithException(service, id);
+            var svc = MockActorServiceFactory.CreateActorServiceForActor<MockEventHandlerActorWithException>(ActorFactory);
+            var actor = svc.Activate(id);
+            return actor;
+        }
+
         private class MockEventHandlerActor : Actor, IEventHandlerActor
         {
             public MockEventHandlerActor(ActorService actorService, ActorId actorId) : base(actorService, actorId)
@@ -105,6 +142,23 @@ namespace CaptainHook.Tests.Actors
             public Task Handle(Guid handle, string payload, string type)
             {
                 return Task.FromResult(true);
+            }
+
+            public Task CompleteHandle(Guid handle)
+            {
+                return Task.FromResult(true);
+            }
+        }
+
+        private class MockEventHandlerActorWithException : Actor, IEventHandlerActor
+        {
+            public MockEventHandlerActorWithException(ActorService actorService, ActorId actorId) : base(actorService, actorId)
+            {
+            }
+
+            public Task Handle(Guid handle, string payload, string type)
+            {
+                throw new Exception();
             }
 
             public Task CompleteHandle(Guid handle)
@@ -124,7 +178,7 @@ namespace CaptainHook.Tests.Actors
                 return Task.FromResult(true);
             }
 
-            public Task CompleteMessage(Guid handle)
+            public Task CompleteMessage(Guid handle, bool messageSuccess)
             {
                 return Task.FromResult(true);
             }
