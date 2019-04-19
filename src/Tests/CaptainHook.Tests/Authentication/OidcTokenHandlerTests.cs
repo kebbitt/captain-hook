@@ -58,7 +58,7 @@ namespace CaptainHook.Tests.Authentication
         /// <param name="expectedStsCallCount"></param>
         /// <returns></returns>
         [IsLayer0]
-        [Theory]
+        [Theory(Skip = "Skipping to remove token refresh")]
         [InlineData(0, 5, 1)]
         [InlineData(1, 5, 1)]
         [InlineData(5, 5, 2)]
