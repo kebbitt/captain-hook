@@ -13,7 +13,7 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
     /// </summary>
     public class AuthenticationHandlerFactory : IAuthHandlerFactory
     {
-        private Dictionary<string, IAcquireTokenHandler> handlers;
+        private readonly Dictionary<string, IAcquireTokenHandler> handlers;
         private readonly IIndex<string, WebhookConfig> _webHookConfigs;
         private readonly IBigBrother _bigBrother;
 

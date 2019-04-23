@@ -47,6 +47,13 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
                     var response = await GetTokenResponseAsync(client, cancellationToken);
                     ReportTokenUpdateFailure(OidcAuthenticationConfig, response);
                     UpdateToken(response);
+                    
+                    BigBrother.Publish(new ClientTokenRequest
+                    {
+                        ClientId = OidcAuthenticationConfig.ClientId,
+                        Authority = OidcAuthenticationConfig.Uri,
+                        Message = "Got a new token and updating the http client when token was null"
+                    });
                 });
             }
             else if (CheckExpired())
@@ -58,6 +65,13 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
                         var response = await GetTokenResponseAsync(client, cancellationToken);
                         ReportTokenUpdateFailure(OidcAuthenticationConfig, response);
                         UpdateToken(response);
+
+                        BigBrother.Publish(new ClientTokenRequest
+                        {
+                            ClientId = OidcAuthenticationConfig.ClientId,
+                            Authority = OidcAuthenticationConfig.Uri,
+                            Message = "Refreshing token and updating the http client with new token"
+                        });
                     }
                 });
             }
@@ -81,13 +95,6 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
                 GrantType = OidcAuthenticationConfig.GrantType,
                 Scope = string.Join(" ", OidcAuthenticationConfig.Scopes)
             }, token);
-
-            BigBrother.Publish(new ClientTokenRequest
-            {
-                ClientId = OidcAuthenticationConfig.ClientId,
-                Authority = OidcAuthenticationConfig.Uri,
-                Message = "Get a new token and updating the http client"
-            });
 
             return response;
         }
