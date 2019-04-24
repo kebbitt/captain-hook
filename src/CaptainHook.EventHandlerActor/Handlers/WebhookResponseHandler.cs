@@ -32,7 +32,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
             _eventHandlerConfig = eventHandlerConfig;
         }
 
-        public override async Task CallAsync<TRequest>(TRequest request, IDictionary<string, object> metadata, CancellationToken token)
+        public override async Task CallAsync<TRequest>(TRequest request, IDictionary<string, object> metadata, CancellationToken cancellationToken)
         {
             if (!(request is MessageData messageData))
             {
@@ -41,7 +41,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
             if (WebhookConfig.AuthenticationConfig.Type != AuthenticationType.None)
             {
-                await AcquireTokenHandler.GetTokenAsync(_client, token);
+                await AcquireTokenHandler.GetTokenAsync(_client, cancellationToken);
             }
 
             var uri = RequestBuilder.BuildUri(WebhookConfig, messageData.Payload);
@@ -53,7 +53,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
                 BigBrother.Publish(new HttpClientFailure(messageData.Handle, messageData.Type, messageData.Payload, msg));
             }
 
-            var response = await _client.ExecuteAsJsonReliably(httpVerb, uri, payload, TelemetryEvent, "application/json", token);
+            var response = await _client.ExecuteAsJsonReliably(httpVerb, uri, payload, TelemetryEvent, "application/json", cancellationToken);
 
             BigBrother.Publish(new WebhookEvent(messageData.Handle, messageData.Type, messageData.Payload, response.IsSuccessStatusCode.ToString()));
 
@@ -73,9 +73,9 @@ namespace CaptainHook.EventHandlerActor.Handlers
             BigBrother.Publish(new WebhookEvent(messageData.Handle, messageData.Type, content));
 
             //call callback
-            var eswHandler = _eventHandlerFactory.CreateWebhookHandler(_eventHandlerConfig.CallbackConfig.Name);
+            var eswHandler = await _eventHandlerFactory.CreateWebhookHandlerAsync(_eventHandlerConfig.CallbackConfig.Name, cancellationToken);
 
-            await eswHandler.CallAsync(messageData, metadata, token);
+            await eswHandler.CallAsync(messageData, metadata, cancellationToken);
         }
     }
 }

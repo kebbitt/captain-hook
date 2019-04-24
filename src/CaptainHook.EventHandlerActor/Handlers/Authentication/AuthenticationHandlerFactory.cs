@@ -1,5 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Threading;
+using System.Threading.Tasks;
 using Autofac.Features.Indexed;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
@@ -13,7 +15,8 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
     /// </summary>
     public class AuthenticationHandlerFactory : IAuthHandlerFactory
     {
-        private readonly Dictionary<string, IAcquireTokenHandler> handlers;
+        private readonly ConcurrentDictionary<string, IAcquireTokenHandler> _handlers;
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private readonly IIndex<string, WebhookConfig> _webHookConfigs;
         private readonly IBigBrother _bigBrother;
 
@@ -22,38 +25,48 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
             _webHookConfigs = webHookConfigs;
             _bigBrother = bigBrother;
 
-            handlers = new Dictionary<string, IAcquireTokenHandler>();
+            _handlers = new ConcurrentDictionary<string, IAcquireTokenHandler>();
         }
 
-        public IAcquireTokenHandler Get(string name)
+        public async Task<IAcquireTokenHandler> GetAsync(string name, CancellationToken cancellationToken)
         {
             if (!_webHookConfigs.TryGetValue(name.ToLower(), out var config))
             {
                 throw new Exception($"Authentication Provider {name} not found");
             }
 
-            if (handlers.ContainsKey(name))
+            if (_handlers.TryGetValue(name, out var handler))
             {
-                return handlers[name];
+                return handler;
             }
-
+            
             switch (config.AuthenticationConfig.Type)
             {
                 case AuthenticationType.None:
                     return null;
 
                 case AuthenticationType.Basic:
-                    handlers[name] = new BasicAuthenticationHandler(config.AuthenticationConfig);
+                    await EnterSemaphore(() =>
+                    {
+                        _handlers.TryAdd(name, new BasicAuthenticationHandler(config.AuthenticationConfig));
+                    }, name, cancellationToken);
                     break;
 
                 case AuthenticationType.OIDC:
-                    handlers[name] = new OidcAuthenticationHandler(config.AuthenticationConfig, _bigBrother);
+                    await EnterSemaphore(() =>
+                    {
+                        _handlers.TryAdd(name, new OidcAuthenticationHandler(config.AuthenticationConfig, _bigBrother));
+                    }, name, cancellationToken);
                     break;
 
                 case AuthenticationType.Custom:
+
                     //todo hack for now until we move this out of here and into an integration layer
                     //todo if this is custom it should be another webhook which calls out to another place, this place gets a token on CH's behalf and then adds this into subsequent webhook requests.
-                    handlers[name] = new MmAuthenticationHandler(config.AuthenticationConfig, _bigBrother);
+                    await EnterSemaphore(() =>
+                    {
+                        _handlers.TryAdd(name, new MmAuthenticationHandler(config.AuthenticationConfig, _bigBrother));
+                    }, name, cancellationToken);
                     break;
 
                 default:
@@ -61,7 +74,26 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
                         $"unknown configuration type of {config.AuthenticationConfig.Type}");
             }
 
-            return handlers[name];
+            _handlers.TryGetValue(name, out var newHandler);
+            return newHandler;
+        }
+
+        private async Task EnterSemaphore(Action action, string key, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await _semaphore.WaitAsync(cancellationToken);
+
+                if (_handlers.ContainsKey(key))
+                {
+                    return;
+                }
+                action();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
     }
 }

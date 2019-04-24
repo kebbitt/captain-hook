@@ -1,7 +1,10 @@
-﻿namespace CaptainHook.EventHandlerActor.Handlers.Authentication
+﻿using System.Threading;
+using System.Threading.Tasks;
+
+namespace CaptainHook.EventHandlerActor.Handlers.Authentication
 {
     public interface IAuthHandlerFactory
     {
-        IAcquireTokenHandler Get(string name);
+        Task<IAcquireTokenHandler> GetAsync(string name, CancellationToken cancellationToken);
     }
 }

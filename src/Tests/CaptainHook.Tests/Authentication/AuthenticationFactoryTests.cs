@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
 using CaptainHook.EventHandlerActor.Handlers.Authentication;
@@ -34,7 +36,7 @@ namespace CaptainHook.Tests.Authentication
         [IsLayer0]
         [Theory]
         [MemberData(nameof(AuthenticationTestData))]
-        public void GetTokenProvider(string configurationName, AuthenticationConfig authenticationConfig, IAcquireTokenHandler expectedHandler)
+        public async Task GetTokenProvider(string configurationName, AuthenticationConfig authenticationConfig, IAcquireTokenHandler expectedHandler)
         {
             var indexedDictionary = new IndexDictionary<string, WebhookConfig>
             {
@@ -49,7 +51,7 @@ namespace CaptainHook.Tests.Authentication
 
             var factory = new AuthenticationHandlerFactory(indexedDictionary, new Mock<IBigBrother>().Object);
 
-            var handler = factory.Get(configurationName);
+            var handler = await factory.GetAsync(configurationName, CancellationToken.None);
 
             Assert.Equal(expectedHandler.GetType(), handler.GetType());
         }
@@ -63,7 +65,7 @@ namespace CaptainHook.Tests.Authentication
         [IsLayer0]
         [Theory]
         [MemberData(nameof(NoneAuthenticationTestData))]
-        public void NoAuthentication(string configurationName, AuthenticationConfig authenticationConfig)
+        public async Task NoAuthentication(string configurationName, AuthenticationConfig authenticationConfig)
         {
             var indexedDictionary = new IndexDictionary<string, WebhookConfig>
             {
@@ -78,7 +80,7 @@ namespace CaptainHook.Tests.Authentication
 
             var factory = new AuthenticationHandlerFactory(indexedDictionary, new Mock<IBigBrother>().Object);
 
-            var handler = factory.Get(configurationName);
+            var handler = await factory.GetAsync(configurationName, CancellationToken.None);
 
             Assert.Null(handler);
         }

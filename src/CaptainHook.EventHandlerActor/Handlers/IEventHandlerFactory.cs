@@ -1,4 +1,7 @@
-﻿namespace CaptainHook.EventHandlerActor.Handlers
+﻿using System.Threading;
+using System.Threading.Tasks;
+
+namespace CaptainHook.EventHandlerActor.Handlers
 {
     public interface IEventHandlerFactory
     {
@@ -6,14 +9,16 @@
         /// Create the custom handler such that we get a mapping from the webhook to the handler selected
         /// </summary>
         /// <param name="fullEventName"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        IHandler CreateEventHandler(string fullEventName);
+        Task<IHandler> CreateEventHandlerAsync(string fullEventName, CancellationToken cancellationToken);
 
         /// <summary>
         /// Used only for getting the callback handler
         /// </summary>
         /// <param name="webHookName"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        IHandler CreateWebhookHandler(string webHookName);
+        Task<IHandler> CreateWebhookHandlerAsync(string webHookName, CancellationToken cancellationToken);
     }
 }
