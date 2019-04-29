@@ -109,26 +109,11 @@ namespace CaptainHook.EventReaderActor
 
         internal async Task SetupServiceBus()
         {
-            var token = new AzureServiceTokenProvider().GetAccessTokenAsync("https://management.core.windows.net/", string.Empty).Result;
-            var tokenCredentials = new TokenCredentials(token);
+            var azureTopic = await ServiceBusNamespaceExtensions.SetupHookTopic(
+                _settings.AzureSubscriptionId,
+                _settings.ServiceBusNamespace,
+                TypeExtensions.GetEntityName(Id.GetStringId()));
 
-            var client = RestClient.Configure()
-                                   .WithEnvironment(AzureEnvironment.AzureGlobalCloud)
-                                   .WithLogLevel(HttpLoggingDelegatingHandler.Level.Basic)
-                                   .WithCredentials(new AzureCredentials(tokenCredentials, tokenCredentials, string.Empty, AzureEnvironment.AzureGlobalCloud))
-                                   .Build();
-
-            var sbNamespace = Azure.Authenticate(client, string.Empty)
-                                   .WithSubscription(_settings.AzureSubscriptionId)
-                                   .ServiceBusNamespaces.List()
-                                   .SingleOrDefault(n => n.Name == _settings.ServiceBusNamespace);
-
-            if (sbNamespace == null)
-            {
-                throw new InvalidOperationException($"Couldn't find the service bus namespace {_settings.ServiceBusNamespace} in the subscription with ID {_settings.AzureSubscriptionId}");
-            }
-
-            var azureTopic = await sbNamespace.CreateTopicIfNotExists(TypeExtensions.GetEntityName(Id.GetStringId()));
             await azureTopic.CreateSubscriptionIfNotExists(SubscriptionName);
         }
 

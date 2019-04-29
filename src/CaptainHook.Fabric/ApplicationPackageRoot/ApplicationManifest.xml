@@ -88,7 +88,7 @@
         <SingletonPartition />
       </StatelessService>
     </Service>
-    <Service Name="CaptainHook.Api" ServicePackageActivationMode="ExclusiveProcess">
+    <!--<Service Name="CaptainHook.Api" ServicePackageActivationMode="ExclusiveProcess">
       <StatelessService ServiceTypeName="CaptainHook.ApiType" InstanceCount="[CaptainHook.Api_InstanceCount]">
         <SingletonPartition />
       </StatelessService>
@@ -122,7 +122,7 @@
       <StatefulService ServiceTypeName="EndpointDispatcherActorServiceType" TargetReplicaSetSize="[EndpointDispatcherActorService_TargetReplicaSetSize]" MinReplicaSetSize="[EndpointDispatcherActorService_MinReplicaSetSize]">
         <UniformInt64Partition PartitionCount="[EndpointDispatcherActorService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
       </StatefulService>
-    </Service>
+    </Service>-->
   </DefaultServices>
 
 </ApplicationManifest>

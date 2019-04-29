@@ -1,8 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Fabric;
 using System.Threading;
 using System.Threading.Tasks;
+using CaptainHook.Common;
+using Eshopworld.Core;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 
@@ -13,9 +14,15 @@ namespace CaptainHook.BaselineService
     /// </summary>
     internal sealed class BaselineService : StatelessService
     {
-        public BaselineService(StatelessServiceContext context)
+        private readonly IBigBrother _bb;
+        private readonly ConfigurationSettings _settings;
+
+        public BaselineService(StatelessServiceContext context, IBigBrother bb, ConfigurationSettings settings)
             : base(context)
-        { }
+        {
+            _bb = bb;
+            _settings = settings;
+        }
 
         /// <summary>
         /// Optional override to create listeners (e.g., TCP, HTTP) for this service replica to handle client or user requests.
@@ -32,17 +39,10 @@ namespace CaptainHook.BaselineService
         /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service instance.</param>
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
-            // TODO: Replace the following sample code with your own logic 
-            //       or remove this RunAsync override if it's not needed in your service.
-
-            long iterations = 0;
-
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
-            }
+            await ServiceBusNamespaceExtensions.SetupHookTopic(
+                _settings.AzureSubscriptionId,
+                _settings.ServiceBusNamespace,
+                TypeExtensions.GetEntityName(typeof(BaselineMessage).FullName));
         }
     }
 }
