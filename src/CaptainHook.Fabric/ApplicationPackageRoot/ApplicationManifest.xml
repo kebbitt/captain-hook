@@ -1,6 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ApplicationTypeName="CaptainHookType" ApplicationTypeVersion="1.0.0" xmlns="http://schemas.microsoft.com/2011/01/fabric">
   <Parameters>
+    <!--<Parameter Name="CaptainHook.ReaderService_MinReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="CaptainHook.ReaderService_PartitionCount" DefaultValue="1" />
+    <Parameter Name="CaptainHook.ReaderService_TargetReplicaSetSize" DefaultValue="3" />-->
     <Parameter Name="CaptainHook.DirectorService_MinReplicaSetSize" DefaultValue="3" />
     <Parameter Name="CaptainHook.DirectorService_PartitionCount" DefaultValue="1" />
     <Parameter Name="CaptainHook.DirectorService_TargetReplicaSetSize" DefaultValue="3" />
@@ -23,6 +26,14 @@
     <Parameter Name="EndpointDispatcherActorService_MinReplicaSetSize" DefaultValue="3" />
     <Parameter Name="EndpointDispatcherActorService_TargetReplicaSetSize" DefaultValue="3" />
   </Parameters>
+  <ServiceManifestImport>
+    <ServiceManifestRef ServiceManifestName="CaptainHook.ReaderServicePkg" ServiceManifestVersion="1.0.0" />
+    <ConfigOverrides />
+    <EnvironmentOverrides CodePackageRef="code">
+      <EnvironmentVariable Name="KEYVAULT_BASE_URI" Value="[KeyVault_Base_Uri]" />
+      <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="[AspNetCore_Environment]" />
+    </EnvironmentOverrides>
+  </ServiceManifestImport>
   <ServiceManifestImport>
     <ServiceManifestRef ServiceManifestName="CaptainHook.DirectorServicePkg" ServiceManifestVersion="1.0.0" />
     <ConfigOverrides />
@@ -78,6 +89,11 @@
   </ServiceManifestImport>
 
   <DefaultServices>
+    <!--<Service Name="CaptainHook.ReaderService" ServicePackageActivationMode="ExclusiveProcess">
+      <StatefulService ServiceTypeName="CaptainHook.ReaderServiceType" TargetReplicaSetSize="[CaptainHook.ReaderService_TargetReplicaSetSize]" MinReplicaSetSize="[CaptainHook.ReaderService_MinReplicaSetSize]">
+        <UniformInt64Partition PartitionCount="[CaptainHook.ReaderService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
+      </StatefulService>
+    </Service>-->
     <Service Name="CaptainHook.DirectorService" ServicePackageActivationMode="ExclusiveProcess">
       <StatefulService ServiceTypeName="CaptainHook.DirectorServiceType" TargetReplicaSetSize="[CaptainHook.DirectorService_TargetReplicaSetSize]" MinReplicaSetSize="[CaptainHook.DirectorService_MinReplicaSetSize]">
         <SingletonPartition />

@@ -47,6 +47,7 @@
     <ProjectReference Include="..\CaptainHook.EndpointDispatcherActor\CaptainHook.EndpointDispatcherActor.csproj" />
     <ProjectReference Include="..\CaptainHook.EventHandlerActor\CaptainHook.EventHandlerActor.csproj" />
     <ProjectReference Include="..\CaptainHook.EventReaderActor\CaptainHook.EventReaderActor.csproj" />
+    <ProjectReference Include="..\CaptainHook.ReaderService\CaptainHook.ReaderService.csproj" />
     <ProjectReference Include="..\CaptainHook.Test.Api\CaptainHook.Test.Api.csproj" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
