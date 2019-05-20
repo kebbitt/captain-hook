@@ -43,14 +43,10 @@ namespace CaptainHook.BaselineService
                 builder.RegisterInstance(settings)
                        .SingleInstance();
 
-
                 builder.RegisterServiceFabricSupport();
-                builder.RegisterStatelessService<BaselineService>("DemoStatelessServiceType");
+                builder.RegisterStatelessService<BaselineService>("CaptainHook.BaselineServiceType");
 
-                using (builder.Build())
-                {
-                    await Task.Delay(Timeout.Infinite);
-                }
+                using (builder.Build()) { await Task.Delay(Timeout.Infinite); }
             }
             catch (Exception e)
             {

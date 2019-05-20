@@ -4,6 +4,11 @@ namespace CaptainHook.Common
 {
     public class BaselineMessage
     {
-        public Guid RandomGuid { get; } = Guid.NewGuid();
+        public BaselineMessage()
+        {
+            RandomGuid = Guid.NewGuid();
+        }
+
+        public Guid RandomGuid { get; }
     }
 }
