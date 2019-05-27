@@ -1,13 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Eshopworld.Core;
 using Eshopworld.DevOps;
 using Eshopworld.Web;
 using Eshopworld.Telemetry;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -17,7 +16,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Swagger;
 using System.Reflection;
+using CaptainHook.Api.Proposal;
+using CaptainHook.Common;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Azure.Cosmos;
 
 namespace CaptainHook.Api
 {
@@ -92,42 +94,27 @@ namespace CaptainHook.Api
                         c.DescribeAllEnumsAsStrings();
                         c.SwaggerDoc("v1", new Info { Version = Assembly.GetExecutingAssembly().GetName().Version.ToString(), Title = "CaptainHook.Api" });
                         c.CustomSchemaIds(x => x.FullName);
-
-                        //c.AddSecurityDefinition("Bearer",
-                        //    new ApiKeyScheme
-                        //    {
-                        //        In = "header",
-                        //        Description = "Please insert JWT with Bearer into field",
-                        //        Name = "Authorization",
-                        //        Type = "apiKey"
-                        //    });
-
-                        //c.AddSecurityRequirement(
-                        //    new Dictionary<string, IEnumerable<string>>
-                        //    {
-                        //        {"Bearer", Array.Empty<string>()}
-                        //    });
                     });
                 }
-
-                //services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddIdentityServerAuthentication(
-                //    x =>
-                //    {
-                //        x.ApiName = serviceConfigurationOptions.Value.ApiName;
-                //        x.ApiSecret = serviceConfigurationOptions.Value.ApiSecret;
-                //        x.Authority = serviceConfigurationOptions.Value.Authority;
-                //        x.RequireHttpsMetadata = serviceConfigurationOptions.Value.IsHttps;
-
-                //        //TODO: this requires Eshopworld.Beatles.Security to be refactored
-                //        //x.AddJwtBearerEventsTelemetry(bb); 
-                //    });
 
                 var builder = new ContainerBuilder();
                 builder.Populate(services);
                 builder.RegisterInstance(_bb).As<IBigBrother>().SingleInstance();
 
-                var container = builder.Build();
-                return new AutofacServiceProvider(container);
+                var configurationSettings = new ConfigurationSettings();
+                _configuration.Bind(configurationSettings);
+                builder.RegisterInstance(configurationSettings);
+
+                var cosmosClient = new CosmosClient(configurationSettings.CosmosConnectionString);
+                builder.RegisterInstance(cosmosClient);
+
+                var database = cosmosClient.Databases.CreateDatabaseIfNotExistsAsync("captain-hook", 400).Result.HandleResponse();
+                builder.RegisterInstance(database);
+
+                var container = database.Containers.CreateContainerIfNotExistsAsync("foo", "/foo").Result.HandleResponse();
+                builder.RegisterInstance(container).As<CosmosContainer>();
+
+                return new AutofacServiceProvider(builder.Build());
             }
             catch (Exception e)
             {

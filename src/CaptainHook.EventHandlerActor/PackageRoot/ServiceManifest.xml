@@ -23,7 +23,7 @@
       </ExeHost>
     </EntryPoint>
     <EnvironmentVariables>
-      <EnvironmentVariable Name="KEYVAULT_BASE_URI" Value="N/A" />
+      <EnvironmentVariable Name="KEYVAULT_URL" Value="N/A" />
       <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="N/A" />
     </EnvironmentVariables>
   </CodePackage>

@@ -6,6 +6,8 @@
 
         public string AzureSubscriptionId { get; set; }
 
+        public string CosmosConnectionString { get; set; }
+
         public string InstrumentationKey { get; set; }
 
         public string ServiceBusConnectionString { get; set; }
