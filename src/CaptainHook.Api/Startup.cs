@@ -17,6 +17,7 @@ using Swashbuckle.AspNetCore.Swagger;
 using System.Reflection;
 using CaptainHook.Api.Proposal;
 using CaptainHook.Common;
+using CaptainHook.Common.Rules;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Azure.Cosmos;
 
@@ -107,10 +108,10 @@ namespace CaptainHook.Api
                 var cosmosClient = new CosmosClient(configurationSettings.CosmosConnectionString);
                 builder.RegisterInstance(cosmosClient);
 
-                var database = cosmosClient.Databases.CreateDatabaseIfNotExistsAsync("captain-hook", 400).Result.HandleResponse();
+                var database = cosmosClient.Databases.CreateDatabaseIfNotExistsAsync("captain-hook", 400).Result.HandleResponse(_bb);
                 builder.RegisterInstance(database);
 
-                var container = database.Containers.CreateContainerIfNotExistsAsync("foo", "/foo").Result.HandleResponse();
+                var container = database.Containers.CreateContainerIfNotExistsAsync(nameof(RoutingRule), RoutingRule.PartitionKey).Result.HandleResponse(_bb);
                 builder.RegisterInstance(container).As<CosmosContainer>();
 
                 return new AutofacServiceProvider(builder.Build());
