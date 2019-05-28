@@ -9,7 +9,7 @@ namespace CaptainHook.Api.Proposal
             [Description("Failed to create the Cosmos Database")]
             public const int DatabaseCreationFailure = 10100;
 
-            [Description("Failed to create the Cosmos Collection")]
+            [Description("Failed to create the Cosmos Container")]
             public const int ContainerCreationFailure = 10200;
         }
     }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Net;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Eshopworld.Core;
