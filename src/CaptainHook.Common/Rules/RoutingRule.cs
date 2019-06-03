@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
-using System.Security.Cryptography;
+using System.ComponentModel.DataAnnotations;
+using Newtonsoft.Json;
 
 namespace CaptainHook.Common.Rules
 {
@@ -9,18 +10,27 @@ namespace CaptainHook.Common.Rules
     public class RoutingRule
     {
         /// <summary>
-        /// A static <see cref="SHA1Managed"/> to hash all the <see cref="RoutingRule"/> key lookups.
+        /// The PartitionKey Path for when creating the collection.
         /// </summary>
-        public static string PartitionKey  => $"/{nameof(EventType)}";
+        [JsonIgnore]
+        public static string PartitionKeyPath  => $"/{nameof(EventType)}";
+
+        /// <summary>
+        /// Gets the partition key for the rule.
+        /// </summary>
+        [JsonIgnore]
+        public string PartitionKey => EventType;
 
         /// <summary>
         /// The type of the event that we want to create the route for.
         /// </summary>
+        [Required]
         public string EventType { get; set; }
 
         /// <summary>
         /// The target web hook uri that we want to route the event to.
         /// </summary>
+        [Required]
         public string HookUri { get; set; }
 
         /// <summary>

@@ -1,4 +1,7 @@
-﻿namespace CaptainHook.Common.Rules
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+
+namespace CaptainHook.Common.Rules
 {
     /// <summary>
     /// Represents a JSONPath filter expression to create rule based routing rules.
@@ -9,6 +12,7 @@
         /// The JSONPath expression.
         ///     See https://goessner.net/articles/JsonPath/ for more details on JSONPath expressions.
         /// </summary>
+        [Required]
         public string Expression { get; set; }
 
         /// <summary>
@@ -25,6 +29,7 @@
     /// <summary>
     /// A list of supported operators to use on <see cref="JsonPathFilter"/>.
     /// </summary>
+    [DefaultValue(Equal)]
     public enum JsonPathFilterOperator
     {
         Equal              =  1,

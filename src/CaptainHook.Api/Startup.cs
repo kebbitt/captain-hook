@@ -84,7 +84,7 @@ namespace CaptainHook.Api
                 //if not generated throw an event but it's not going to stop the app from starting
                 if (!File.Exists(path))
                 {
-                    BigBrother.Write(new Exception("Swagger XML document has not been included in the project"));
+                    BigBrother.Write(new InvalidOperationException("Swagger XML document has not been included in the project"));
                 }
                 else
                 {
@@ -92,7 +92,7 @@ namespace CaptainHook.Api
                     {
                         c.IncludeXmlComments(path);
                         c.DescribeAllEnumsAsStrings();
-                        c.SwaggerDoc("v1", new Info { Version = Assembly.GetExecutingAssembly().GetName().Version.ToString(), Title = "CaptainHook.Api" });
+                        c.SwaggerDoc("v1", new Info { Version = Assembly.GetExecutingAssembly().GetName().Version.ToString(), Title = Assembly.GetExecutingAssembly().GetName().Name });
                         c.CustomSchemaIds(x => x.FullName);
                     });
                 }
@@ -111,8 +111,8 @@ namespace CaptainHook.Api
                 var database = cosmosClient.Databases.CreateDatabaseIfNotExistsAsync("captain-hook", 400).Result.HandleResponse(_bb);
                 builder.RegisterInstance(database);
 
-                var container = database.Containers.CreateContainerIfNotExistsAsync(nameof(RoutingRule), RoutingRule.PartitionKey).Result.HandleResponse(_bb);
-                builder.RegisterInstance(container).As<CosmosContainer>();
+                var container = database.Containers.CreateContainerIfNotExistsAsync(nameof(RoutingRule), RoutingRule.PartitionKeyPath).Result.HandleResponse(_bb);
+                builder.RegisterInstance(container);
 
                 return new AutofacServiceProvider(builder.Build());
             }
