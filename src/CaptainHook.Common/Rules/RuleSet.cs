@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using CaptainHook.Common.Rules;
+using CaptainHook.Common.Proposal;
 
-namespace CaptainHook.Api.Controllers
+namespace CaptainHook.Common.Rules
 {
     /// <summary>
     /// Defines a group of rules to be applied with a single ETag.
@@ -14,6 +14,12 @@ namespace CaptainHook.Api.Controllers
         /// </summary>
         [Required]
         public string Id { get; set; }
+
+        /// <summary>
+        /// Stores the list of previous ETags that we have seen for this rule set.
+        /// </summary>
+        [HttpIgnore]
+        public IEnumerable<string> PreviousETags { get; set; }
 
         /// <summary>
         /// The ETag that identifies the unique version of this rule set.

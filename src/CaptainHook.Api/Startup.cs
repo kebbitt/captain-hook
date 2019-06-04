@@ -17,6 +17,7 @@ using Swashbuckle.AspNetCore.Swagger;
 using System.Reflection;
 using CaptainHook.Api.Proposal;
 using CaptainHook.Common;
+using CaptainHook.Common.Proposal;
 using CaptainHook.Common.Rules;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Azure.Cosmos;
@@ -66,16 +67,19 @@ namespace CaptainHook.Api
                 var serviceConfigurationOptions = services.BuildServiceProvider()
                     .GetService<IOptions<ServiceConfigurationOptions>>();
 
-                services.AddMvc(options =>
-                {
-                    var policy = ScopePolicy.Create(serviceConfigurationOptions.Value.RequiredScopes.ToArray());
+                services.AddMvc(
+                            options =>
+                            {
+                                var policy = ScopePolicy.Create(serviceConfigurationOptions.Value.RequiredScopes.ToArray());
 
-                    var filter = EnvironmentHelper.IsInFabric ? 
-                        (IFilterMetadata) new AuthorizeFilter(policy): 
-                        new AllowAnonymousFilter();
+                                var filter = EnvironmentHelper.IsInFabric
+                                    ? (IFilterMetadata) new AuthorizeFilter(policy)
+                                    : new AllowAnonymousFilter();
 
-                    options.Filters.Add(filter);
-                });
+                                options.Filters.Add(filter);
+                            })
+                        .AddJsonOptions(options => options.SerializerSettings.ContractResolver = new HttpContractResolver());
+
                 services.AddApiVersioning();
 
                 //Get XML documentation

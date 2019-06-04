@@ -25,9 +25,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.Test.Api", "Cap
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.BaselineService", "CaptainHook.BaselineService\CaptainHook.BaselineService.csproj", "{007AB97C-B69B-401D-89C6-02F2F95E5855}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CaptainHook.DirectorService", "CaptainHook.DirectorService\CaptainHook.DirectorService.csproj", "{3AB8CE93-C36D-4987-A5DD-5CC2DAEB84B4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.DirectorService", "CaptainHook.DirectorService\CaptainHook.DirectorService.csproj", "{3AB8CE93-C36D-4987-A5DD-5CC2DAEB84B4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CaptainHook.ReaderService", "CaptainHook.ReaderService\CaptainHook.ReaderService.csproj", "{23A8AFDA-979C-48CB-B1A1-72967CCC439C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.ReaderService", "CaptainHook.ReaderService\CaptainHook.ReaderService.csproj", "{23A8AFDA-979C-48CB-B1A1-72967CCC439C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CaptainHook.Common.Tests", "Tests\CaptainHook.Common.Tests\CaptainHook.Common.Tests.csproj", "{C0BA81F8-8C3B-423D-9066-92905CEFCF94}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -117,6 +119,14 @@ Global
 		{23A8AFDA-979C-48CB-B1A1-72967CCC439C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{23A8AFDA-979C-48CB-B1A1-72967CCC439C}.Release|x64.ActiveCfg = Release|Any CPU
 		{23A8AFDA-979C-48CB-B1A1-72967CCC439C}.Release|x64.Build.0 = Release|Any CPU
+		{C0BA81F8-8C3B-423D-9066-92905CEFCF94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0BA81F8-8C3B-423D-9066-92905CEFCF94}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0BA81F8-8C3B-423D-9066-92905CEFCF94}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C0BA81F8-8C3B-423D-9066-92905CEFCF94}.Debug|x64.Build.0 = Debug|Any CPU
+		{C0BA81F8-8C3B-423D-9066-92905CEFCF94}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0BA81F8-8C3B-423D-9066-92905CEFCF94}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0BA81F8-8C3B-423D-9066-92905CEFCF94}.Release|x64.ActiveCfg = Release|Any CPU
+		{C0BA81F8-8C3B-423D-9066-92905CEFCF94}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -124,6 +134,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{6DFF2BCE-35E9-4535-996A-8E3F21530EAD} = {6C9D563B-5E8D-49AB-A827-CE98F735567B}
 		{895674D4-21E7-441D-98D5-3AB4BA2AFF69} = {6C9D563B-5E8D-49AB-A827-CE98F735567B}
+		{C0BA81F8-8C3B-423D-9066-92905CEFCF94} = {6C9D563B-5E8D-49AB-A827-CE98F735567B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {839C8B27-7C12-42F3-A1E3-85EB0F130282}
