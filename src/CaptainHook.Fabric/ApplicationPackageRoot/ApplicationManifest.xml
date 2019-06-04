@@ -98,11 +98,11 @@
         <SingletonPartition />
       </StatefulService>
     </Service>
-    <Service Name="CaptainHook.BaselineService" ServicePackageActivationMode="ExclusiveProcess">
+    <!--<Service Name="CaptainHook.BaselineService" ServicePackageActivationMode="ExclusiveProcess">
       <StatelessService ServiceTypeName="CaptainHook.BaselineServiceType" InstanceCount="[CaptainHook.Baseline_InstanceCount]">
         <SingletonPartition />
       </StatelessService>
-    </Service>
+    </Service>-->
     <Service Name="CaptainHook.Api" ServicePackageActivationMode="ExclusiveProcess">
       <StatelessService ServiceTypeName="CaptainHook.ApiType" InstanceCount="[CaptainHook.Api_InstanceCount]">
         <SingletonPartition />
