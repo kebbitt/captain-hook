@@ -59,7 +59,9 @@ namespace CaptainHook.Api.Controllers
         public async Task<IActionResult> Post([FromBody]RoutingRule rule)
         {
             if(!ModelState.IsValid)
-                return BadRequest(); // Parse errors
+                return BadRequest(); // todo: parse errors to payload - proposal ? esw.telemetry ?
+
+            // todo: check existence
 
             await _container.Items.CreateItemAsync(rule.PartitionKey, rule);
 

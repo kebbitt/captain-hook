@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Fabric;
 using System.Threading;
@@ -12,6 +13,8 @@ namespace CaptainHook.DirectorService
     /// </summary>
     internal sealed class DirectorService : StatefulService
     {
+        internal const string ReaderApplicationName = "CaptainHook.ReaderService";
+
         public DirectorService(StatefulServiceContext context)
             : base(context)
         { }
@@ -37,7 +40,7 @@ namespace CaptainHook.DirectorService
         {
             using (var fabricClient = new FabricClient())
             {
-                //fabricClient.QueryManager.GetServiceListAsync()
+                var serviceList = await fabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{ReaderApplicationName}"));
             }
         }
     }
