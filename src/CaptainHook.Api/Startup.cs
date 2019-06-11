@@ -115,8 +115,11 @@ namespace CaptainHook.Api
                 var database = cosmosClient.Databases.CreateDatabaseIfNotExistsAsync("captain-hook", 400).Result.HandleResponse(_bb);
                 builder.RegisterInstance(database);
 
-                var container = database.Containers.CreateContainerIfNotExistsAsync(nameof(RoutingRule), RoutingRule.PartitionKeyPath).Result.HandleResponse(_bb);
-                builder.RegisterInstance(container);
+                var ruleContainer = database.Containers.CreateContainerIfNotExistsAsync(nameof(RoutingRule), RoutingRule.PartitionKeyPath).Result.HandleResponse(_bb);
+                builder.RegisterInstance(ruleContainer).SingleInstance().Keyed<CosmosContainer>(typeof(RoutingRule));
+
+                var ruleSetContainer = database.Containers.CreateContainerIfNotExistsAsync(nameof(RuleSet), RuleSet.PartitionKeyPath).Result.HandleResponse(_bb);
+                builder.RegisterInstance(ruleSetContainer).SingleInstance().Keyed<CosmosContainer>(typeof(RuleSet));
 
                 return new AutofacServiceProvider(builder.Build());
             }

@@ -89,7 +89,7 @@ namespace CaptainHook.BaselineService
             catch (Exception ex)
             {
                 _bb.Publish(ex.ToExceptionEvent());
-                // don't rethrow, because we don't want to fault the entire service instance for a single message pump action
+                // don't rethrow, because we don't want to fault the entire service instance for a single message pump failure
             }
         }
     }
