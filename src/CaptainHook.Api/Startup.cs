@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Swagger;
 using System.Reflection;
+using CaptainHook.Api.Controllers;
 using CaptainHook.Api.Proposal;
 using CaptainHook.Common;
 using CaptainHook.Common.Proposal;
@@ -57,27 +58,14 @@ namespace CaptainHook.Api
         /// </summary>
         /// <param name="services">service collection</param>
         /// <returns>service provider instance (Autofac provider)</returns>
-        public IServiceProvider ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IServiceCollection services)
         {
             try
             {
                 services.AddApplicationInsightsTelemetry(_telemetrySettings.InstrumentationKey);
                 services.Configure<ServiceConfigurationOptions>(_configuration.GetSection("ServiceConfigurationOptions"));
 
-                var serviceConfigurationOptions = services.BuildServiceProvider()
-                    .GetService<IOptions<ServiceConfigurationOptions>>();
-
-                services.AddMvc(
-                            options =>
-                            {
-                                var policy = ScopePolicy.Create(serviceConfigurationOptions.Value.RequiredScopes.ToArray());
-
-                                var filter = EnvironmentHelper.IsInFabric
-                                    ? (IFilterMetadata) new AuthorizeFilter(policy)
-                                    : new AllowAnonymousFilter();
-
-                                options.Filters.Add(filter);
-                            })
+                services.AddMvc()
                         .AddJsonOptions(options => options.SerializerSettings.ContractResolver = new HttpContractResolver());
 
                 services.AddApiVersioning();
@@ -100,9 +88,22 @@ namespace CaptainHook.Api
                         c.CustomSchemaIds(x => x.FullName);
                     });
                 }
+            }
+            catch (Exception e)
+            {
+                _bb.Publish(e.ToExceptionEvent());
+                throw;
+            }
+        }
 
-                var builder = new ContainerBuilder();
-                builder.Populate(services);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="builder"></param>
+        public void ConfigureContainer(ContainerBuilder builder)
+        {
+            try
+            {
                 builder.RegisterInstance(_bb).As<IBigBrother>().SingleInstance();
 
                 var configurationSettings = new ConfigurationSettings();
@@ -116,12 +117,10 @@ namespace CaptainHook.Api
                 builder.RegisterInstance(database);
 
                 var ruleContainer = database.Containers.CreateContainerIfNotExistsAsync(nameof(RoutingRule), RoutingRule.PartitionKeyPath).Result.HandleResponse(_bb);
-                builder.RegisterInstance(ruleContainer).SingleInstance().Keyed<CosmosContainer>(typeof(RoutingRule));
+                builder.RegisterInstance(ruleContainer).Keyed<CosmosContainer>(nameof(RoutingRule)).SingleInstance();
 
-                var ruleSetContainer = database.Containers.CreateContainerIfNotExistsAsync(nameof(RuleSet), RuleSet.PartitionKeyPath).Result.HandleResponse(_bb);
-                builder.RegisterInstance(ruleSetContainer).SingleInstance().Keyed<CosmosContainer>(typeof(RuleSet));
-
-                return new AutofacServiceProvider(builder.Build());
+                var ruleSetContainer = database.Containers.CreateContainerIfNotExistsAsync(nameof(RoutingRuleSet), RoutingRuleSet.PartitionKeyPath).Result.HandleResponse(_bb);
+                builder.RegisterInstance(ruleSetContainer).Keyed<CosmosContainer>(nameof(RoutingRuleSet)).SingleInstance();
             }
             catch (Exception e)
             {

@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Threading.Tasks;
 using Autofac.Features.AttributeFilters;
+using Autofac.Features.Indexed;
 using CaptainHook.Common.Rules;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
@@ -21,14 +22,12 @@ namespace CaptainHook.Api.Controllers
         /// <summary>
         /// Initializes a new instance of <see cref="RuleController"/>.
         /// </summary>
-        /// <param name="ruleSetContainer">The injected <see cref="CosmosContainer"/> for <see cref="RuleSet"/></param>
+        /// <param name="ruleSetContainer">The injected <see cref="CosmosContainer"/> for <see cref="RoutingRuleSet"/></param>
         /// <param name="ruleContainer">The injected <see cref="CosmosContainer"/> for <see cref="RoutingRule"/></param>
-        public RuleSetController(
-            [KeyFilter(typeof(RuleSet))]     CosmosContainer ruleSetContainer,
-            [KeyFilter(typeof(RoutingRule))] CosmosContainer ruleContainer)
+        public RuleSetController(IIndex<string, CosmosContainer> containers)
         {
-            _ruleSetContainer = ruleSetContainer;
-            _ruleContainer = ruleContainer;
+            _ruleSetContainer = containers[nameof(RoutingRuleSet)];
+            _ruleContainer = containers[nameof(RoutingRule)];
         }
 
         /// <summary>
@@ -36,7 +35,7 @@ namespace CaptainHook.Api.Controllers
         /// </summary>
         /// <returns>see response code to response type metadata, list of all values</returns>
         [HttpGet]
-        [ProducesResponseType(typeof(RuleSet[]), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(RoutingRuleSet[]), (int) HttpStatusCode.OK)]
         public async Task<IActionResult> Get()
         {
             return await Task.FromResult(new JsonResult(new[] { "value1", "value2" }));
@@ -48,7 +47,7 @@ namespace CaptainHook.Api.Controllers
         /// <param name="id"></param>
         /// <returns>see response code to response type metadata, individual value for a given id</returns>
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(RuleSet), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(RoutingRuleSet), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
         public async Task<IActionResult> Get(string id)
         {
@@ -62,14 +61,14 @@ namespace CaptainHook.Api.Controllers
         [HttpPost]
         [ProducesResponseType((int) HttpStatusCode.OK)]
         [ProducesResponseType((int) HttpStatusCode.BadRequest)]
-        public async Task<IActionResult> Post([FromBody]RuleSet ruleSet)
+        public async Task<IActionResult> Post([FromBody]RoutingRuleSet routingRuleSet)
         {
             if(!ModelState.IsValid)
                 return BadRequest(); // todo: parse errors to payload - proposal ? esw.telemetry ?
 
             // todo: check existence
 
-            await _ruleSetContainer.Items.CreateItemAsync(ruleSet.PartitionKey, ruleSet);
+            await _ruleSetContainer.Items.CreateItemAsync(routingRuleSet.PartitionKey, routingRuleSet);
 
             return Ok();
         }
@@ -84,7 +83,7 @@ namespace CaptainHook.Api.Controllers
         [ProducesResponseType((int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
-        public async Task<IActionResult> Put(int id, [FromBody]RuleSet ruleSet)
+        public async Task<IActionResult> Put(int id, [FromBody]RoutingRuleSet routingRuleSet)
         {
             //if (string.IsNullOrWhiteSpace(value))
             //    return await Task.FromResult(BadRequest());

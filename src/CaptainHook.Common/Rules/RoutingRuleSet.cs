@@ -8,7 +8,7 @@ namespace CaptainHook.Common.Rules
     /// <summary>
     /// Defines a group of rules to be applied with a single ETag.
     /// </summary>
-    public class RuleSet
+    public class RoutingRuleSet
     {
         /// <summary>
         /// The PartitionKey Path for when creating the collection.
