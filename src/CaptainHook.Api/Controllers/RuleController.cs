@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Threading.Tasks;
 using Autofac.Features.Indexed;
@@ -9,9 +10,12 @@ using Microsoft.Azure.Cosmos;
 namespace CaptainHook.Api.Controllers
 {
     /// <summary>
-    /// sample controller
+    /// Deals with operations for <see cref="RoutingRule"/>.
     /// </summary>
-    [ApiVersion("1")]
+    /// <remarks>
+    /// Intended to be used by tools and components that implement rules from external 3rd parties, like retailers.
+    /// </remarks>
+    [ApiController, ApiVersion("1")]
     [Route("api/v{version:apiVersion}/[controller]")]
     [Produces("application/json")]
     public class RuleController : Controller
@@ -28,9 +32,12 @@ namespace CaptainHook.Api.Controllers
         }
 
         /// <summary>
-        /// GET implementation for default route
+        /// GET implementation for default route.
         /// </summary>
-        /// <returns>see response code to response type metadata, list of all values</returns>
+        /// <returns>The full list of Rules in the EDA platform.</returns>
+        /// <remarks>
+        /// Currently doesn't implement any paging mechanisms.
+        /// </remarks>
         [HttpGet]
         [ProducesResponseType(typeof(string[]), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> Get()
@@ -47,16 +54,18 @@ namespace CaptainHook.Api.Controllers
         }
 
         /// <summary>
-        /// Get with Id
+        /// Get implementation for the full <see cref="RoutingRule"/> partition, based on the type of event.
         /// </summary>
-        /// <param name="eventType"></param>
-        /// <returns>see response code to response type metadata, individual value for a given id</returns>
+        /// <param name="eventType">The type of the event key part of the rule.</param>
+        /// <returns>The full list of Rules for the given event type.</returns>
+        /// <remarks>
+        /// Currently doesn't implement any paging mechanisms.
+        /// </remarks>
         [HttpGet("{eventType}")]
         [ProducesResponseType(typeof(string), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
-        public async Task<IActionResult> Get(string eventType)
+        public async Task<IActionResult> Get([Required]string eventType)
         {
-
             var result = new List<RoutingRule>();
             var iterator = _container.Items.CreateItemQuery<RoutingRule>(new CosmosSqlQueryDefinition($"SELECT * FROM {nameof(RoutingRule)}"), eventType);
 
@@ -69,18 +78,22 @@ namespace CaptainHook.Api.Controllers
         }
 
         /// <summary>
-        /// post
+        /// Implementation of the POST HTTP verb for <see cref="RoutingRule"/>.
+        ///     Creates a <see cref="RoutingRule"/>.
         /// </summary>
-        /// <param name="rule"></param>
+        /// <param name="rule">The <see cref="RoutingRule"/> we want to create.</param>
+        /// <returns></returns>
         [HttpPost]
         [ProducesResponseType((int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType((int)HttpStatusCode.Conflict)]
         public async Task<IActionResult> Post([FromBody]RoutingRule rule)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(); // todo: parse errors to payload - proposal ? esw.telemetry ?
-
-            // todo: check existence
+            var readResponse = await _container.Items.ReadItemAsync<RoutingRule>(rule.EventType, rule.Id);
+            if (readResponse.Resource != null && readResponse.StatusCode == HttpStatusCode.OK)
+            {
+                return Conflict("Routing Rule already exists");
+            }
 
             await _container.Items.CreateItemAsync(rule.PartitionKey, rule);
 
@@ -88,34 +101,40 @@ namespace CaptainHook.Api.Controllers
         }
 
         /// <summary>
-        /// Put
+        /// Implementation of the PUT HTTP verb for <see cref="RoutingRule"/>.
+        ///     Updates a <see cref="RoutingRule"/>.
         /// </summary>
-        /// <param name="id">id to process</param>
-        /// <param name="value">payload</param>
-        /// <returns>action result</returns>
-        [HttpPut("{id}")]
+        /// <param name="rule">The <see cref="RoutingRule"/> we want to update.</param>
+        [HttpPut]
         [ProducesResponseType((int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
-        public async Task<IActionResult> Put(int id, [FromBody]string value)
+        public async Task<IActionResult> Put([FromBody]RoutingRule rule)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                return await Task.FromResult(BadRequest());
+            var readResponse = await _container.Items.ReadItemAsync<RoutingRule>(rule.EventType, rule.Id);
+            if (readResponse.StatusCode == HttpStatusCode.NotFound)
+            {
+                return NotFound();
+            }
 
-            return await Task.FromResult(Ok());
+            await _container.Items.ReplaceItemAsync(rule.PartitionKey, rule.Id, rule);
+
+            return Ok();
         }
 
         /// <summary>
-        /// Delete
+        /// Implementation of the DELETE HTTP verb for <see cref="RoutingRule"/>.
+        ///     Deletes a <see cref="RoutingRule"/> given it's composite key.
         /// </summary>
-        /// <param name="id">id to delete</param>
-        /// <returns>action result</returns>
-        [HttpDelete("{id}")]
+        /// <param name="eventType">The type of the event key part of the rule.</param>
+        /// <param name="hookUri">The hook URI key part of the rule.</param>
+        [HttpDelete("{eventType}/{hookUri}")]
         [ProducesResponseType((int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete([Required]string eventType, [Required]string hookUri)
         {
-            return await Task.FromResult(Ok());
+            var deleteResponse = await _container.Items.DeleteItemAsync<RoutingRule>(eventType, new RoutingRule(eventType, hookUri).Id);
+            return deleteResponse.StatusCode == HttpStatusCode.NotFound ? (IActionResult) NotFound() : Ok();
         }
     }
 }

@@ -1,26 +1,20 @@
 ﻿using System;
 using System.IO;
 using Autofac;
-using Autofac.Extensions.DependencyInjection;
 using Eshopworld.Core;
 using Eshopworld.DevOps;
 using Eshopworld.Web;
 using Eshopworld.Telemetry;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Swagger;
 using System.Reflection;
-using CaptainHook.Api.Controllers;
 using CaptainHook.Api.Proposal;
 using CaptainHook.Common;
 using CaptainHook.Common.Proposal;
 using CaptainHook.Common.Rules;
-using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Azure.Cosmos;
 
 namespace CaptainHook.Api

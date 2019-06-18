@@ -13,6 +13,25 @@ namespace CaptainHook.Common.Rules
     public class RoutingRule
     {
         private readonly SHA256Managed _sha = new SHA256Managed();
+        private string _id;
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="RoutingRule"/>.
+        /// </summary>
+        public RoutingRule()
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="RoutingRule"/>.
+        /// </summary>
+        /// <param name="eventType">The type of the event on this rule.</param>
+        /// <param name="hookUri">The target hook URI for this rule.</param>
+        public RoutingRule(string eventType, string hookUri)
+        {
+            EventType = eventType;
+            HookUri = hookUri;
+        }
 
         /// <summary>
         /// The PartitionKey Path for when creating the collection.
@@ -30,7 +49,7 @@ namespace CaptainHook.Common.Rules
         /// Gets the Id of the document, that is a hashed composite key with the <see cref="EventType"/> and the <see cref="HookUri"/>.
         /// </summary>
         [HttpIgnore, JsonProperty(PropertyName = "id")]
-        public byte[] Id => _sha.ComputeHash(Encoding.UTF8.GetBytes(EventType + HookUri));
+        public string Id => _id ?? (_id = Encoding.UTF8.GetString(_sha.ComputeHash(Encoding.UTF8.GetBytes(EventType + HookUri))));
 
         /// <summary>
         /// The type of the event that we want to create the route for.
