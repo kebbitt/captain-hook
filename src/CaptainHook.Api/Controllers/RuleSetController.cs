@@ -1,17 +1,23 @@
-﻿using System.Net;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
-using Autofac.Features.AttributeFilters;
 using Autofac.Features.Indexed;
 using CaptainHook.Common.Rules;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
+using Polly;
 
 namespace CaptainHook.Api.Controllers
 {
     /// <summary>
-    /// sample controller
+    /// Deals with operations for <see cref="RoutingRuleSet"/>.
     /// </summary>
-    [ApiVersion("1")]
+    /// <remarks>
+    /// Intended to be used by internal tools that want to off-load detailed rules management.
+    /// </remarks>
+    [ApiController, ApiVersion("1")]
     [Route("api/v{version:apiVersion}/[controller]")]
     [Produces("application/json")]
     public class RuleSetController : Controller
@@ -22,8 +28,7 @@ namespace CaptainHook.Api.Controllers
         /// <summary>
         /// Initializes a new instance of <see cref="RuleController"/>.
         /// </summary>
-        /// <param name="ruleSetContainer">The injected <see cref="CosmosContainer"/> for <see cref="RoutingRuleSet"/></param>
-        /// <param name="ruleContainer">The injected <see cref="CosmosContainer"/> for <see cref="RoutingRule"/></param>
+        /// <param name="containers">The injected <see cref="Dictionary{TKey,TValue}"/> of <see cref="CosmosContainer"/>.</param>
         public RuleSetController(IIndex<string, CosmosContainer> containers)
         {
             _ruleSetContainer = containers[nameof(RoutingRuleSet)];
@@ -35,7 +40,7 @@ namespace CaptainHook.Api.Controllers
         /// </summary>
         /// <returns>see response code to response type metadata, list of all values</returns>
         [HttpGet]
-        [ProducesResponseType(typeof(RoutingRuleSet[]), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(RoutingRuleSet[]), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> Get()
         {
             return await Task.FromResult(new JsonResult(new[] { "value1", "value2" }));
@@ -55,22 +60,56 @@ namespace CaptainHook.Api.Controllers
         }
 
         /// <summary>
-        /// post
+        /// Implementation of the POST HTTP verb for <see cref="RoutingRuleSet"/>.
+        ///     Creates a <see cref="RoutingRuleSet"/>.
         /// </summary>
-        /// <param name="rule"></param>
+        /// <param name="routingRuleSet">The <see cref="RoutingRuleSet"/> we want to create.</param>
         [HttpPost]
-        [ProducesResponseType((int) HttpStatusCode.OK)]
-        [ProducesResponseType((int) HttpStatusCode.BadRequest)]
-        public async Task<IActionResult> Post([FromBody]RoutingRuleSet routingRuleSet)
+        [ProducesResponseType((int)HttpStatusCode.OK)]
+        [ProducesResponseType((int)HttpStatusCode.BadRequest)]
+        public async Task<IActionResult> Post([FromBody]RoutingRuleSet routingRuleSet) // TODO: RULES EXPANSION
         {
-            if(!ModelState.IsValid)
-                return BadRequest(); // todo: parse errors to payload - proposal ? esw.telemetry ?
+            var policy = Policy.Handle<CosmosException>(ex => ex.StatusCode == HttpStatusCode.PreconditionFailed)
+                               .WaitAndRetryAsync(new[]
+                               {
+                                   TimeSpan.FromSeconds(1),
+                                   TimeSpan.FromSeconds(2),
+                                   TimeSpan.FromSeconds(4)
+                               });
 
-            // todo: check existence
+            return await policy.ExecuteAsync<IActionResult>(async () =>
+            {
+                var readResponse = await _ruleSetContainer.Items.ReadItemAsync<RoutingRuleSet>(routingRuleSet.PartitionKey, routingRuleSet.Id);
+                if (readResponse.StatusCode != HttpStatusCode.NotFound)
+                {
+                    var previousSet = readResponse.Resource;
 
-            await _ruleSetContainer.Items.CreateItemAsync(routingRuleSet.PartitionKey, routingRuleSet);
+                    if (previousSet.ETag == routingRuleSet.ETag)
+                    {
+                        return Ok();
+                    }
 
-            return Ok();
+                    if (previousSet.PreviousETags.Contains(routingRuleSet.ETag))
+                    {
+                        return Conflict();
+                    }
+
+                    routingRuleSet.PreviousETags = previousSet.PreviousETags.Concat(new[] { previousSet.ETag });
+
+                    await _ruleSetContainer.Items.ReplaceItemAsync(
+                        routingRuleSet.PartitionKey,
+                        routingRuleSet.Id,
+                        routingRuleSet,
+                        new CosmosItemRequestOptions
+                        { AccessCondition = new AccessCondition { Type = AccessConditionType.IfMatch, Condition = readResponse.ETag } }
+                    );
+
+                    return Ok();
+                }
+
+                await _ruleSetContainer.Items.CreateItemAsync(routingRuleSet.PartitionKey, routingRuleSet);
+                return Ok();
+            });
         }
 
         /// <summary>
@@ -85,9 +124,6 @@ namespace CaptainHook.Api.Controllers
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
         public async Task<IActionResult> Put(int id, [FromBody]RoutingRuleSet routingRuleSet)
         {
-            //if (string.IsNullOrWhiteSpace(value))
-            //    return await Task.FromResult(BadRequest());
-
             return await Task.FromResult(Ok());
         }
 

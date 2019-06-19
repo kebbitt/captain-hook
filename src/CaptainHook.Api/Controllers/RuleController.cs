@@ -67,8 +67,8 @@ namespace CaptainHook.Api.Controllers
         public async Task<IActionResult> Get([Required]string eventType)
         {
             var result = new List<RoutingRule>();
-            var iterator = _container.Items.CreateItemQuery<RoutingRule>(new CosmosSqlQueryDefinition($"SELECT * FROM {nameof(RoutingRule)}"), eventType);
 
+            var iterator = _container.Items.CreateItemQuery<RoutingRule>(new CosmosSqlQueryDefinition($"SELECT * FROM {nameof(RoutingRule)}"), eventType);
             while (iterator.HasMoreResults)
             {
                 result.AddRange(await iterator.FetchNextSetAsync());
@@ -82,7 +82,6 @@ namespace CaptainHook.Api.Controllers
         ///     Creates a <see cref="RoutingRule"/>.
         /// </summary>
         /// <param name="rule">The <see cref="RoutingRule"/> we want to create.</param>
-        /// <returns></returns>
         [HttpPost]
         [ProducesResponseType((int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]

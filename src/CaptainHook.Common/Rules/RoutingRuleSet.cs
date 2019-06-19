@@ -14,7 +14,7 @@ namespace CaptainHook.Common.Rules
         /// The PartitionKey Path for when creating the collection.
         /// </summary>
         [JsonIgnore]
-        public static string PartitionKeyPath => $"/{nameof(Id)}";
+        public static string PartitionKeyPath => "/id";
 
         /// <summary>
         /// Gets the partition key for the rule.
@@ -25,7 +25,7 @@ namespace CaptainHook.Common.Rules
         /// <summary>
         /// The ID of the rule set - usually the name of the application setting the rule set.
         /// </summary>
-        [Required]
+        [Required, JsonProperty(PropertyName = "id")]
         public string Id { get; set; }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace CaptainHook.Common.Rules
         /// <summary>
         /// The list of routing rules that compose this rule set.
         /// </summary>
-        [Required]
+        //[Required]
         public IEnumerable<RoutingRule> RoutingRules { get; set; }
     }
 }
