@@ -10,7 +10,7 @@ namespace CaptainHook.Common.Rules
     /// <summary>
     /// Represents a routing rule used to configure captain-hook.
     /// </summary>
-    public class RoutingRule
+    public class RoutingRule : IEqualityComparer<RoutingRule>
     {
         private readonly SHA256Managed _sha = new SHA256Managed();
         private string _id;
@@ -67,5 +67,25 @@ namespace CaptainHook.Common.Rules
         /// A list of JSONPath based filters on this routing rule.
         /// </summary>
         public IEnumerable<JsonPathFilter> Filters { get; set; }
+
+        /// <inheritdoc />
+        public bool Equals(RoutingRule x, RoutingRule y)
+        {
+            return x.EventType == y.EventType && x.HookUri == y.HookUri;
+        }
+
+        /// <inheritdoc />
+        public int GetHashCode(RoutingRule obj)
+        {
+            unchecked
+            {
+                var hash = (int)2166136261;
+
+                if (EventType != null) hash = (hash * 16777619) ^ EventType.GetHashCode();
+                if (HookUri != null) hash = (hash * 16777619) ^ HookUri.GetHashCode();
+
+                return hash;
+            }
+        }
     }
 }

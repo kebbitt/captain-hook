@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Autofac.Features.Indexed;
+using CaptainHook.Common.Proposal;
 using CaptainHook.Common.Rules;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
@@ -67,22 +68,15 @@ namespace CaptainHook.Api.Controllers
         [HttpPost]
         [ProducesResponseType((int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
-        public async Task<IActionResult> Post([FromBody]RoutingRuleSet routingRuleSet) // TODO: RULES EXPANSION
+        public async Task<IActionResult> Post([FromBody]RoutingRuleSet routingRuleSet)
         {
-            var policy = Policy.Handle<CosmosException>(ex => ex.StatusCode == HttpStatusCode.PreconditionFailed)
-                               .WaitAndRetryAsync(new[]
-                               {
-                                   TimeSpan.FromSeconds(1),
-                                   TimeSpan.FromSeconds(2),
-                                   TimeSpan.FromSeconds(4)
-                               });
-
-            return await policy.ExecuteAsync<IActionResult>(async () =>
+            RoutingRuleSet previousSet = default;
+            var result = await EshopworldPolicy.CosmosConflictPolicy().ExecuteAsync<IActionResult>(async () =>
             {
                 var readResponse = await _ruleSetContainer.Items.ReadItemAsync<RoutingRuleSet>(routingRuleSet.PartitionKey, routingRuleSet.Id);
                 if (readResponse.StatusCode != HttpStatusCode.NotFound)
                 {
-                    var previousSet = readResponse.Resource;
+                    previousSet = readResponse.Resource;
 
                     if (previousSet.ETag == routingRuleSet.ETag)
                     {
@@ -101,15 +95,60 @@ namespace CaptainHook.Api.Controllers
                         routingRuleSet.Id,
                         routingRuleSet,
                         new CosmosItemRequestOptions
-                        { AccessCondition = new AccessCondition { Type = AccessConditionType.IfMatch, Condition = readResponse.ETag } }
+                        {
+                            AccessCondition = new AccessCondition {Type = AccessConditionType.IfMatch, Condition = readResponse.ETag}
+                        }
                     );
 
-                    return Ok();
+                    return null;
                 }
 
                 await _ruleSetContainer.Items.CreateItemAsync(routingRuleSet.PartitionKey, routingRuleSet);
-                return Ok();
+                return null;
             });
+
+            if (result != null) return result;
+
+            var addRules = previousSet == null
+                ? routingRuleSet.RoutingRules.ToList()
+                : routingRuleSet.RoutingRules.Except(previousSet.RoutingRules).ToList();
+
+            var removeRules = previousSet == null
+                ? new List<RoutingRule>()
+                : previousSet.RoutingRules.Except(routingRuleSet.RoutingRules).ToList();
+
+            var replaceRules = previousSet == null
+                ? new List<RoutingRule>()
+                : previousSet.RoutingRules.Except(routingRuleSet.RoutingRules).ToList();
+
+            // Create
+            await EshopworldPolicy.CosmosConflictPolicy().ExecuteAsync(async() =>
+            {
+                foreach (var rule in addRules)
+                {
+                    await _ruleContainer.Items.CreateItemAsync(rule.PartitionKey, rule);
+                }
+            });
+
+            // Delete
+            await EshopworldPolicy.CosmosConflictPolicy().ExecuteAsync(async () =>
+            {
+                foreach (var rule in removeRules)
+                {
+                    await _ruleContainer.Items.DeleteItemAsync<RoutingRule>(rule.PartitionKey, rule.Id);
+                }
+            });
+
+            // Replace || TODO? Should we handle other types of responses like 404 ?
+            await EshopworldPolicy.CosmosConflictPolicy().ExecuteAsync(async () =>
+            {
+                foreach (var rule in replaceRules)
+                {
+                    await _ruleContainer.Items.ReplaceItemAsync(rule.PartitionKey, rule.Id, rule);
+                }
+            });
+
+            return Ok();
         }
 
         /// <summary>
