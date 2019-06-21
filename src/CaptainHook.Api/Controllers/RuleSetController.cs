@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -8,7 +7,6 @@ using CaptainHook.Common.Proposal;
 using CaptainHook.Common.Rules;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
-using Polly;
 
 namespace CaptainHook.Api.Controllers
 {
@@ -37,27 +35,39 @@ namespace CaptainHook.Api.Controllers
         }
 
         /// <summary>
-        /// GET implementation for default route
+        /// GET implementation for default route.
         /// </summary>
-        /// <returns>see response code to response type metadata, list of all values</returns>
+        /// <returns>The full list of <see cref="RoutingRuleSet"/> in the captain-hook platform.</returns>
+        /// <remarks>
+        /// Currently doesn't implement any paging mechanisms.
+        /// </remarks>
         [HttpGet]
         [ProducesResponseType(typeof(RoutingRuleSet[]), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> Get()
         {
-            return await Task.FromResult(new JsonResult(new[] { "value1", "value2" }));
+            var result = new List<RoutingRuleSet>();
+
+            var iterator = _ruleSetContainer.Items.GetItemIterator<RoutingRuleSet>();
+            while (iterator.HasMoreResults)
+            {
+                result.AddRange(await iterator.FetchNextSetAsync());
+            }
+
+            return new JsonResult(result);
         }
 
         /// <summary>
-        /// Get with Id
+        /// Get implementation for a <see cref="RoutingRuleSet"/> with a specific ID.
         /// </summary>
-        /// <param name="id"></param>
-        /// <returns>see response code to response type metadata, individual value for a given id</returns>
+        /// <param name="id">The ID of the <see cref="RoutingRuleSet"/> that we are retrieving.</param>
+        /// <returns>The <see cref="RoutingRuleSet"/> with the given ID.</returns>
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(RoutingRuleSet), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
         public async Task<IActionResult> Get(string id)
         {
-            return await Task.FromResult(new JsonResult("value"));
+            var readResponse = await _ruleSetContainer.Items.ReadItemAsync<RoutingRuleSet>(id, id);
+            return readResponse.StatusCode == HttpStatusCode.NotFound ? (IActionResult) NotFound() : new JsonResult(readResponse.Resource);
         }
 
         /// <summary>
@@ -68,6 +78,7 @@ namespace CaptainHook.Api.Controllers
         [HttpPost]
         [ProducesResponseType((int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType((int)HttpStatusCode.Conflict)]
         public async Task<IActionResult> Post([FromBody]RoutingRuleSet routingRuleSet)
         {
             RoutingRuleSet previousSet = default;
@@ -152,7 +163,7 @@ namespace CaptainHook.Api.Controllers
         }
 
         /// <summary>
-        /// Put
+        /// NO IMPLEMENTATION DISCUSSION - ???
         /// </summary>
         /// <param name="id">id to process</param>
         /// <param name="value">payload</param>
@@ -167,16 +178,33 @@ namespace CaptainHook.Api.Controllers
         }
 
         /// <summary>
-        /// Delete
+        /// 
         /// </summary>
-        /// <param name="id">id to delete</param>
-        /// <returns>action result</returns>
+        /// <param name="id"></param>
         [HttpDelete("{id}")]
         [ProducesResponseType((int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(string id)
         {
-            return await Task.FromResult(Ok());
+            var readResponse = await _ruleSetContainer.Items.ReadItemAsync<RoutingRuleSet>(id, id);
+
+            if (readResponse.StatusCode == HttpStatusCode.NotFound)
+            {
+                return NotFound();
+            }
+
+            var ruleSet = readResponse.Resource;
+            var deleteResponse = await _ruleSetContainer.Items.DeleteItemAsync<RoutingRuleSet>(id, id);
+
+            if (deleteResponse.StatusCode == HttpStatusCode.OK)
+            {
+                foreach (var rule in ruleSet.RoutingRules)
+                {
+                    await _ruleContainer.Items.DeleteItemAsync<RoutingRule>(rule.PartitionKey, rule.Id);
+                }
+            }
+
+            return Ok();
         }
     }
 }

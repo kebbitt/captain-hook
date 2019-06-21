@@ -34,7 +34,7 @@ namespace CaptainHook.Api.Controllers
         /// <summary>
         /// GET implementation for default route.
         /// </summary>
-        /// <returns>The full list of Rules in the EDA platform.</returns>
+        /// <returns>The full list of <see cref="RoutingRule"/> in the captain-hook platform.</returns>
         /// <remarks>
         /// Currently doesn't implement any paging mechanisms.
         /// </remarks>
