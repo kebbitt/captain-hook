@@ -15,22 +15,36 @@ namespace CaptainHook.Common.Configuration
             WebhookRequestRules = new List<WebhookRequestRule>();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public AuthenticationConfig AuthenticationConfig { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public string Uri { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public string Name { get; set; }
 
-        //todo implement this on the calls to the webhook to select http verb
+        /// <summary>
+        /// 
+        /// </summary>
         public HttpVerb HttpVerb { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public List<WebhookRequestRule> WebhookRequestRules { get; set; }
 
         /// <summary>
         /// Request duration maximum timeout in seconds
         /// Left at 100 seconds as the default value for the http client timeout
         /// </summary>
-        public TimeSpan Timeout { get; set; } = new TimeSpan(0,0, 100);
+        public TimeSpan Timeout { get; set; } = new TimeSpan(0, 0, 100);
     }
 
     /// <summary>
@@ -38,7 +52,7 @@ namespace CaptainHook.Common.Configuration
     /// </summary>
     public class EventHandlerConfig
     {
-        public WebhookConfig WebHookConfig { get; set; }
+        public WebhookConfig WebhookConfig { get; set; }
 
         public WebhookConfig CallbackConfig { get; set; }
 

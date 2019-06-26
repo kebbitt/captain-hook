@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
+using CaptainHook.EventHandlerActor;
 using Eshopworld.Tests.Core;
 using Microsoft.Azure.KeyVault;
 using Microsoft.Azure.Services.AppAuthentication;
@@ -17,7 +17,7 @@ namespace CaptainHook.Tests.Configuration
         [IsDev]
         public void ConfigNotEmpty()
         {
-            var kvUri = "https://dgtest.vault.azure.net/";
+            var kvUri = "https://esw-tooling-ci-we.vault.azure.net/";
 
             var config = new ConfigurationBuilder().AddAzureKeyVault(
                 kvUri,
@@ -27,112 +27,41 @@ namespace CaptainHook.Tests.Configuration
                 new DefaultKeyVaultSecretManager()).Build();
 
             //autowire up configs in keyvault to webhooks
+            //autowire up configs in keyvault to webhooks
             var section = config.GetSection("event");
             var values = section.GetChildren().ToList();
 
             var eventHandlerList = new List<EventHandlerConfig>();
             var webhookList = new List<WebhookConfig>(values.Count);
-
+            var endpointList = new Dictionary<string, WebhookConfig>(values.Count);
             foreach (var configurationSection in values)
             {
                 //temp work around until config comes in through the API
                 var eventHandlerConfig = configurationSection.Get<EventHandlerConfig>();
                 eventHandlerList.Add(eventHandlerConfig);
 
-                if (eventHandlerConfig.WebHookConfig != null)
+                var path = "webhookconfig";
+                if (eventHandlerConfig.WebhookConfig != null)
                 {
-                    if (eventHandlerConfig.WebHookConfig.AuthenticationConfig.Type == AuthenticationType.Basic)
-                    {
-                        var basicAuthenticationConfig = new BasicAuthenticationConfig
-                        {
-                            Username = configurationSection["webhookconfig:authenticationconfig:username"],
-                            Password = configurationSection["webhookconfig:authenticationconfig:password"]
-                        };
-                        eventHandlerConfig.WebHookConfig.AuthenticationConfig = basicAuthenticationConfig;
-                    }
-
-                    if (eventHandlerConfig.WebHookConfig.AuthenticationConfig.Type == AuthenticationType.OIDC)
-                    {
-                        eventHandlerConfig.WebHookConfig.AuthenticationConfig =
-                            ParseOidcAuthenticationConfig(
-                                configurationSection.GetSection("webhookconfig:authenticationconfig"));
-                    }
-
-                    if (eventHandlerConfig.WebHookConfig.AuthenticationConfig.Type == AuthenticationType.Custom)
-                    {
-                        eventHandlerConfig.WebHookConfig.AuthenticationConfig =
-                            ParseOidcAuthenticationConfig(
-                                configurationSection.GetSection("webhookconfig:authenticationconfig"));
-                        eventHandlerConfig.WebHookConfig.AuthenticationConfig.Type = AuthenticationType.Custom;
-                    }
-
-                    webhookList.Add(eventHandlerConfig.WebHookConfig);
+                    ConfigParser.ParseAuthScheme(eventHandlerConfig.WebhookConfig, configurationSection, $"{path}:authenticationconfig");
+                    webhookList.Add(eventHandlerConfig.WebhookConfig);
+                    ConfigParser.AddEndpoints(eventHandlerConfig.WebhookConfig, endpointList, configurationSection, path);
                 }
 
-                if (eventHandlerConfig.CallBackEnabled)
+                if (!eventHandlerConfig.CallBackEnabled)
                 {
-                    if (eventHandlerConfig.CallbackConfig.AuthenticationConfig.Type == AuthenticationType.Basic)
-                    {
-                        var basicAuthenticationConfig = new BasicAuthenticationConfig
-                        {
-                            Username = configurationSection["webhookconfig:authenticationconfig:username"],
-                            Password = configurationSection["webhookconfig:authenticationconfig:password"]
-                        };
-                        eventHandlerConfig.CallbackConfig.AuthenticationConfig = basicAuthenticationConfig;
-                    }
-
-                    if (eventHandlerConfig.CallbackConfig.AuthenticationConfig.Type == AuthenticationType.OIDC)
-                    {
-                        eventHandlerConfig.CallbackConfig.AuthenticationConfig =
-                            ParseOidcAuthenticationConfig(
-                                configurationSection.GetSection("callbackconfig:authenticationconfig"));
-                    }
-
-                    if (eventHandlerConfig.CallbackConfig.AuthenticationConfig.Type == AuthenticationType.Custom)
-                    {
-                        eventHandlerConfig.CallbackConfig.AuthenticationConfig =
-                            ParseOidcAuthenticationConfig(
-                                configurationSection.GetSection("callbackconfig:authenticationconfig"));
-                        eventHandlerConfig.CallbackConfig.AuthenticationConfig.Type = AuthenticationType.Custom;
-                    }
-
-                    webhookList.Add(eventHandlerConfig.CallbackConfig);
+                    continue;
                 }
+
+                path = "callbackconfig";
+                ConfigParser.ParseAuthScheme(eventHandlerConfig.CallbackConfig, configurationSection, $"{path}:authenticationconfig");
+                webhookList.Add(eventHandlerConfig.CallbackConfig);
+                ConfigParser.AddEndpoints(eventHandlerConfig.CallbackConfig, endpointList, configurationSection, path);
             }
 
             Assert.NotEmpty(eventHandlerList);
             Assert.NotEmpty(webhookList);
-        }
-
-        /// <summary>
-        /// Hack to parse out the config types, won't be needed after api configuration
-        /// </summary>
-        /// <param name="configurationSection"></param>
-        /// <returns></returns>
-        private static OidcAuthenticationConfig ParseOidcAuthenticationConfig(IConfiguration configurationSection)
-        {
-            var oauthAuthenticationConfig = new OidcAuthenticationConfig
-            {
-                ClientId = configurationSection["clientid"],
-                ClientSecret = configurationSection["clientsecret"],
-                Uri = configurationSection["uri"],
-                Scopes = configurationSection["scopes"].Split(" ")
-            };
-
-            var refresh = configurationSection["refresh"];
-            if (string.IsNullOrWhiteSpace(refresh))
-            {
-                oauthAuthenticationConfig.RefreshBeforeInSeconds = 10;
-            }
-            else
-            {
-                if (int.TryParse(refresh, out var refreshValue))
-                {
-                    oauthAuthenticationConfig.RefreshBeforeInSeconds = refreshValue;
-                }
-            }
-
-            return oauthAuthenticationConfig;
+            Assert.NotEmpty(endpointList);
         }
     }
 }

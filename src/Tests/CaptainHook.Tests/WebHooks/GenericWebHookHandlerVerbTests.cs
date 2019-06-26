@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -38,11 +39,13 @@ namespace CaptainHook.Tests.WebHooks
                 .WithContentType("application/json", payload)
                 .Respond(expectedResponseCode, "application/json", expectedResponseBody);
 
+            var httpClients = new IndexDictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } };
+
             var genericWebhookHandler = new GenericWebhookHandler(
-                new Mock<IAcquireTokenHandler>().Object,
+                new Mock<IAuthenticationHandlerFactory>().Object,
                 new RequestBuilder(),
                 new Mock<IBigBrother>().Object,
-                mockHttp.ToHttpClient(),
+                httpClients,
                 config);
 
             await genericWebhookHandler.CallAsync(new MessageData { Payload = payload }, new Dictionary<string, object>(), _cancellationToken);
@@ -58,11 +61,13 @@ namespace CaptainHook.Tests.WebHooks
             var request = mockHttp.When(httpMethod, config.Uri)
                 .Respond(expectedResponseCode, "application/json", expectedResponseBody);
 
+            var httpClients = new IndexDictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } };
+
             var genericWebhookHandler = new GenericWebhookHandler(
-                new Mock<IAcquireTokenHandler>().Object,
+                new Mock<IAuthenticationHandlerFactory>().Object,
                 new RequestBuilder(),
                 new Mock<IBigBrother>().Object,
-                mockHttp.ToHttpClient(),
+                httpClients,
                 config);
 
             await genericWebhookHandler.CallAsync(new MessageData { Payload = payload }, new Dictionary<string, object>(), _cancellationToken);

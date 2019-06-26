@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -20,7 +21,7 @@ namespace CaptainHook.Tests.WebHooks
 {
     public class WebhookResponseHandlerTests
     {
-        private CancellationToken _cancellationToken;
+        private readonly CancellationToken _cancellationToken;
 
         public WebhookResponseHandlerTests()
         {
@@ -41,31 +42,38 @@ namespace CaptainHook.Tests.WebHooks
                 .WithContentType("application/json", expectedContent)
                 .Respond(HttpStatusCode.OK, "application/json", "{\"msg\":\"Hello World\"}");
 
-            var httpClient = mockHttpHandler.ToHttpClient();
-
-            var mockAuthHandler = new Mock<IAcquireTokenHandler>();
+            var mockAuthHandlerFactory = new Mock<IAuthenticationHandlerFactory>();
+            mockAuthHandlerFactory.Setup(s => s.GetAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => new Mock<IAcquireTokenHandler>().Object);
             var mockBigBrother = new Mock<IBigBrother>();
 
+            var httpClients = new IndexDictionary<string, HttpClient>
+            {
+                {new Uri(config.WebhookConfig.Uri).Host, mockHttpHandler.ToHttpClient()},
+                {new Uri(config.CallbackConfig.Uri).Host, mockHttpHandler.ToHttpClient()}
+            };
+
             var mockHandlerFactory = new Mock<IEventHandlerFactory>();
-            mockHandlerFactory.Setup(s => s.CreateWebhookHandlerAsync(config.CallbackConfig.Name, CancellationToken.None)).ReturnsAsync(
+            mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
                 new GenericWebhookHandler(
-                    mockAuthHandler.Object,
+                    mockAuthHandlerFactory.Object,
                     new RequestBuilder(),
                     mockBigBrother.Object,
-                    httpClient,
+                    httpClients,
                     config.CallbackConfig));
 
             var webhookResponseHandler = new WebhookResponseHandler(
                 mockHandlerFactory.Object,
-                mockAuthHandler.Object,
+                mockAuthHandlerFactory.Object,
                 new RequestBuilder(),
                 mockBigBrother.Object,
-                httpClient,
+                httpClients,
                 config);
 
             await webhookResponseHandler.CallAsync(messageData, new Dictionary<string, object>(), _cancellationToken);
 
-            mockAuthHandler.Verify(e => e.GetTokenAsync(It.IsAny<HttpClient>(), _cancellationToken), Times.Exactly(1));
+            mockAuthHandlerFactory.Verify(e => e.GetAsync(It.IsAny<string>(), _cancellationToken), Times.Never);
+            mockAuthHandlerFactory.Verify(e => e.GetAsync(It.IsAny<Uri>(), _cancellationToken), Times.Once);
             Assert.Equal(1, mockHttpHandler.GetMatchCount(mockWebHookRequestWithCallback));
         }
 
@@ -86,32 +94,40 @@ namespace CaptainHook.Tests.WebHooks
             var mockWebHookRequest = mockHttpHandler.When(HttpMethod.Put, expectedCallbackUri)
                 .Respond(HttpStatusCode.OK, "application/json", "{\"msg\":\"Hello World\"}");
 
-            var httpClient = mockHttpHandler.ToHttpClient();
+            var httpClients = new IndexDictionary<string, HttpClient>
+            {
+                {new Uri(config.WebhookConfig.Uri).Host, mockHttpHandler.ToHttpClient()},
+                {new Uri(config.CallbackConfig.Uri).Host, mockHttpHandler.ToHttpClient()}
+            };
 
-            var mockAuthHandler = new Mock<IAcquireTokenHandler>();
+            var mockAuthHandlerFactory = new Mock<IAuthenticationHandlerFactory>();
+            mockAuthHandlerFactory.Setup(s => s.GetAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => new Mock<IAcquireTokenHandler>().Object);
+
             var mockBigBrother = new Mock<IBigBrother>();
 
             var mockHandlerFactory = new Mock<IEventHandlerFactory>();
-            mockHandlerFactory.Setup(s => s.CreateWebhookHandlerAsync(config.CallbackConfig.Name, CancellationToken.None)).ReturnsAsync(
+            mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
                 new GenericWebhookHandler(
-                    mockAuthHandler.Object,
+                    mockAuthHandlerFactory.Object,
                     new RequestBuilder(),
                     mockBigBrother.Object,
-                    httpClient,
+                    httpClients,
                     config.CallbackConfig));
 
             var webhookResponseHandler = new WebhookResponseHandler(
                 mockHandlerFactory.Object,
-                mockAuthHandler.Object,
+                mockAuthHandlerFactory.Object,
                 new RequestBuilder(),
                 mockBigBrother.Object,
-                httpClient,
+                httpClients,
                 config);
 
             await webhookResponseHandler.CallAsync(messageData, new Dictionary<string, object>(), _cancellationToken);
 
-            mockAuthHandler.Verify(e => e.GetTokenAsync(It.IsAny<HttpClient>(), _cancellationToken), Times.Exactly(1));
-            mockHandlerFactory.Verify(e => e.CreateWebhookHandlerAsync(It.IsAny<string>(), CancellationToken.None), Times.AtMostOnce);
+            mockAuthHandlerFactory.Verify(e => e.GetAsync(It.IsAny<string>(), _cancellationToken), Times.Never);
+            mockAuthHandlerFactory.Verify(e => e.GetAsync(It.IsAny<Uri>(), _cancellationToken), Times.Once);
+            mockHandlerFactory.Verify(e => e.CreateWebhookHandler(It.IsAny<string>()), Times.AtMostOnce);
 
             Assert.Equal(1, mockHttpHandler.GetMatchCount(mockWebHookRequest));
         }
@@ -130,32 +146,44 @@ namespace CaptainHook.Tests.WebHooks
                 .WithContentType("application/json; charset=utf-8", expectedContent)
                 .Respond(HttpStatusCode.OK, "application/json", "{\"msg\":\"Hello World\"}");
 
-            var httpClient = mockHttpHandler.ToHttpClient();
+            var httpClients = new IndexDictionary<string, HttpClient>
+            {
+                {new Uri(config.CallbackConfig.Uri).Host, mockHttpHandler.ToHttpClient()}
+            };
 
-            var mockAuthHandler = new Mock<IAcquireTokenHandler>();
+            //for each route in the path query, we create a mock http client in the factory
+            foreach (var rules in config.WebhookConfig.WebhookRequestRules.Where(r => r.Routes.Any()))
+            {
+                foreach (var route in rules.Routes)
+                {
+                    httpClients.Add(new Uri(route.Uri).Host, mockHttpHandler.ToHttpClient());
+                }
+            }
+
+            var mockAuthHandlerFactory = new Mock<IAuthenticationHandlerFactory>();
             var mockBigBrother = new Mock<IBigBrother>();
 
             var mockHandlerFactory = new Mock<IEventHandlerFactory>();
-            mockHandlerFactory.Setup(s => s.CreateWebhookHandlerAsync(config.CallbackConfig.Name, CancellationToken.None)).ReturnsAsync(
+            mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
                 new GenericWebhookHandler(
-                    mockAuthHandler.Object,
+                    mockAuthHandlerFactory.Object,
                     new RequestBuilder(),
                     mockBigBrother.Object,
-                    httpClient,
+                    httpClients,
                     config.CallbackConfig));
 
             var webhookResponseHandler = new WebhookResponseHandler(
                 mockHandlerFactory.Object,
-                mockAuthHandler.Object,
+                mockAuthHandlerFactory.Object,
                 new RequestBuilder(),
                 mockBigBrother.Object,
-                httpClient,
+                httpClients,
                 config);
 
             await webhookResponseHandler.CallAsync(messageData, new Dictionary<string, object>(), _cancellationToken);
 
-            mockAuthHandler.Verify(e => e.GetTokenAsync(It.IsAny<HttpClient>(), _cancellationToken), Times.Exactly(1));
-            mockHandlerFactory.Verify(e => e.CreateWebhookHandlerAsync(It.IsAny<string>(), CancellationToken.None), Times.AtMostOnce);
+            mockAuthHandlerFactory.Verify(e => e.GetAsync(It.IsAny<string>(), _cancellationToken), Times.AtMostOnce);
+            mockHandlerFactory.Verify(e => e.CreateWebhookHandler(It.IsAny<string>()), Times.AtMostOnce);
 
             Assert.Equal(1, mockHttpHandler.GetMatchCount(multiRouteCall));
         }
@@ -174,26 +202,30 @@ namespace CaptainHook.Tests.WebHooks
                 .WithContentType("application/json; charset=utf-8", expectedContent)
                 .Respond(HttpStatusCode.OK, "application/json", "{\"msg\":\"Hello World\"}");
 
-            var httpClient = mockHttpHandler.ToHttpClient();
+            var httpClients = new IndexDictionary<string, HttpClient>
+            {
+                {new Uri(config.WebhookConfig.Uri).Host, mockHttpHandler.ToHttpClient()},
+                {new Uri(config.CallbackConfig.Uri).Host, mockHttpHandler.ToHttpClient()}
+            };
 
-            var mockAuthHandler = new Mock<IAcquireTokenHandler>();
+            var mockAuthHandlerFactory = new Mock<IAuthenticationHandlerFactory>();
             var mockBigBrother = new Mock<IBigBrother>();
 
             var mockHandlerFactory = new Mock<IEventHandlerFactory>();
-            mockHandlerFactory.Setup(s => s.CreateWebhookHandlerAsync(config.CallbackConfig.Name, CancellationToken.None)).ReturnsAsync(
+            mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
                 new GenericWebhookHandler(
-                    mockAuthHandler.Object,
+                    mockAuthHandlerFactory.Object,
                     new RequestBuilder(),
                     mockBigBrother.Object,
-                    httpClient,
+                    httpClients,
                     config.CallbackConfig));
 
             var webhookResponseHandler = new WebhookResponseHandler(
                 mockHandlerFactory.Object,
-                mockAuthHandler.Object,
+                mockAuthHandlerFactory.Object,
                 new RequestBuilder(),
                 mockBigBrother.Object,
-                httpClient,
+                httpClients,
                 config);
 
             await Assert.ThrowsAsync<Exception>(async () => await webhookResponseHandler.CallAsync(messageData, new Dictionary<string, object>(), _cancellationToken));
@@ -252,7 +284,7 @@ namespace CaptainHook.Tests.WebHooks
         {
             Name = "Event 1",
             Type = "blahblah",
-            WebHookConfig = new WebhookConfig
+            WebhookConfig = new WebhookConfig
             {
                 Name = "Webhook1",
                 HttpVerb = HttpVerb.Post,
@@ -347,19 +379,9 @@ namespace CaptainHook.Tests.WebHooks
         {
             Name = "Event 1",
             Type = "blahblah",
-            WebHookConfig = new WebhookConfig
+            WebhookConfig = new WebhookConfig
             {
                 Name = "Webhook1",
-                HttpVerb = HttpVerb.Post,
-                Uri = "https://blah.blah.eshopworld.com",
-                AuthenticationConfig = new OidcAuthenticationConfig
-                {
-                    Type = AuthenticationType.OIDC,
-                    Uri = "https://blah-blah.sts.eshopworld.com",
-                    ClientId = "ClientId",
-                    ClientSecret = "ClientSecret",
-                    Scopes = new[] { "scope1", "scope2" }
-                },
                 WebhookRequestRules = new List<WebhookRequestRule>
                 {
                     new WebhookRequestRule
@@ -465,7 +487,7 @@ namespace CaptainHook.Tests.WebHooks
         {
             Name = "Event 1",
             Type = "blahblah",
-            WebHookConfig = new WebhookConfig
+            WebhookConfig = new WebhookConfig
             {
                 Name = "Webhook1",
                 HttpVerb = HttpVerb.Post,

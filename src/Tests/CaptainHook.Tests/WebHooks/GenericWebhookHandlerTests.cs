@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -18,7 +19,7 @@ namespace CaptainHook.Tests.WebHooks
 {
     public class GenericWebhookHandlerTests
     {
-        private CancellationToken _cancellationToken;
+        private readonly CancellationToken _cancellationToken;
 
         public GenericWebhookHandlerTests()
         {
@@ -57,11 +58,13 @@ namespace CaptainHook.Tests.WebHooks
                 .WithContentType("application/json", messageData.Payload)
                 .Respond(HttpStatusCode.OK, "application/json", string.Empty);
 
+            var httpClients = new IndexDictionary<string, HttpClient> {{new Uri(config.Uri).Host, mockHttp.ToHttpClient()}};
+
             var genericWebhookHandler = new GenericWebhookHandler(
-                new Mock<IAcquireTokenHandler>().Object,
+                new Mock<IAuthenticationHandlerFactory>().Object,
                 new RequestBuilder(),
                 new Mock<IBigBrother>().Object,
-                mockHttp.ToHttpClient(),
+                httpClients,
                 config);
 
             await genericWebhookHandler.CallAsync(messageData, new Dictionary<string, object>(), _cancellationToken);

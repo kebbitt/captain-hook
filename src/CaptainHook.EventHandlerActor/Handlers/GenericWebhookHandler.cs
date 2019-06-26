@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Autofac.Features.Indexed;
 using CaptainHook.Common;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
@@ -17,24 +18,24 @@ namespace CaptainHook.EventHandlerActor.Handlers
     /// </summary>
     public class GenericWebhookHandler : IHandler
     {
-        private readonly HttpClient _client;
         protected readonly IBigBrother BigBrother;
+        private readonly IIndex<string, HttpClient> _httpClients;
         protected readonly IRequestBuilder RequestBuilder;
         protected readonly WebhookConfig WebhookConfig;
-        protected readonly IAcquireTokenHandler AcquireTokenHandler;
+        private readonly IAuthenticationHandlerFactory _authenticationHandlerFactory;
 
         public GenericWebhookHandler(
-            IAcquireTokenHandler acquireTokenHandler,
+            IAuthenticationHandlerFactory authenticationHandlerFactory,
             IRequestBuilder requestBuilder,
             IBigBrother bigBrother,
-            HttpClient client,
+            IIndex<string, HttpClient> httpClients,
             WebhookConfig webhookConfig)
         {
-            _client = client;
-            AcquireTokenHandler = acquireTokenHandler;
             BigBrother = bigBrother;
+            _httpClients = httpClients;
             RequestBuilder = requestBuilder;
             WebhookConfig = webhookConfig;
+            this._authenticationHandlerFactory = authenticationHandlerFactory;
         }
 
         /// <summary>
@@ -54,30 +55,55 @@ namespace CaptainHook.EventHandlerActor.Handlers
                     throw new Exception("injected wrong implementation");
                 }
 
-                //make a call to client identity provider
-                if (WebhookConfig.AuthenticationConfig.Type != AuthenticationType.None)
-                {
-                    await AcquireTokenHandler.GetTokenAsync(_client, cancellationToken);
-                }
-
                 var uri = RequestBuilder.BuildUri(WebhookConfig, messageData.Payload);
                 var httpVerb = RequestBuilder.SelectHttpVerb(WebhookConfig, messageData.Payload);
-                var payload = this.RequestBuilder.BuildPayload(this.WebhookConfig, messageData.Payload, metadata);
+                var payload = RequestBuilder.BuildPayload(this.WebhookConfig, messageData.Payload, metadata);
+                var authenticationScheme = RequestBuilder.SelectAuthenticationScheme(WebhookConfig, messageData.Payload);
+                var config = RequestBuilder.SelectWebhookConfig(WebhookConfig, messageData.Payload);
+
+                var httpClient = await GetHttpClient(cancellationToken, config, authenticationScheme);
 
                 void TelemetryEvent(string msg)
                 {
                     BigBrother.Publish(new HttpClientFailure(messageData.Handle, messageData.Type, payload, msg));
                 }
 
-                var response = await _client.ExecuteAsJsonReliably(httpVerb, uri, payload, TelemetryEvent, token: cancellationToken);
+                var response = await httpClient.ExecuteAsJsonReliably(httpVerb, uri, payload, TelemetryEvent, token: cancellationToken);
                 
-                BigBrother.Publish(new WebhookEvent(messageData.Handle, messageData.Type, $"Response status code {response.StatusCode}"));
+                BigBrother.Publish(new WebhookEvent(messageData.Handle, messageData.Type, $"Response status code {response.StatusCode}", uri.AbsoluteUri));
             }
             catch (Exception e)
             {
                 BigBrother.Publish(e.ToExceptionEvent());
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Gets a configured http client for use in a request from the http client factory
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <param name="config"></param>
+        /// <param name="authenticationScheme"></param>
+        /// <returns></returns>
+        protected async Task<HttpClient> GetHttpClient(CancellationToken cancellationToken, WebhookConfig config, AuthenticationType authenticationScheme)
+        {
+            var uri = new Uri(config.Uri);
+
+            if (!_httpClients.TryGetValue(uri.Host, out var httpClient))
+            {
+                throw new ArgumentNullException(nameof(httpClient), $"HttpClient for {uri.Host} was not found");
+            }
+
+            if (authenticationScheme == AuthenticationType.None)
+            {
+                return httpClient;
+            }
+
+            var acquireTokenHandler = await _authenticationHandlerFactory.GetAsync(uri, cancellationToken);
+            await acquireTokenHandler.GetTokenAsync(httpClient, cancellationToken);
+
+            return httpClient;
         }
     }
 }

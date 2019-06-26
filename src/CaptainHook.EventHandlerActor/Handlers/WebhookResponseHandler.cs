@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Autofac.Features.Indexed;
 using CaptainHook.Common;
-using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
 using CaptainHook.Common.Telemetry;
 using CaptainHook.EventHandlerActor.Handlers.Authentication;
@@ -14,21 +14,19 @@ namespace CaptainHook.EventHandlerActor.Handlers
 {
     public class WebhookResponseHandler : GenericWebhookHandler
     {
-        private readonly HttpClient _client;
         private readonly EventHandlerConfig _eventHandlerConfig;
         private readonly IEventHandlerFactory _eventHandlerFactory;
 
         public WebhookResponseHandler(
             IEventHandlerFactory eventHandlerFactory,
-            IAcquireTokenHandler acquireTokenHandler,
+            IAuthenticationHandlerFactory authenticationHandlerFactory,
             IRequestBuilder requestBuilder,
             IBigBrother bigBrother,
-            HttpClient client,
+            IIndex<string, HttpClient> httpClients,
             EventHandlerConfig eventHandlerConfig)
-            : base(acquireTokenHandler, requestBuilder, bigBrother, client, eventHandlerConfig.WebHookConfig)
+            : base(authenticationHandlerFactory, requestBuilder, bigBrother, httpClients, eventHandlerConfig.WebhookConfig)
         {
             _eventHandlerFactory = eventHandlerFactory;
-            _client = client;
             _eventHandlerConfig = eventHandlerConfig;
         }
 
@@ -39,23 +37,22 @@ namespace CaptainHook.EventHandlerActor.Handlers
                 throw new Exception("injected wrong implementation");
             }
 
-            if (WebhookConfig.AuthenticationConfig.Type != AuthenticationType.None)
-            {
-                await AcquireTokenHandler.GetTokenAsync(_client, cancellationToken);
-            }
-
             var uri = RequestBuilder.BuildUri(WebhookConfig, messageData.Payload);
             var httpVerb = RequestBuilder.SelectHttpVerb(WebhookConfig, messageData.Payload);
             var payload = RequestBuilder.BuildPayload(WebhookConfig, messageData.Payload, metadata);
+            var authenticationScheme = RequestBuilder.SelectAuthenticationScheme(WebhookConfig, messageData.Payload);
+            var config = RequestBuilder.SelectWebhookConfig(WebhookConfig, messageData.Payload);
+
+            var httpClient = await GetHttpClient(cancellationToken, config, authenticationScheme);
 
             void TelemetryEvent(string msg)
             {
                 BigBrother.Publish(new HttpClientFailure(messageData.Handle, messageData.Type, messageData.Payload, msg));
             }
 
-            var response = await _client.ExecuteAsJsonReliably(httpVerb, uri, payload, TelemetryEvent, "application/json", cancellationToken);
+            var response = await httpClient.ExecuteAsJsonReliably(httpVerb, uri, payload, TelemetryEvent, "application/json", cancellationToken);
 
-            BigBrother.Publish(new WebhookEvent(messageData.Handle, messageData.Type, messageData.Payload, response.IsSuccessStatusCode.ToString()));
+            BigBrother.Publish(new WebhookEvent(messageData.Handle, messageData.Type, "Webhook event complete", config.Uri, response.IsSuccessStatusCode.ToString()));
 
             if (metadata == null)
             {
@@ -70,10 +67,10 @@ namespace CaptainHook.EventHandlerActor.Handlers
             metadata.Add("HttpStatusCode", (int)response.StatusCode);
             metadata.Add("HttpResponseContent", content);
 
-            BigBrother.Publish(new WebhookEvent(messageData.Handle, messageData.Type, content));
+            BigBrother.Publish(new WebhookEvent(messageData.Handle, messageData.Type, content, uri.AbsoluteUri));
 
             //call callback
-            var eswHandler = await _eventHandlerFactory.CreateWebhookHandlerAsync(_eventHandlerConfig.CallbackConfig.Name, cancellationToken);
+            var eswHandler = _eventHandlerFactory.CreateWebhookHandler(_eventHandlerConfig.CallbackConfig.Name);
 
             await eswHandler.CallAsync(messageData, metadata, cancellationToken);
         }

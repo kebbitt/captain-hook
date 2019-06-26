@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CaptainHook.Common;
+using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -11,7 +12,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
     public class RequestBuilder : IRequestBuilder
     {
         /// <inheritdoc />
-        public string BuildUri(WebhookConfig config, string payload)
+        public Uri BuildUri(WebhookConfig config, string payload)
         {
             var uri = config.Uri;
 
@@ -19,41 +20,41 @@ namespace CaptainHook.EventHandlerActor.Handlers
             var rules = config.WebhookRequestRules.FirstOrDefault(r => r.Destination.RuleAction == RuleAction.Route);
             if (rules != null)
             {
+                var selector = string.Empty;
                 if (rules.Source.Location == Location.Body)
                 {
-                    var path = rules.Source.Path;
-                    var value = ModelParser.ParsePayloadPropertyAsString(path, payload);
-
-                    if (string.IsNullOrWhiteSpace(value))
-                    {
-                        throw new ArgumentNullException(nameof(path), "routing path value in message payload is null or empty");
-                    }
-
-                    //selects the route based on the value found in the payload of the message
-                    var route = rules.Routes.FirstOrDefault(r => r.Selector.Equals(value, StringComparison.OrdinalIgnoreCase));
-                    if (route == null)
-                    {
-                        throw new Exception("route mapping/selector not found between config and the properties on the domain object");
-                    }
-                    uri = route.Uri;
+                    selector = ModelParser.ParsePayloadPropertyAsString(rules.Source.Path, payload);
                 }
+
+                if (string.IsNullOrWhiteSpace(selector))
+                {
+                    throw new ArgumentNullException(nameof(rules.Source.Path), "routing path value in message payload is null or empty");
+                }
+
+                //selects the route based on the value found in the payload of the message
+                var route = rules.Routes.FirstOrDefault(r => r.Selector.Equals(selector, StringComparison.OrdinalIgnoreCase));
+                if (route == null)
+                {
+                    throw new Exception("route mapping/selector not found between config and the properties on the domain object");
+                }
+                uri = route.Uri;
             }
 
             //after route has been selected then select the identifier for the RESTful URI if applicable
             var uriRules = config.WebhookRequestRules.FirstOrDefault(l => l.Destination.Location == Location.Uri);
             if (uriRules == null)
             {
-                return uri;
+                return new Uri(uri);
             }
 
             if (uriRules.Source.Location != Location.Body)
             {
-                return uri;
+                return new Uri(uri);
             }
 
             var parameter = ModelParser.ParsePayloadPropertyAsString(uriRules.Source.Path, payload);
             uri = CombineUriAndResourceId(uri, parameter);
-            return uri;
+            return new Uri(uri);
         }
 
         /// <summary>
@@ -155,9 +156,29 @@ namespace CaptainHook.EventHandlerActor.Handlers
                 return webhookConfig.HttpVerb;
             }
 
-            if (rules.Source.Location != Location.Body)
+            var value = ModelParser.ParsePayloadPropertyAsString(rules.Source.Path, payload);
+
+            if (string.IsNullOrWhiteSpace(value))
             {
-                return webhookConfig.HttpVerb;
+                throw new ArgumentNullException(nameof(rules.Source.Path), "routing path value in message payload is null or empty");
+            }
+
+            var route = rules.Routes.FirstOrDefault(r => r.Selector.Equals(value, StringComparison.OrdinalIgnoreCase));
+            if (route == null)
+            {
+                throw new Exception("route http verb mapping/selector not found between config and the properties on the domain object");
+            }
+            return route.HttpVerb;
+        }
+
+        /// <inheritdoc />
+        public AuthenticationType SelectAuthenticationScheme(WebhookConfig webhookConfig, string payload)
+        {
+            //build the uri from the routes first
+            var rules = webhookConfig.WebhookRequestRules.FirstOrDefault(r => r.Destination.RuleAction == RuleAction.Route);
+            if (rules == null)
+            {
+                return webhookConfig.AuthenticationConfig.Type;
             }
 
             var value = ModelParser.ParsePayloadPropertyAsString(rules.Source.Path, payload);
@@ -172,7 +193,36 @@ namespace CaptainHook.EventHandlerActor.Handlers
             {
                 throw new Exception("route http verb mapping/selector not found between config and the properties on the domain object");
             }
-            return route.HttpVerb;
+            return route.AuthenticationConfig.Type;
+        }
+
+        public WebhookConfig SelectWebhookConfig(WebhookConfig webhookConfig, string payload)
+        {
+            var rules = webhookConfig.WebhookRequestRules.FirstOrDefault(r => r.Destination.RuleAction == RuleAction.Route);
+            if (rules == null)
+            {
+                return webhookConfig;
+            }
+            
+            var selector = string.Empty;
+            if (rules.Source.Location == Location.Body)
+            {
+                selector = ModelParser.ParsePayloadPropertyAsString(rules.Source.Path, payload);
+            }
+
+            if (string.IsNullOrWhiteSpace(selector))
+            {
+                throw new ArgumentNullException(nameof(rules.Source.Path), "routing path value in message payload is null or empty");
+            }
+
+            //selects the route based on the value found in the payload of the message
+            var route = rules.Routes.FirstOrDefault(r => r.Selector.Equals(selector, StringComparison.OrdinalIgnoreCase));
+            if (route == null)
+            {
+                throw new Exception("route mapping/selector not found between config and the properties on the domain object");
+            }
+
+            return route;
         }
     }
 }
