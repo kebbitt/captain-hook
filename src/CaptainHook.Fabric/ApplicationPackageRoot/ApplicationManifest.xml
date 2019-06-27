@@ -95,6 +95,7 @@
     </Service>-->
     <Service Name="CaptainHook.DirectorService" ServicePackageActivationMode="ExclusiveProcess">
       <StatefulService ServiceTypeName="CaptainHook.DirectorServiceType" TargetReplicaSetSize="[CaptainHook.DirectorService_TargetReplicaSetSize]" MinReplicaSetSize="[CaptainHook.DirectorService_MinReplicaSetSize]">
+        <!--<UniformInt64Partition PartitionCount="1" LowKey="-9223372036854775808" HighKey="9223372036854775807" />-->
         <SingletonPartition />
       </StatefulService>
     </Service>

@@ -2,7 +2,7 @@
 {
     public class ConfigurationSettings
     {
-        public const string KeyVaultUriEnvVariable = "KEYVAULT_BASE_URI";
+        public const string KeyVaultUriEnvVariable = "KEYVAULT_URL";
 
         public string AzureSubscriptionId { get; set; }
 
