@@ -163,24 +163,16 @@ namespace CaptainHook.Api.Controllers
         }
 
         /// <summary>
-        /// NO IMPLEMENTATION DISCUSSION - ???
+        /// Implementation of the DELETE HTTP verb for <see cref="RoutingRuleSet"/>.
+        ///     Deletes a <see cref="RoutingRuleSet"/> given it's key.
+        ///     It also removes all <see cref="RoutingRule"/> associated with the set.
         /// </summary>
-        /// <param name="id">id to process</param>
-        /// <param name="value">payload</param>
-        /// <returns>action result</returns>
-        [HttpPut("{id}")]
-        [ProducesResponseType((int)HttpStatusCode.OK)]
-        [ProducesResponseType((int)HttpStatusCode.BadRequest)]
-        [ProducesResponseType((int)HttpStatusCode.NotFound)]
-        public async Task<IActionResult> Put(int id, [FromBody]RoutingRuleSet routingRuleSet)
-        {
-            return await Task.FromResult(Ok());
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="id"></param>
+        /// <param name="id">The ID of the <see cref="RoutingRuleSet"/> that we are deleting.</param>
+        /// <remarks>
+        /// This method is a hard delete, intended for cleanup purposes only.
+        ///     Once the rule set is deleted, the knowledge of previous ETags is deleted also, that resets
+        ///     the entire history of the rule set.
+        /// </remarks>
         [HttpDelete("{id}")]
         [ProducesResponseType((int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]

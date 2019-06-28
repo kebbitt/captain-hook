@@ -5,44 +5,39 @@ using System.Fabric.Description;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using CaptainHook.Common;
 using CaptainHook.Common.Rules;
 using Eshopworld.Core;
 using Microsoft.Azure.Cosmos;
-using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 
 namespace CaptainHook.DirectorService
 {
     /// <summary>
-    /// An instance of this class is created for each service replica by the Service Fabric runtime.
+    /// An instance of this class is created for each Director service replica.
+    ///     Represents a single director for the entire CaptainHook stack.
     /// </summary>
     public class DirectorService : StatefulService
     {
-        internal const string CaptainHookApplicationName = "CaptainHook";
-        internal const string ReaderServiceTypeName = "CaptainHook.ReaderServiceType";
-
         internal readonly IBigBrother Bb;
         internal readonly CosmosContainer RuleContainer;
+        internal readonly FabricClient FabricClient;
 
         internal readonly List<RoutingRule> Rules = new List<RoutingRule>();
 
-        public DirectorService(StatefulServiceContext context, IBigBrother bb, CosmosContainer ruleContainer)
+        /// <summary>
+        /// Initializes a new instance of <see cref="DirectorService"/>.
+        /// </summary>
+        /// <param name="context">The injected <see cref="StatefulServiceContext"/>.</param>
+        /// <param name="bb">The injected <see cref="IBigBrother"/> telemetry interface.</param>
+        /// <param name="ruleContainer">The injected <see cref="CosmosContainer"/> for the <see cref="RoutingRule"/>.</param>
+        /// <param name="fabricClient">The injected <see cref="FabricClient"/>.</param>
+        public DirectorService(StatefulServiceContext context, IBigBrother bb, CosmosContainer ruleContainer, FabricClient fabricClient)
             : base(context)
         {
             Bb = bb;
             RuleContainer = ruleContainer;
-        }
-
-        /// <summary>
-        /// Optional override to create listeners (e.g., HTTP, Service Remoting, WCF, etc.) for this service replica to handle client or user requests.
-        /// </summary>
-        /// <remarks>
-        /// For more information on service communication, see https://aka.ms/servicefabricservicecommunication
-        /// </remarks>
-        /// <returns>A collection of listeners.</returns>
-        protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
-        {
-            return new ServiceReplicaListener[0];
+            FabricClient = fabricClient;
         }
 
         /// <summary>
@@ -61,28 +56,43 @@ namespace CaptainHook.DirectorService
                 }
 
                 var uniqueEventTypes = Rules.Select(r => r.EventType).Distinct();
-                using (var fabricClient = new FabricClient())
+                var readerServiceList = (await FabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{CaptainHookApplication.ApplicationName}")))
+                                  .Select(s => s.ServiceName.AbsoluteUri)
+                                  .ToList();
+
+                foreach (var type in uniqueEventTypes)
                 {
-                    var serviceList = (await fabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{CaptainHookApplicationName}")))
-                                      .Select(s => s.ServiceName.AbsoluteUri)
-                                      .ToList();
+                    if (cancellationToken.IsCancellationRequested) return;
 
-                    foreach (var type in uniqueEventTypes)
-                    {
-                        var serviceNameUri = $"fabric:/{CaptainHookApplicationName}/Reader.{type}";
-                        if (serviceList.Contains(serviceNameUri)) continue;
+                    var serviceNameUri = $"fabric:/{CaptainHookApplication.ApplicationName}/{CaptainHookApplication.ReaderServicePrefix}.{type}";
+                    if (readerServiceList.Contains(serviceNameUri)) continue;
 
-                        await fabricClient.ServiceManager.CreateServiceAsync(new StatefulServiceDescription
+                    await FabricClient.ServiceManager.CreateServiceAsync(
+                        new StatefulServiceDescription
                         {
-                            ApplicationName = new Uri($"fabric:/{CaptainHookApplicationName}"),
+                            ApplicationName = new Uri($"fabric:/{CaptainHookApplication.ApplicationName}"),
                             HasPersistedState = true,
                             MinReplicaSetSize = 3,
                             TargetReplicaSetSize = 3,
                             PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
-                            ServiceTypeName = ReaderServiceTypeName,
+                            ServiceTypeName = CaptainHookApplication.ReaderServiceType,
                             ServiceName = new Uri(serviceNameUri)
                         });
-                    }
+                }
+
+                var uniqueHosts = Rules.Select(r => new Uri(r.HookUri).Host).Distinct();
+                var dispatcherServiceList = (await FabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{CaptainHookApplication.ApplicationName}")))
+                                        .Select(s => s.ServiceName.AbsoluteUri)
+                                        .ToList();
+
+                foreach (var host in uniqueHosts)
+                {
+                    if (cancellationToken.IsCancellationRequested) return;
+
+                    var serviceNameUri = $"fabric:/{CaptainHookApplication.ApplicationName}/{CaptainHookApplication.DispatcherServicePrefix}.{host}";
+                    if (dispatcherServiceList.Contains(serviceNameUri)) continue;
+
+                    // Stuff
                 }
             }
             catch (Exception ex)

@@ -37,14 +37,14 @@ namespace CaptainHook.ReaderService
 
                 var builder = new ContainerBuilder();
                 builder.RegisterInstance(bb)
-                    .As<IBigBrother>()
-                    .SingleInstance();
+                       .As<IBigBrother>()
+                       .SingleInstance();
 
                 builder.RegisterInstance(settings)
-                    .SingleInstance();
+                       .SingleInstance();
 
                 builder.RegisterServiceFabricSupport();
-                builder.RegisterStatefulService<ReaderService>("CaptainHook.ReaderServiceType");
+                builder.RegisterStatefulService<ReaderService>(CaptainHookApplication.ReaderServiceType);
 
                 using (builder.Build()) { await Task.Delay(Timeout.Infinite); }
             }

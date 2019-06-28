@@ -1,4 +1,5 @@
 using System;
+using System.Fabric;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
@@ -27,9 +28,10 @@ namespace CaptainHook.DirectorService
                 var kvUri = Environment.GetEnvironmentVariable(ConfigurationSettings.KeyVaultUriEnvVariable);
 
                 var config = new ConfigurationBuilder().AddAzureKeyVault(
-                    kvUri,
-                    new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(new AzureServiceTokenProvider().KeyVaultTokenCallback)),
-                    new DefaultKeyVaultSecretManager()).Build();
+                                                           kvUri,
+                                                           new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(new AzureServiceTokenProvider().KeyVaultTokenCallback)),
+                                                           new DefaultKeyVaultSecretManager())
+                                                       .Build();
 
                 var settings = new ConfigurationSettings();
                 config.Bind(settings);
@@ -39,11 +41,13 @@ namespace CaptainHook.DirectorService
 
                 var builder = new ContainerBuilder();
                 builder.RegisterInstance(bb)
-                    .As<IBigBrother>()
-                    .SingleInstance();
+                       .As<IBigBrother>()
+                       .SingleInstance();
 
                 builder.RegisterInstance(settings)
-                    .SingleInstance();
+                       .SingleInstance();
+
+                builder.RegisterType<FabricClient>().SingleInstance();
 
                 var cosmosClient = new CosmosClient(settings.CosmosConnectionString);
                 builder.RegisterInstance(cosmosClient);
@@ -55,7 +59,7 @@ namespace CaptainHook.DirectorService
                 builder.RegisterInstance(ruleContainer).SingleInstance();
 
                 builder.RegisterServiceFabricSupport();
-                builder.RegisterStatefulService<DirectorService>("CaptainHook.DirectorServiceType");
+                builder.RegisterStatefulService<DirectorService>(CaptainHookApplication.DirectorServiceType);
 
                 using (builder.Build()) { await Task.Delay(Timeout.Infinite); } // block
             }

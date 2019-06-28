@@ -10,6 +10,10 @@ namespace CaptainHook.Common.Rules
     /// <summary>
     /// Represents a routing rule used to configure captain-hook.
     /// </summary>
+    /// <remarks>
+    /// TODO: Authentication scheme
+    /// TODO: Protect against casing
+    /// </remarks>
     public class RoutingRule : IEqualityComparer<RoutingRule>
     {
         private readonly SHA256Managed _sha = new SHA256Managed();
@@ -62,6 +66,9 @@ namespace CaptainHook.Common.Rules
         /// </summary>
         [Required]
         public string HookUri { get; set; }
+
+
+        public string Callback { get; set; }
 
         /// <summary>
         /// A list of JSONPath based filters on this routing rule.
