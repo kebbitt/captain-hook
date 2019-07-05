@@ -10,7 +10,7 @@
             <ReplicatorConfigSection Name="EventHandlerActorServiceReplicatorConfig" />
             <ReplicatorSecurityConfigSection Name="EventHandlerActorServiceReplicatorSecurityConfig" />
             <StoreConfigSection Name="EventHandlerActorServiceLocalStoreConfig" />
-            <ServiceEndpointV2_1 Name="EventHandlerActorServiceEndpointV2_1" />
+            <ServiceEndpointV2 Name="EventHandlerActorServiceEndpointV2" />
           </GeneratedNames>
         </Extension>
       </Extensions>
@@ -33,6 +33,7 @@
       <Endpoint Name="CaptainHook.EventHandlerActorServiceEndpointV2_1" />
       <Endpoint Name="EventHandlerActorServiceEndpointV2_1" />
       <Endpoint Name="EventHandlerActorServiceReplicatorEndpoint" />
+      <Endpoint Name="EventHandlerActorServiceEndpointV2" />
     </Endpoints>
   </Resources>
   <!-- The content will be generated during build -->

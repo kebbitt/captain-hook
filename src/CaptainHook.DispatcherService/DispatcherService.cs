@@ -3,18 +3,20 @@ using System.Collections.Generic;
 using System.Fabric;
 using System.Threading;
 using System.Threading.Tasks;
+using CaptainHook.Interfaces;
 using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 
-namespace CaptainHook.ReaderService
+namespace CaptainHook.DispatcherService
 {
     /// <summary>
     /// An instance of this class is created for each service replica by the Service Fabric runtime.
     /// </summary>
-    public class ReaderService : StatefulService
+    public class DispatcherService : StatefulService, IDispatcher
     {
-        public ReaderService(StatefulServiceContext context)
+        public DispatcherService(StatefulServiceContext context)
             : base(context)
         { }
 
@@ -27,7 +29,7 @@ namespace CaptainHook.ReaderService
         /// <returns>A collection of listeners.</returns>
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
-            return new ServiceReplicaListener[0];
+            return this.CreateServiceRemotingReplicaListeners();
         }
 
         /// <summary>

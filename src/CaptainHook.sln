@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.28407.52
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.Interfaces", "CaptainHook.Interfaces\CaptainHook.Interfaces.csproj", "{2EFD6F18-374F-4DB7-95D9-419310F5283E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.EndpointDispatcherActor", "CaptainHook.EndpointDispatcherActor\CaptainHook.EndpointDispatcherActor.csproj", "{84A8AF48-7380-4032-AD1C-DBFB947B97F8}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.EventHandlerActor", "CaptainHook.EventHandlerActor\CaptainHook.EventHandlerActor.csproj", "{FE882D21-737F-4085-8E33-26E3CD619BD5}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.EventReaderActor", "CaptainHook.EventReaderActor\CaptainHook.EventReaderActor.csproj", "{06EAC07A-92C6-455E-BD0C-F25DD35C86EB}"
@@ -29,7 +27,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.DirectorService
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.ReaderService", "CaptainHook.ReaderService\CaptainHook.ReaderService.csproj", "{23A8AFDA-979C-48CB-B1A1-72967CCC439C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CaptainHook.Common.Tests", "Tests\CaptainHook.Common.Tests\CaptainHook.Common.Tests.csproj", "{C0BA81F8-8C3B-423D-9066-92905CEFCF94}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.Common.Tests", "Tests\CaptainHook.Common.Tests\CaptainHook.Common.Tests.csproj", "{C0BA81F8-8C3B-423D-9066-92905CEFCF94}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CaptainHook.DispatcherService", "CaptainHook.DispatcherService\CaptainHook.DispatcherService.csproj", "{170B3B87-336A-4C14-BC9B-C5CD5D5A28BC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,12 +45,6 @@ Global
 		{2EFD6F18-374F-4DB7-95D9-419310F5283E}.Release|Any CPU.ActiveCfg = Release|x64
 		{2EFD6F18-374F-4DB7-95D9-419310F5283E}.Release|x64.ActiveCfg = Release|x64
 		{2EFD6F18-374F-4DB7-95D9-419310F5283E}.Release|x64.Build.0 = Release|x64
-		{84A8AF48-7380-4032-AD1C-DBFB947B97F8}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{84A8AF48-7380-4032-AD1C-DBFB947B97F8}.Debug|x64.ActiveCfg = Debug|x64
-		{84A8AF48-7380-4032-AD1C-DBFB947B97F8}.Debug|x64.Build.0 = Debug|x64
-		{84A8AF48-7380-4032-AD1C-DBFB947B97F8}.Release|Any CPU.ActiveCfg = Release|x64
-		{84A8AF48-7380-4032-AD1C-DBFB947B97F8}.Release|x64.ActiveCfg = Release|x64
-		{84A8AF48-7380-4032-AD1C-DBFB947B97F8}.Release|x64.Build.0 = Release|x64
 		{FE882D21-737F-4085-8E33-26E3CD619BD5}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{FE882D21-737F-4085-8E33-26E3CD619BD5}.Debug|x64.ActiveCfg = Debug|x64
 		{FE882D21-737F-4085-8E33-26E3CD619BD5}.Debug|x64.Build.0 = Debug|x64
@@ -127,6 +121,14 @@ Global
 		{C0BA81F8-8C3B-423D-9066-92905CEFCF94}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C0BA81F8-8C3B-423D-9066-92905CEFCF94}.Release|x64.ActiveCfg = Release|Any CPU
 		{C0BA81F8-8C3B-423D-9066-92905CEFCF94}.Release|x64.Build.0 = Release|Any CPU
+		{170B3B87-336A-4C14-BC9B-C5CD5D5A28BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{170B3B87-336A-4C14-BC9B-C5CD5D5A28BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{170B3B87-336A-4C14-BC9B-C5CD5D5A28BC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{170B3B87-336A-4C14-BC9B-C5CD5D5A28BC}.Debug|x64.Build.0 = Debug|Any CPU
+		{170B3B87-336A-4C14-BC9B-C5CD5D5A28BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{170B3B87-336A-4C14-BC9B-C5CD5D5A28BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{170B3B87-336A-4C14-BC9B-C5CD5D5A28BC}.Release|x64.ActiveCfg = Release|Any CPU
+		{170B3B87-336A-4C14-BC9B-C5CD5D5A28BC}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

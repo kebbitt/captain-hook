@@ -18,6 +18,7 @@
     <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.21.0" />
     <PackageReference Include="Microsoft.Azure.ServiceBus" Version="3.4.0" />
     <PackageReference Include="Microsoft.ServiceFabric.Actors" Version="3.3.654" />
+    <PackageReference Include="Microsoft.ServiceFabric.Services.Remoting" Version="3.3.654" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="polly" Version="7.1.0" />
   </ItemGroup>

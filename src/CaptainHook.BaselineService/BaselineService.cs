@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Fabric;
 using System.Text;
 using System.Threading;
@@ -7,7 +6,6 @@ using System.Threading.Tasks;
 using CaptainHook.Common;
 using Eshopworld.Core;
 using Microsoft.Azure.ServiceBus;
-using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using Newtonsoft.Json;
 
@@ -27,15 +25,6 @@ namespace CaptainHook.BaselineService
         {
             _bb = bb;
             _settings = settings;
-        }
-
-        /// <summary>
-        /// Optional override to create listeners (e.g., TCP, HTTP) for this service replica to handle client or user requests.
-        /// </summary>
-        /// <returns>A collection of listeners.</returns>
-        protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()
-        {
-            return new ServiceInstanceListener[0];
         }
 
         /// <summary>

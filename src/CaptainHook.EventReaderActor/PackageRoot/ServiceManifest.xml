@@ -10,7 +10,7 @@
             <ReplicatorConfigSection Name="EventReaderActorServiceReplicatorConfig" />
             <ReplicatorSecurityConfigSection Name="EventReaderActorServiceReplicatorSecurityConfig" />
             <StoreConfigSection Name="EventReaderActorServiceLocalStoreConfig" />
-            <ServiceEndpointV2_1 Name="EventReaderActorServiceEndpointV2_1" />
+            <ServiceEndpointV2 Name="EventReaderActorServiceEndpointV2" />
           </GeneratedNames>
         </Extension>
       </Extensions>
@@ -34,6 +34,7 @@
       <Endpoint Name="EventReaderActorServiceEndpointV2_1" />
       <Endpoint Name="IEventReaderActorEndpointV2_1" />
       <Endpoint Name="EventReaderActorServiceReplicatorEndpoint" />
+      <Endpoint Name="EventReaderActorServiceEndpointV2" />
     </Endpoints>
   </Resources>
   <!-- The content will be generated during build -->

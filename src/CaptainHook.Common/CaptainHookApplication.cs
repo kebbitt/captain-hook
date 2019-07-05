@@ -10,6 +10,8 @@
 
         public const string ReaderServicePrefix = "Reader";
 
+        public const string DispatcherServiceType = "CaptainHook.DispatcherServiceType";
+
         public const string DispatcherServicePrefix = "Dispatcher";
     }
 }
