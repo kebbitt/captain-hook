@@ -44,7 +44,7 @@ namespace CaptainHook.DispatcherService
                        .SingleInstance();
 
                 builder.RegisterServiceFabricSupport();
-                builder.RegisterStatefulService<DispatcherService>(CaptainHookApplication.DispatcherServiceType);
+                builder.RegisterStatefulService<DispatcherServiceService>(CaptainHookApplication.DispatcherServiceType);
 
                 using (builder.Build()) { await Task.Delay(Timeout.Infinite); }
             }

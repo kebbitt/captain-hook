@@ -46,7 +46,6 @@
     <ProjectReference Include="..\CaptainHook.DirectorService\CaptainHook.DirectorService.csproj" />
     <ProjectReference Include="..\CaptainHook.DispatcherService\CaptainHook.DispatcherService.csproj" />
     <ProjectReference Include="..\CaptainHook.EventHandlerActor\CaptainHook.EventHandlerActor.csproj" />
-    <ProjectReference Include="..\CaptainHook.EventReaderActor\CaptainHook.EventReaderActor.csproj" />
     <ProjectReference Include="..\CaptainHook.ReaderService\CaptainHook.ReaderService.csproj" />
     <ProjectReference Include="..\CaptainHook.Test.Api\CaptainHook.Test.Api.csproj" />
   </ItemGroup>

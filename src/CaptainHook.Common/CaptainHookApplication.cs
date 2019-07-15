@@ -13,5 +13,9 @@
         public const string DispatcherServiceType = "CaptainHook.DispatcherServiceType";
 
         public const string DispatcherServicePrefix = "Dispatcher";
+
+        public const string HandlerServiceType = "CaptainHook.EventHandlerActorServiceType";
+
+        public const string HandlerServicePrefix = "Handler";
     }
 }

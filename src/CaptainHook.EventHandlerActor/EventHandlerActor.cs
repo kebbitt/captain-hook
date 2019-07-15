@@ -71,9 +71,9 @@ namespace CaptainHook.EventHandlerActor
         /// <remarks>
         /// Not used in this case, because we are hard-coding all handling logic in this Actor, so there's no need to handle completion in higher actors.
         /// </remarks>>
-        public async Task CompleteDispatch(string baseUri)
+        public Task CompleteDispatch(string baseUri)
         {
-            await Task.Yield();
+            return Task.CompletedTask;
         }
 
         private async Task InternalHandle(object _)

@@ -4,11 +4,6 @@
     <Parameter Name="KeyVault_Url" DefaultValue="N/A" />
     <Parameter Name="AspNetCore_Environment" DefaultValue="N/A" />
 
-    <!--<Parameter Name="CaptainHook.ReaderService_MinReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="CaptainHook.ReaderService_PartitionCount" DefaultValue="1" />
-    <Parameter Name="CaptainHook.ReaderService_TargetReplicaSetSize" DefaultValue="3" />-->
-    <Parameter Name="CaptainHook.DispatcherService_MinReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="CaptainHook.DispatcherService_TargetReplicaSetSize" DefaultValue="3" />
     <Parameter Name="CaptainHook.DirectorService_MinReplicaSetSize" DefaultValue="3" />
     <Parameter Name="CaptainHook.DirectorService_TargetReplicaSetSize" DefaultValue="3" />
 
@@ -18,15 +13,9 @@
     <Parameter Name="CaptainHook.Api_InstanceCount" DefaultValue="1" />
     <Parameter Name="CaptainHook.Test.Api_InstanceCount" DefaultValue="-1" />
 
-    <Parameter Name="EventReaderActorService_PartitionCount" DefaultValue="10" />
-    <Parameter Name="EventReaderActorService_MinReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="EventReaderActorService_TargetReplicaSetSize" DefaultValue="3" />
     <Parameter Name="EventHandlerActorService_PartitionCount" DefaultValue="10" />
     <Parameter Name="EventHandlerActorService_MinReplicaSetSize" DefaultValue="3" />
     <Parameter Name="EventHandlerActorService_TargetReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="EndpointDispatcherActorService_PartitionCount" DefaultValue="10" />
-    <Parameter Name="EndpointDispatcherActorService_MinReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="EndpointDispatcherActorService_TargetReplicaSetSize" DefaultValue="3" />
   </Parameters>
   <ServiceManifestImport>
     <ServiceManifestRef ServiceManifestName="CaptainHook.DispatcherServicePkg" ServiceManifestVersion="1.0.0" />
@@ -77,13 +66,6 @@
     </EnvironmentOverrides>
   </ServiceManifestImport>
   <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="CaptainHook.EventReaderActorPkg" ServiceManifestVersion="1.0.0" />
-    <EnvironmentOverrides CodePackageRef="Code">
-      <EnvironmentVariable Name="KEYVAULT_URL" Value="[KeyVault_Url]" />
-      <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="[AspNetCore_Environment]" />
-    </EnvironmentOverrides>
-  </ServiceManifestImport>
-  <ServiceManifestImport>
     <ServiceManifestRef ServiceManifestName="CaptainHook.EventHandlerActorPkg" ServiceManifestVersion="1.0.0" />
     <EnvironmentOverrides CodePackageRef="Code">
       <EnvironmentVariable Name="KEYVAULT_URL" Value="[KeyVault_Url]" />
@@ -121,11 +103,6 @@
       <StatelessService ServiceTypeName="CaptainHook.Test.ApiType" InstanceCount="[CaptainHook.Test.Api_InstanceCount]">
         <SingletonPartition />
       </StatelessService>
-    </Service>
-    <Service Name="EventReaderActorService" GeneratedIdRef="721b0349-2561-4ed0-8296-401fc9bd13e5|Persisted">
-      <StatefulService ServiceTypeName="EventReaderActorServiceType" TargetReplicaSetSize="[EventReaderActorService_TargetReplicaSetSize]" MinReplicaSetSize="[EventReaderActorService_MinReplicaSetSize]">
-        <UniformInt64Partition PartitionCount="[EventReaderActorService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
-      </StatefulService>
     </Service>
     <Service Name="EventHandlerActorService" GeneratedIdRef="5f534f03-abfa-4f36-9fca-c9e0f131fc7a|Persisted">
       <StatefulService ServiceTypeName="EventHandlerActorServiceType" TargetReplicaSetSize="[EventHandlerActorService_TargetReplicaSetSize]" MinReplicaSetSize="[EventHandlerActorService_MinReplicaSetSize]">

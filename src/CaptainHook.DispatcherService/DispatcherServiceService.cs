@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Fabric;
 using System.Threading;
 using System.Threading.Tasks;
+using CaptainHook.Common;
 using CaptainHook.Interfaces;
 using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
@@ -14,9 +15,9 @@ namespace CaptainHook.DispatcherService
     /// <summary>
     /// An instance of this class is created for each service replica by the Service Fabric runtime.
     /// </summary>
-    public class DispatcherService : StatefulService, IDispatcher
+    public class DispatcherServiceService : StatefulService, IDispatcherService
     {
-        public DispatcherService(StatefulServiceContext context)
+        public DispatcherServiceService(StatefulServiceContext context)
             : base(context)
         { }
 
@@ -61,6 +62,11 @@ namespace CaptainHook.DispatcherService
 
                 await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }
+        }
+
+        public Task Dispatch(MessageData messageData)
+        {
+            return Task.CompletedTask;
         }
     }
 }

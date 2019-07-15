@@ -1,10 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Fabric;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using CaptainHook.Common;
+using CaptainHook.Interfaces;
+using Eshopworld.Core;
+using Microsoft.Azure.ServiceBus;
+using Microsoft.Azure.ServiceBus.Core;
+using Microsoft.ServiceFabric.Actors;
+using Microsoft.ServiceFabric.Actors.Client;
 using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 
 namespace CaptainHook.ReaderService
@@ -12,11 +22,37 @@ namespace CaptainHook.ReaderService
     /// <summary>
     /// An instance of this class is created for each service replica by the Service Fabric runtime.
     /// </summary>
-    public class ReaderService : StatefulService
+    public class ReaderService : StatefulService, IReaderService
     {
-        public ReaderService(StatefulServiceContext context)
+        internal const string SubscriptionName = "captain-hook";
+
+        // TAKE NUMBER OF HANDLERS INTO CONSIDERATION, DO NOT BATCH MORE THEN HANDLERS
+        private const int BatchSize = 1; // make this dynamic - based on the number of active handlers - more handlers, lower batch
+
+        internal readonly IBigBrother Bb;
+        internal readonly ConfigurationSettings Settings;
+        internal readonly string EventType;
+
+        internal readonly Dictionary<Guid, string> LockTokens = new Dictionary<Guid, string>();
+        internal readonly Dictionary<Guid, int> InFlightMessages = new Dictionary<Guid, int>();
+
+        internal IReliableDictionary2<Guid, MessageDataHandle> MessageHandles;
+        internal HashSet<int> FreeHandlers = new HashSet<int>();
+        internal MessageReceiver Receiver;
+
+#if DEBUG
+        internal int HandlerCount = 1;
+#else
+        internal int HandlerCount = 10;
+#endif
+
+        public ReaderService(StatefulServiceContext context, IBigBrother bb, ConfigurationSettings settings)
             : base(context)
-        { }
+        {
+            Bb = bb;
+            Settings = settings;
+            EventType = Encoding.UTF8.GetString(context.InitializationData);
+        }
 
         /// <summary>
         /// Optional override to create listeners (e.g., HTTP, Service Remoting, WCF, etc.) for this service replica to handle client or user requests.
@@ -27,7 +63,42 @@ namespace CaptainHook.ReaderService
         /// <returns>A collection of listeners.</returns>
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
-            return new ServiceReplicaListener[0];
+            return this.CreateServiceRemotingReplicaListeners();
+        }
+
+        internal async Task SetupServiceBus()
+        {
+            var azureTopic = await ServiceBusNamespaceExtensions.SetupHookTopic(
+                Settings.AzureSubscriptionId,
+                Settings.ServiceBusNamespace,
+                TypeExtensions.GetEntityName(EventType));
+
+            await azureTopic.CreateSubscriptionIfNotExists(SubscriptionName);
+        }
+
+        internal async Task BuildInMemoryState(CancellationToken cancellationToken)
+        {
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var enumerator = (await MessageHandles.CreateKeyEnumerableAsync(tx)).GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync(cancellationToken))
+                {
+                    if (cancellationToken.IsCancellationRequested) return;
+
+                    var handleData = await MessageHandles.TryGetValueAsync(tx, enumerator.Current);
+                    if(!handleData.HasValue) continue;
+
+                    LockTokens.Add(handleData.Value.Handle, handleData.Value.LockToken);
+                    InFlightMessages.Add(handleData.Value.Handle, handleData.Value.HandlerId);
+                }
+
+                await tx.CommitAsync();
+
+                var maxUsedHandlers = InFlightMessages.Values.OrderByDescending(i => i).FirstOrDefault();
+                if (maxUsedHandlers > HandlerCount) HandlerCount = maxUsedHandlers;
+                FreeHandlers = Enumerable.Range(1, HandlerCount).Except(InFlightMessages.Values).ToHashSet();
+            }
         }
 
         /// <summary>
@@ -37,28 +108,70 @@ namespace CaptainHook.ReaderService
         /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
-            // TODO: Replace the following sample code with your own logic 
-            //       or remove this RunAsync override if it's not needed in your service.
+            MessageHandles = await StateManager.GetOrAddAsync<IReliableDictionary2<Guid, MessageDataHandle>>(nameof(MessageDataHandle));
 
-            var myDictionary = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, long>>("myDictionary");
+            await BuildInMemoryState(cancellationToken);
+            await SetupServiceBus();
+
+            Receiver = new MessageReceiver(
+                Settings.ServiceBusConnectionString,
+                EntityNameHelper.FormatSubscriptionPath(TypeExtensions.GetEntityName(EventType), SubscriptionName),
+                ReceiveMode.PeekLock,
+                new RetryExponential(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(500), 3),
+                BatchSize);
 
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                using (var tx = this.StateManager.CreateTransaction())
+                if (Receiver.IsClosedOrClosing) continue; // TODO: put a circuit breaker here - also add recycling of the receiver to improve reliability
+
+                var messages = await Receiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
+                if (messages == null) continue;
+
+                foreach (var message in messages)
                 {
-                    var result = await myDictionary.TryGetValueAsync(tx, "Counter");
+                    var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), EventType);
 
-                    await myDictionary.AddOrUpdateAsync(tx, "Counter", 0, (key, value) => ++value);
+                    var handlerId = FreeHandlers.FirstOrDefault();
+                    if (handlerId == 0)
+                    {
+                        handlerId = ++HandlerCount;
+                    }
+                    else
+                    {
+                        FreeHandlers.Remove(handlerId);
+                    }
 
-                    // If an exception is thrown before calling CommitAsync, the transaction aborts, all changes are 
-                    // discarded, and nothing is saved to the secondary replicas.
-                    await tx.CommitAsync();
+                    messageData.HandlerId = handlerId;
+                    InFlightMessages.Add(messageData.Handle, handlerId);
+                    LockTokens.Add(messageData.Handle, message.SystemProperties.LockToken);
+
+                    var handleData = new MessageDataHandle
+                    {
+                        Handle = messageData.Handle,
+                        HandlerId = handlerId,
+                        LockToken = message.SystemProperties.LockToken
+                    };
+
+
+                    using (var tx = StateManager.CreateTransaction())
+                    {
+                        await MessageHandles.AddAsync(tx, handleData.Handle, handleData);
+
+                        // TODO: This doesn't work as-is anymore, since there are multiple service instances for the handler actor service
+                        // TODO: Shouldn't attempt to rebuild the service instance name, but instead serialize a JSon initializer payload with eventtype + handler instance name
+                        //await ActorProxy.Create<IEventHandlerActor>(new ActorId(messageData.EventHandlerActorId)).HandleMessage(messageData);
+
+                        await tx.CommitAsync();
+                    }
                 }
-
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }
+        }
+
+        public Task HandlerCompleted(MessageData messageData)
+        {
+            return Task.CompletedTask;
         }
     }
 }
