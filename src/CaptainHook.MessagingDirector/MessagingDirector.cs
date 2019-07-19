@@ -39,7 +39,8 @@
                     "checkout.domain.infrastructure.domainevents.platformordercreatedomainevent",
                     "nike.snkrs.core.events.productrefreshevent",
                     "nike.snkrs.core.events.productupdatedevent",
-                    "nike.snkrs.controltowerapi.models.events.nikelaunchdatareceivedevent"
+                    "nike.snkrs.controltowerapi.models.events.nikelaunchdatareceivedevent",
+                    "core.events.test.trackingdomainevent"
                 });
         }
 
