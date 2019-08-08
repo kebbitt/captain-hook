@@ -1,6 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ApplicationTypeName="CaptainHookType" ApplicationTypeVersion="1.0.0" xmlns="http://schemas.microsoft.com/2011/01/fabric">
   <Parameters>
+    <Parameter Name="CaptainHook.DirectorService_MinReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="CaptainHook.DirectorService_PartitionCount" DefaultValue="1" />
+    <Parameter Name="CaptainHook.DirectorService_TargetReplicaSetSize" DefaultValue="3" />
     <Parameter Name="KeyVault_Base_Uri" DefaultValue="N/A" />
     <Parameter Name="AspNetCore_Environment" DefaultValue="N/A" />
 
@@ -20,6 +23,10 @@
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion 
        should match the Name and Version attributes of the ServiceManifest element defined in the 
        ServiceManifest.xml file. -->
+  <ServiceManifestImport>
+    <ServiceManifestRef ServiceManifestName="CaptainHook.DirectorServicePkg" ServiceManifestVersion="1.0.0" />
+    <ConfigOverrides />
+  </ServiceManifestImport>
   <ServiceManifestImport>
     <ServiceManifestRef ServiceManifestName="CaptainHook.PoolManagerActorPkg" ServiceManifestVersion="1.0.0" />
     <EnvironmentOverrides CodePackageRef="Code">
@@ -45,6 +52,16 @@
     <ServiceManifestRef ServiceManifestName="CaptainHook.MessagingDirectorPkg" ServiceManifestVersion="1.0.0" />
   </ServiceManifestImport>
   <DefaultServices>
+    <Service Name="CaptainHook.DirectorService" ServicePackageActivationMode="ExclusiveProcess">
+      <StatefulService ServiceTypeName="CaptainHook.DirectorServiceType" TargetReplicaSetSize="[CaptainHook.DirectorService_TargetReplicaSetSize]" MinReplicaSetSize="[CaptainHook.DirectorService_MinReplicaSetSize]">
+        <UniformInt64Partition PartitionCount="[CaptainHook.DirectorService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
+      </StatefulService>
+    </Service>
+    <Service Name="EndpointDispatcherActorService" GeneratedIdRef="d44d5f9a-5d0d-47f1-a260-0be33fe1c254|Persisted">
+      <StatefulService ServiceTypeName="EndpointDispatcherActorServiceType" TargetReplicaSetSize="[EndpointDispatcherActorService_TargetReplicaSetSize]" MinReplicaSetSize="[EndpointDispatcherActorService_MinReplicaSetSize]">
+        <UniformInt64Partition PartitionCount="[EndpointDispatcherActorService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
+      </StatefulService>
+    </Service>
     <Service Name="EventHandlerActorService" GeneratedIdRef="5f534f03-abfa-4f36-9fca-c9e0f131fc7a|Persisted">
       <StatefulService ServiceTypeName="EventHandlerActorServiceType" TargetReplicaSetSize="[EventHandlerActorService_TargetReplicaSetSize]" MinReplicaSetSize="[EventHandlerActorService_MinReplicaSetSize]">
         <UniformInt64Partition PartitionCount="[EventHandlerActorService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
