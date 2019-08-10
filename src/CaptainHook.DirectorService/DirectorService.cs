@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Fabric;
 using System.Fabric.Description;
 using System.Linq;
@@ -8,8 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
 using Eshopworld.Core;
-using Microsoft.ServiceFabric.Data.Collections;
-using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 
 namespace CaptainHook.DirectorService
@@ -17,23 +14,18 @@ namespace CaptainHook.DirectorService
     public class DirectorService : StatefulService
     {
         internal readonly IBigBrother Bb;
-        internal readonly CosmosContainer RuleContainer;
         internal readonly FabricClient FabricClient;
-
-        internal readonly List<RoutingRule> Rules = new List<RoutingRule>();
 
         /// <summary>
         /// Initializes a new instance of <see cref="DirectorService"/>.
         /// </summary>
         /// <param name="context">The injected <see cref="StatefulServiceContext"/>.</param>
         /// <param name="bb">The injected <see cref="IBigBrother"/> telemetry interface.</param>
-        /// <param name="ruleContainer">The injected <see cref="CosmosContainer"/> for the <see cref="RoutingRule"/>.</param>
         /// <param name="fabricClient">The injected <see cref="FabricClient"/>.</param>
-        public DirectorService(StatefulServiceContext context, IBigBrother bb, CosmosContainer ruleContainer, FabricClient fabricClient)
+        public DirectorService(StatefulServiceContext context, IBigBrother bb,FabricClient fabricClient)
             : base(context)
         {
             Bb = bb;
-            RuleContainer = ruleContainer;
             FabricClient = fabricClient;
         }
 
@@ -48,18 +40,31 @@ namespace CaptainHook.DirectorService
 
             try
             {
-                var iterator = RuleContainer.Items.GetItemIterator<RoutingRule>();
-                while (iterator.HasMoreResults)
-                {
-                    Rules.AddRange(await iterator.FetchNextSetAsync(cancellationToken));
-                }
+                //var iterator = RuleContainer.Items.GetItemIterator<RoutingRule>();
+                //while (iterator.HasMoreResults)
+                //{
+                //    Rules.AddRange(await iterator.FetchNextSetAsync(cancellationToken));
+                //}
 
-                var uniqueEventTypes = Rules.Select(r => r.EventType).Distinct();
+                //var uniqueEventTypes = Rules.Select(r => r.EventType).Distinct();
+
+                var events = new[]
+                {
+                    //"core.events.test.trackingdomainevent",
+                    "checkout.domain.infrastructure.domainevents.retailerorderconfirmationdomainevent",
+                    //"checkout.domain.infrastructure.domainevents.platformordercreatedomainevent",
+                    //"nike.snkrs.core.events.productrefreshevent",
+                    //"nike.snkrs.core.events.productupdatedevent",
+                    //"nike.snkrs.controltowerapi.models.events.nikelaunchdatareceivedevent",
+                    //"bullfrog.domainevents.scalechange"
+                };
+
+
                 var serviceList = (await FabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}")))
                                   .Select(s => s.ServiceName.AbsoluteUri)
                                   .ToList();
 
-                foreach (var type in uniqueEventTypes)
+                foreach (var type in events)
                 {
                     if (cancellationToken.IsCancellationRequested) return;
 

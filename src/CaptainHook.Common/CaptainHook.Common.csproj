@@ -16,11 +16,4 @@
     <PackageReference Include="IdentityModel" Version="3.10.10" />
     <PackageReference Include="Microsoft.ServiceFabric.Actors" Version="3.4.658" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Http">
-      <HintPath>C:\Program Files\dotnet\sdk\NuGetFallbackFolder\microsoft.extensions.http\2.2.0\lib\netstandard2.0\Microsoft.Extensions.Http.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
 </Project>

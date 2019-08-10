@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.EventHandlerAct
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.EventReaderActor", "CaptainHook.EventReaderActor\CaptainHook.EventReaderActor.csproj", "{06EAC07A-92C6-455E-BD0C-F25DD35C86EB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.MessagingDirector", "CaptainHook.MessagingDirector\CaptainHook.MessagingDirector.csproj", "{2801EDE9-FBBE-414A-9C89-B49770BE91DB}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.Common", "CaptainHook.Common\CaptainHook.Common.csproj", "{5889AD8A-FFD2-4296-935F-C0111177D742}"
 EndProject
 Project("{A07B5EB6-E848-4116-A8D0-A826331D98C6}") = "CaptainHook.Fabric", "CaptainHook.Fabric\CaptainHook.Fabric.sfproj", "{D44FA61E-30BD-487C-97CB-877E596872A8}"
@@ -30,7 +28,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Benchmarks", "Benchmarks", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.Benchmark", "CaptainHook.Benchmark\CaptainHook.Benchmark.csproj", "{F933539D-C4FA-424D-924A-21FAF7DA26C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CaptainHook.DirectorService", "CaptainHook.DirectorService\CaptainHook.DirectorService.csproj", "{2DE25753-8202-4D18-A98A-696CD452C3E1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.DirectorService", "CaptainHook.DirectorService\CaptainHook.DirectorService.csproj", "{2DE25753-8202-4D18-A98A-696CD452C3E1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -64,12 +62,6 @@ Global
 		{06EAC07A-92C6-455E-BD0C-F25DD35C86EB}.Release|Any CPU.ActiveCfg = Release|x64
 		{06EAC07A-92C6-455E-BD0C-F25DD35C86EB}.Release|x64.ActiveCfg = Release|x64
 		{06EAC07A-92C6-455E-BD0C-F25DD35C86EB}.Release|x64.Build.0 = Release|x64
-		{2801EDE9-FBBE-414A-9C89-B49770BE91DB}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{2801EDE9-FBBE-414A-9C89-B49770BE91DB}.Debug|x64.ActiveCfg = Debug|x64
-		{2801EDE9-FBBE-414A-9C89-B49770BE91DB}.Debug|x64.Build.0 = Debug|x64
-		{2801EDE9-FBBE-414A-9C89-B49770BE91DB}.Release|Any CPU.ActiveCfg = Release|x64
-		{2801EDE9-FBBE-414A-9C89-B49770BE91DB}.Release|x64.ActiveCfg = Release|x64
-		{2801EDE9-FBBE-414A-9C89-B49770BE91DB}.Release|x64.Build.0 = Release|x64
 		{5889AD8A-FFD2-4296-935F-C0111177D742}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{5889AD8A-FFD2-4296-935F-C0111177D742}.Debug|x64.ActiveCfg = Debug|x64
 		{5889AD8A-FFD2-4296-935F-C0111177D742}.Debug|x64.Build.0 = Debug|x64
