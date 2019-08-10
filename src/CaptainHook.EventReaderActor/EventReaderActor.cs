@@ -4,7 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CaptainHook.Common.Configuration;
-using CaptainHook.Common.Telemetry;
+using CaptainHook.Common.Telemetry.Actor;
+using CaptainHook.Common.Telemetry.Message;
 using CaptainHook.Interfaces;
 using Eshopworld.Core;
 using Microsoft.Azure.Management.Fluent;
@@ -18,10 +19,47 @@ using Microsoft.Rest;
 using Microsoft.ServiceFabric.Actors;
 using Microsoft.ServiceFabric.Actors.Client;
 using Microsoft.ServiceFabric.Actors.Runtime;
-using Microsoft.ServiceFabric.Data;
 
 namespace CaptainHook.EventReaderActor
 {
+    public class LockedMessage
+    {
+        public LockedMessage()
+        {
+            
+        }
+
+        public LockedMessage(Message message)
+        {
+            Message = message;
+        }
+
+        /// <summary>
+        /// The limit of times the lock of a messages can be renewed. This currently equates to a 5 * 30 seconds limit.
+        /// </summary>
+        public const int RenewLockLimit = 5;
+
+        /// <summary>
+        /// A count of how many times the messages has it's lock renewed
+        /// </summary>
+        public int LockRenewCount { get; set; }
+
+        /// <summary>
+        /// The ServiceBus message
+        /// </summary>
+        public Message Message { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DateTime LockUntilUtc => Message.SystemProperties.LockedUntilUtc;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string LockToken => Message.SystemProperties.LockToken;
+    }
+
     /// <remarks>
     /// This class represents an actor.
     /// Every ActorID maps to an instance of this class.
@@ -44,10 +82,8 @@ namespace CaptainHook.EventReaderActor
 
         private volatile bool _readingEvents;
         private MessageReceiver _receiver;
-        private IActorReminder _wakeupReminder;
         private const string WakeUpReminderName = "Wake up";
-
-        private ConditionalValue<Dictionary<Guid, string>> _messagesInHandlers;
+        private Dictionary<Guid, LockedMessage> _activeMessages;
 
         /// <summary>
         /// Initializes a new instance of EventReaderActor
@@ -69,21 +105,9 @@ namespace CaptainHook.EventReaderActor
             {
                 _bigBrother.Publish(new ActorActivated(this));
 
-                var inHandlers =
-                    await StateManager.TryGetStateAsync<Dictionary<Guid, string>>(nameof(_messagesInHandlers));
-                if (inHandlers.HasValue)
-                {
-                    _messagesInHandlers = inHandlers;
-                }
-                else
-                {
-                    _messagesInHandlers =
-                        new ConditionalValue<Dictionary<Guid, string>>(true, new Dictionary<Guid, string>());
-                    await StateManager.AddOrUpdateStateAsync(nameof(_messagesInHandlers), _messagesInHandlers.Value,
-                        (s, value) => value);
-                }
+                await InitialiseState();
 
-                await SetupServiceBus();
+                await SetupServiceBusAsync();
 
                 _receiver = new MessageReceiver(
                     _settings.ServiceBusConnectionString,
@@ -93,11 +117,11 @@ namespace CaptainHook.EventReaderActor
                     new RetryExponential(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(500), 3),
                     BatchSize);
 
-                //registers a timer for the actor to poll the queue
-                RegisterTimer(ReadEventsAsync,
+                ////registers a timer for the actor to poll the queue
+                RegisterTimer(RenewLockAsync,
                     null,
-                    TimeSpan.FromMilliseconds(1000),
-                    TimeSpan.FromMilliseconds(100));
+                    TimeSpan.FromMilliseconds(5000),
+                    TimeSpan.FromMilliseconds(5000));
 
             }
             catch (Exception e)
@@ -109,13 +133,27 @@ namespace CaptainHook.EventReaderActor
             await base.OnActivateAsync();
         }
 
+        private async Task InitialiseState()
+        {
+            var activeMessages = await StateManager.TryGetStateAsync<Dictionary<Guid, LockedMessage>>(nameof(_activeMessages));
+            if (activeMessages.HasValue)
+            {
+                _activeMessages = activeMessages.Value;
+            }
+            else
+            {
+                _activeMessages = new Dictionary<Guid, LockedMessage>();
+                await StateManager.AddOrUpdateStateAsync(nameof(_activeMessages), _activeMessages, (s, value) => value);
+            }
+        }
+
         protected override Task OnDeactivateAsync()
         {
             _bigBrother.Publish(new ActorDeactivated(this));
             return base.OnDeactivateAsync();
         }
 
-        internal async Task SetupServiceBus()
+        internal async Task SetupServiceBusAsync()
         {
             var token = new AzureServiceTokenProvider().GetAccessTokenAsync("https://management.core.windows.net/", string.Empty).Result;
             var tokenCredentials = new TokenCredentials(token);
@@ -140,6 +178,7 @@ namespace CaptainHook.EventReaderActor
             await azureTopic.CreateSubscriptionIfNotExists(SubscriptionName);
         }
 
+        //todo this should not pool the service bus if the handler is full.
         internal async Task ReadEventsAsync(object _)
         {
             try
@@ -152,17 +191,16 @@ namespace CaptainHook.EventReaderActor
 
                 if (_receiver.IsClosedOrClosing) return;
 
-                var messages = _receiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50)).Result;
+                var messages = await _receiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
                 if (messages == null) return;
 
                 foreach (var message in messages)
                 {
-                    await _receiver.RenewLockAsync(message);
-
                     //get a message, sends it to the pool manager and then sends it to an event handler, comes back then with a handle.
                     var handle = await ActorProxy.Create<IPoolManagerActor>(new ActorId(0)).DoWork(Encoding.UTF8.GetString(message.Body), Id.GetStringId());
-                    _messagesInHandlers.Value.Add(handle, message.SystemProperties.LockToken);
-                    await StateManager.AddOrUpdateStateAsync(nameof(_messagesInHandlers), _messagesInHandlers.Value, (s, value) => value);
+
+                    _activeMessages.Add(handle, new LockedMessage(message));
+                    await StateManager.AddOrUpdateStateAsync(nameof(_activeMessages), _activeMessages, (s, value) => value);
                 }
             }
             catch (Exception e)
@@ -176,16 +214,54 @@ namespace CaptainHook.EventReaderActor
             }
         }
 
+        /// <summary>
+        /// Renews the message lock for each messages which is active
+        /// todo think about putting this into it's own actor per message
+        /// </summary>
+        /// <param name="_"></param>
+        /// <returns></returns>
+        internal async Task RenewLockAsync(object _)
+        {
+            //todo think about a finite limit of renews for a message
+            foreach (var activeMessage in _activeMessages.Keys)
+            {
+                var message = _activeMessages[activeMessage];
+
+                if (message.LockUntilUtc >= DateTime.UtcNow.Subtract(TimeSpan.FromSeconds(5)))
+                {
+                    if (_activeMessages[activeMessage].LockRenewCount >= LockedMessage.RenewLockLimit)
+                    {
+                        _bigBrother.Publish(new MessageRenewLimitEvent
+                        {
+                            EventName = Id.GetStringId(),
+                            HandleId = activeMessage.ToString(),
+                            Count = _activeMessages[activeMessage].LockRenewCount
+                        });
+                        continue;
+                    }
+
+                    await _receiver.RenewLockAsync(message.LockToken);
+                    _activeMessages[activeMessage].LockRenewCount++;
+                    _bigBrother.Publish(new MessageRenewEvent
+                    {
+                        EventName = Id.GetStringId(),
+                        HandleId = activeMessage.ToString(),
+                        Count = _activeMessages[activeMessage].LockRenewCount
+                    });
+                }
+            }
+        }
+
         /// <remarks>
         /// Do nothing by design. We just need to make sure that the actor is properly activated.
         /// </remarks>>
         public async Task Run()
         {
-            _wakeupReminder = await this.RegisterReminderAsync(
+            await this.RegisterReminderAsync(
                 WakeUpReminderName,
                 null,
-                TimeSpan.FromMinutes(15),
-                TimeSpan.FromMinutes(15));
+                TimeSpan.FromSeconds(1),
+                TimeSpan.FromSeconds(1));
         }
 
         public async Task CompleteMessage(Guid handle, bool messageSuccess)
@@ -193,12 +269,16 @@ namespace CaptainHook.EventReaderActor
             //todo NOT HANDLING FAULTS YET - BE CAREFUL HERE!
             try
             {
+                if (_activeMessages.ContainsKey(handle))
+                {
+                    _activeMessages.Remove(handle);
+                    await StateManager.AddOrUpdateStateAsync(nameof(_activeMessages), _activeMessages, (s, value) => value);
+                }
+
                 if (messageSuccess)
                 {
-                    await _receiver.CompleteAsync(_messagesInHandlers.Value[handle]);
+                    await _receiver.CompleteAsync(_activeMessages[handle].LockToken);
                 }
-                _messagesInHandlers.Value.Remove(handle);
-                await StateManager.AddOrUpdateStateAsync(nameof(_messagesInHandlers), _messagesInHandlers.Value, (s, value) => value);
             }
             catch (Exception e)
             {

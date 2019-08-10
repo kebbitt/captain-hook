@@ -1,7 +1,7 @@
-﻿namespace CaptainHook.Common.Telemetry
-{
-    using Eshopworld.Core;
+﻿using Eshopworld.Core;
 
+namespace CaptainHook.Common.Telemetry.Message
+{
     public class UnknownMessageType : TelemetryEvent
     {
         public string Type { get; set; }

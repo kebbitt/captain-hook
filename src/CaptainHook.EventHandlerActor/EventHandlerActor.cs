@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Telemetry;
+using CaptainHook.Common.Telemetry.Actor;
 using CaptainHook.EventHandlerActor.Handlers;
 using CaptainHook.Interfaces;
 using Eshopworld.Core;
@@ -101,7 +102,6 @@ namespace CaptainHook.EventHandlerActor
 
         private async Task InternalHandle(object state)
         {
-            var correlationId = Guid.NewGuid();
             var handle = Guid.NewGuid();
             try
             {
@@ -131,7 +131,6 @@ namespace CaptainHook.EventHandlerActor
 
                 var messageData = messageDataConditional.Value;
                 handle = messageData.Handle;
-                messageData.CorrelationId = correlationId.ToString();
 
                 var handler = _eventHandlerFactory.CreateEventHandler(messageData.Type);
 

@@ -2,6 +2,7 @@
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
 using CaptainHook.Common.Telemetry;
+using CaptainHook.Common.Telemetry.Web;
 using Eshopworld.Core;
 
 namespace CaptainHook.EventHandlerActor.Handlers

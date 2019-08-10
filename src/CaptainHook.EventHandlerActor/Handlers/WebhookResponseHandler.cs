@@ -7,6 +7,7 @@ using Autofac.Features.Indexed;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
 using CaptainHook.Common.Telemetry;
+using CaptainHook.Common.Telemetry.Web;
 using CaptainHook.EventHandlerActor.Handlers.Authentication;
 using Eshopworld.Core;
 
@@ -45,6 +46,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
             var httpClient = await GetHttpClient(cancellationToken, config, authenticationScheme, messageData.CorrelationId);
 
+            //todo don't like this but it will do for now to keep the extensions clean from message implementation
             var handler = new HttpFailureLogger(BigBrother, messageData, uri.AbsoluteUri, httpVerb);
 
             var response = await httpClient.ExecuteAsJsonReliably(httpVerb, uri, payload, handler, "application/json", cancellationToken);

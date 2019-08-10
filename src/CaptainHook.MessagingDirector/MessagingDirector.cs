@@ -35,13 +35,13 @@
             await StateManager.TryAddStateAsync(MessageTypesKey,
                 new[]
                 {
-                    "core.events.test.trackingdomainevent",
+                    //"core.events.test.trackingdomainevent",
                     "checkout.domain.infrastructure.domainevents.retailerorderconfirmationdomainevent",
-                    "checkout.domain.infrastructure.domainevents.platformordercreatedomainevent",
-                    "nike.snkrs.core.events.productrefreshevent",
-                    "nike.snkrs.core.events.productupdatedevent",
-                    "nike.snkrs.controltowerapi.models.events.nikelaunchdatareceivedevent",
-                    "bullfrog.domainevents.scalechange"
+                    //"checkout.domain.infrastructure.domainevents.platformordercreatedomainevent",
+                    //"nike.snkrs.core.events.productrefreshevent",
+                    //"nike.snkrs.core.events.productupdatedevent",
+                    //"nike.snkrs.controltowerapi.models.events.nikelaunchdatareceivedevent",
+                    //"bullfrog.domainevents.scalechange"
                 });
         }
 

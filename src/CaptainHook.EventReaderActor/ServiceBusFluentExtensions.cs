@@ -75,15 +75,15 @@
         public static string GetEntityName(string type, bool connectToEnv = false)
         {
             var name = type;
-#if DEBUG
-            if (Debugger.IsAttached)
-            {
-                if (!connectToEnv)
-                {
-                    name += $"-{Environment.UserName.Replace("$", "")}";
-                }
-            }
-#endif
+//#if DEBUG
+//            if (Debugger.IsAttached)
+//            {
+//                if (!connectToEnv)
+//                {
+//                    name += $"-{Environment.UserName.Replace("$", "")}";
+//                }
+//            }
+//#endif
 
             return name?.ToLower();
         }
