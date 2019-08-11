@@ -47,7 +47,6 @@
     <ProjectReference Include="..\CaptainHook.EventReaderActor\CaptainHook.EventReaderActor.csproj" />
     <ProjectReference Include="..\CaptainHook.EventReaderService\CaptainHook.EventReaderService.csproj" />
     <ProjectReference Include="..\CaptainHook.PoolManagerActor\CaptainHook.PoolManagerActor.csproj" />
-    <ProjectReference Include="..\EventReaderService\EventReaderService.csproj" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
   <PropertyGroup>
