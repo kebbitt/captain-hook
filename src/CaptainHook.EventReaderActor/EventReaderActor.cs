@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Autofac;
 using CaptainHook.Common.Configuration;
 using CaptainHook.Common.Telemetry;
+using CaptainHook.Common.Telemetry.Actor;
 using CaptainHook.Interfaces;
 using Eshopworld.Core;
 using Microsoft.Azure.Management.Fluent;

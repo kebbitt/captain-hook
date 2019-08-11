@@ -1,7 +1,7 @@
 ﻿using Eshopworld.Core;
 using Microsoft.ServiceFabric.Actors.Runtime;
 
-namespace CaptainHook.Common.Telemetry
+namespace CaptainHook.Common.Telemetry.Actor
 {
     public abstract class ActorTelemetryEvent : TelemetryEvent
     {

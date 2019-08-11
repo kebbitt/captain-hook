@@ -1,6 +1,6 @@
 ﻿using Microsoft.ServiceFabric.Actors.Runtime;
 
-namespace CaptainHook.Common.Telemetry
+namespace CaptainHook.Common.Telemetry.Actor
 {
     public class PoolManagerActorTelemetryEvent : ActorTelemetryEvent
     {

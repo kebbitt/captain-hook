@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Telemetry;
+using CaptainHook.Common.Telemetry.Actor;
 using CaptainHook.Interfaces;
 
 namespace CaptainHook.PoolManagerActor

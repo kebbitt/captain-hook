@@ -16,4 +16,8 @@
     <PackageReference Include="IdentityModel" Version="3.10.10" />
     <PackageReference Include="Microsoft.ServiceFabric.Actors" Version="3.4.658" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Telemetry\Service\" />
+  </ItemGroup>
 </Project>

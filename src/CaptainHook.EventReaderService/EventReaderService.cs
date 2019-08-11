@@ -119,10 +119,8 @@ namespace CaptainHook.EventReaderService
                 new RetryExponential(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(500), 3),
                 BatchSize);
 
-            while (true)
+            while (cancellationToken.IsCancellationRequested)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
                 if (Receiver.IsClosedOrClosing) continue; // TODO: put a circuit breaker here - also add recycling of the receiver to improve reliability
 
                 var messages = await Receiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));

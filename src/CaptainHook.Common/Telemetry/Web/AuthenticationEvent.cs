@@ -1,6 +1,6 @@
 ﻿using Eshopworld.Core;
 
-namespace CaptainHook.Common.Telemetry
+namespace CaptainHook.Common.Telemetry.Web
 {
     public class AuthenticationEvent : TelemetryEvent
     {

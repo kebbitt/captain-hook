@@ -1,11 +1,10 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using CaptainHook.Common.Configuration;
+using Eshopworld.Core;
 
-namespace CaptainHook.Common.Telemetry
+namespace CaptainHook.Common.Telemetry.Web
 {
-    using System;
-    using Eshopworld.Core;
-
     public class WebhookEvent : TelemetryEvent
     {
         public WebhookEvent()
