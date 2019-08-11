@@ -6,19 +6,22 @@
         {
             public const string ApplicationName = "CaptainHook";
 
-            public const string DirectorServiceType = "CaptainHook.DirectorServiceType";
+            public struct Services
+            {
+                public const string EventReaderServicePrefix = "EventReader";
 
-            public const string ReaderServiceType = "CaptainHook.ReaderServiceType";
+                public const string EventReaderServiceType = "CaptainHook.EventReaderServiceType";
 
-            public const string ReaderServicePrefix = "Reader";
+                public const string DirectorServiceType = "CaptainHook.DirectorServiceType";
 
-            public const string DispatcherServiceType = "CaptainHook.DispatcherServiceType";
+                public const string EventDispatcherServicePrefix = "Dispatcher";
 
-            public const string DispatcherServicePrefix = "Dispatcher";
+                public const string EventDispatcherServiceType = "CaptainHook.EventDispatcherServiceType";
 
-            public const string HandlerServiceType = "CaptainHook.EventHandlerActorServiceType";
+                public const string EventHandlerServicePrefix = "EventHandler";
 
-            public const string HandlerServicePrefix = "Handler";
+                public const string EventHandlerServiceType = "CaptainHook.EventHandlerActorServiceType";
+            }
         }
     }
 }

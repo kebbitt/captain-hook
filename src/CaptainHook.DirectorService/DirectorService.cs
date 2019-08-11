@@ -50,15 +50,14 @@ namespace CaptainHook.DirectorService
 
                 var events = new[]
                 {
-                    //"core.events.test.trackingdomainevent",
+                    "core.events.test.trackingdomainevent",
                     "checkout.domain.infrastructure.domainevents.retailerorderconfirmationdomainevent",
-                    //"checkout.domain.infrastructure.domainevents.platformordercreatedomainevent",
-                    //"nike.snkrs.core.events.productrefreshevent",
-                    //"nike.snkrs.core.events.productupdatedevent",
-                    //"nike.snkrs.controltowerapi.models.events.nikelaunchdatareceivedevent",
-                    //"bullfrog.domainevents.scalechange"
+                    "checkout.domain.infrastructure.domainevents.platformordercreatedomainevent",
+                    "nike.snkrs.core.events.productrefreshevent",
+                    "nike.snkrs.core.events.productupdatedevent",
+                    "nike.snkrs.controltowerapi.models.events.nikelaunchdatareceivedevent",
+                    "bullfrog.domainevents.scalechange"
                 };
-
 
                 var serviceList = (await FabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}")))
                                   .Select(s => s.ServiceName.AbsoluteUri)
@@ -68,7 +67,7 @@ namespace CaptainHook.DirectorService
                 {
                     if (cancellationToken.IsCancellationRequested) return;
 
-                    var readerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.ReaderServicePrefix}.{type}";
+                    var readerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServicePrefix}.{type}";
                     if (!serviceList.Contains(readerServiceNameUri))
                     {
                         await FabricClient.ServiceManager.CreateServiceAsync(
@@ -79,56 +78,57 @@ namespace CaptainHook.DirectorService
                                 MinReplicaSetSize = 3,
                                 TargetReplicaSetSize = 3,
                                 PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
-                                ServiceTypeName = Constants.CaptainHookApplication.ReaderServiceType,
+                                ServiceTypeName = Constants.CaptainHookApplication.Services.EventReaderServiceType,
                                 ServiceName = new Uri(readerServiceNameUri),
                                 InitializationData = Encoding.UTF8.GetBytes(type)
                             });
                     }
 
-                    var handlerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.HandlerServicePrefix}.{type}";
-                    if (!serviceList.Contains(handlerServiceNameUri))
-                    {
-                        // TODO: Untested - so commented out - not sure if actor services are exactly like stateful services
-                        //await FabricClient.ServiceManager.CreateServiceAsync(
-                        //    new StatefulServiceDescription
-                        //    {
-                        //        ApplicationName = new Uri($"fabric:/{CaptainHookApplication.ApplicationName}"),
-                        //        HasPersistedState = true,
-                        //        MinReplicaSetSize = 3,
-                        //        TargetReplicaSetSize = 3,
-                        //        PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
-                        //        ServiceTypeName = CaptainHookApplication.HandlerServiceType,
-                        //        ServiceName = new Uri(handlerServiceNameUri)
-                        //    });
-                    }
+                    //var handlerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventHandlerServicePrefix}.{type}";
+                    //if (!serviceList.Contains(handlerServiceNameUri))
+                    //{
+                    //    // TODO: Untested - so commented out - not sure if actor services are exactly like stateful services
+                    //    //await FabricClient.ServiceManager.CreateServiceAsync(
+                    //    //    new StatefulServiceDescription
+                    //    //    {
+                    //    //        ApplicationName = new Uri($"fabric:/{CaptainHookApplication.ApplicationName}"),
+                    //    //        HasPersistedState = true,
+                    //    //        MinReplicaSetSize = 3,
+                    //    //        TargetReplicaSetSize = 3,
+                    //    //        PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
+                    //    //        ServiceTypeName = CaptainHookApplication.EventHandlerServiceType,
+                    //    //        ServiceName = new Uri(handlerServiceNameUri)
+                    //    //    });
+                    //}
                 }
 
                 // TODO: Can't do this for internal eshopworld.com|net hosts, otherwise the sharding would be crazy - need to aggregate internal hosts by domain
-                var uniqueHosts = Rules.Select(r => new Uri(r.HookUri).Host).Distinct();
-                var dispatcherServiceList = (await FabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}")))
-                                        .Select(s => s.ServiceName.AbsoluteUri)
-                                        .ToList();
+                //var uniqueHosts = Rules.Select(r => new Uri(r.HookUri).Host).Distinct();
+                //var dispatcherServiceList = (await FabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}")))
+                //                        .Select(s => s.ServiceName.AbsoluteUri)
+                //                        .ToList();
 
-                foreach (var host in uniqueHosts)
-                {
-                    if (cancellationToken.IsCancellationRequested) return;
+                //todo this might be used for dispatchers per host but that seems a bit drastic
+                //foreach (var host in uniqueHosts)
+                //{
+                //    if (cancellationToken.IsCancellationRequested) return;
 
-                    var dispatcherServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.DispatcherServicePrefix}.{host}";
-                    if (dispatcherServiceList.Contains(dispatcherServiceNameUri)) continue;
+                //    var dispatcherServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.EventDispatcherServicePrefix}.{host}";
+                //    if (dispatcherServiceList.Contains(dispatcherServiceNameUri)) continue;
 
-                    await FabricClient.ServiceManager.CreateServiceAsync(
-                        new StatefulServiceDescription
-                        {
-                            ApplicationName = new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}"),
-                            HasPersistedState = true,
-                            MinReplicaSetSize = 3,
-                            TargetReplicaSetSize = 3,
-                            PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
-                            ServiceTypeName = Constants.CaptainHookApplication.ReaderServiceType,
-                            ServiceName = new Uri(dispatcherServiceNameUri),
-                            InitializationData = Encoding.UTF8.GetBytes(host)
-                        });
-                }
+                //    await FabricClient.ServiceManager.CreateServiceAsync(
+                //        new StatefulServiceDescription
+                //        {
+                //            ApplicationName = new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}"),
+                //            HasPersistedState = true,
+                //            MinReplicaSetSize = 3,
+                //            TargetReplicaSetSize = 3,
+                //            PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
+                //            ServiceTypeName = Constants.CaptainHookApplication.EventReaderServiceType,
+                //            ServiceName = new Uri(dispatcherServiceNameUri),
+                //            InitializationData = Encoding.UTF8.GetBytes(host)
+                //        });
+                //}
             }
             catch (Exception ex)
             {

@@ -1,10 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Fabric;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.ServiceFabric.Services.Runtime;
 
-namespace CaptainHook.DirectorService
+namespace CaptainHook.EventReaderService
 {
-    [EventSource(Name = "ESW-CaptainHook.Fabric-CaptainHook.DirectorService")]
+    [EventSource(Name = "MyCompany-CaptainHook.Fabric-CaptainHook.EventReaderService")]
     internal sealed class ServiceEventSource : EventSource
     {
         public static readonly ServiceEventSource Current = new ServiceEventSource();
