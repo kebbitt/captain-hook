@@ -83,13 +83,7 @@ namespace CaptainHook.EventHandlerActor
 
         public async Task Handle(Guid handle, string payload, string type)
         {
-            var messageData = new MessageData
-            {
-                Handle = handle,
-                Payload = payload,
-                Type = type
-            };
-
+            var messageData = new MessageData(payload, type);
             await StateManager.AddOrUpdateStateAsync(handle.ToString(), messageData, (s, pair) => pair);
 
             _handleTimer = RegisterTimer(

@@ -1,8 +1,16 @@
 using System;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.ServiceFabric.Services.Runtime;
+using Autofac;
+using Autofac.Integration.ServiceFabric;
+using CaptainHook.Common;
+using CaptainHook.Common.Configuration;
+using Eshopworld.Core;
+using Eshopworld.Telemetry;
+using Microsoft.Azure.KeyVault;
+using Microsoft.Azure.Services.AppAuthentication;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.AzureKeyVault;
 
 namespace CaptainHook.EventReaderService
 {
@@ -11,27 +19,39 @@ namespace CaptainHook.EventReaderService
         /// <summary>
         /// This is the entry point of the service host process.
         /// </summary>
-        private static void Main()
+        private static async Task Main()
         {
             try
             {
-                // The ServiceManifest.XML file defines one or more service type names.
-                // Registering a service maps a service type name to a .NET type.
-                // When Service Fabric creates an instance of this service type,
-                // an instance of the class is created in this host process.
+                var kvUri = Environment.GetEnvironmentVariable(ConfigurationSettings.KeyVaultUriEnvVariable);
 
-                ServiceRuntime.RegisterServiceAsync("CaptainHook.EventReaderServiceType",
-                    context => new EventReaderService(context)).GetAwaiter().GetResult();
+                var config = new ConfigurationBuilder().AddAzureKeyVault(
+                    kvUri,
+                    new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(new AzureServiceTokenProvider().KeyVaultTokenCallback)),
+                    new DefaultKeyVaultSecretManager()).Build();
 
-                ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(EventReaderService).Name);
+                var settings = new ConfigurationSettings();
+                config.Bind(settings);
 
-                // Prevents this host process from terminating so services keep running.
-                Thread.Sleep(Timeout.Infinite);
+                var bb = new BigBrother(settings.InstrumentationKey, settings.InstrumentationKey);
+                bb.UseEventSourceSink().ForExceptions();
+
+                var builder = new ContainerBuilder();
+                builder.RegisterInstance(bb)
+                    .As<IBigBrother>()
+                    .SingleInstance();
+
+                builder.RegisterInstance(settings)
+                    .SingleInstance();
+
+                builder.RegisterServiceFabricSupport();
+                builder.RegisterStatefulService<EventReaderService>(Constants.CaptainHookApplication.Services.EventReaderServiceType);
+
+                using (builder.Build()) { await Task.Delay(Timeout.Infinite); }
             }
             catch (Exception e)
             {
-                ServiceEventSource.Current.ServiceHostInitializationFailed(e.ToString());
-                throw;
+                BigBrother.Write(e);
             }
         }
     }

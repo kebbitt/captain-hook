@@ -1,16 +1,36 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetLatestRuntimePatch>True</TargetLatestRuntimePatch>
+
+    <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
+    <LangVersion>latest</LangVersion>
+    <DebugType>Full</DebugType>
+
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
     <IsServiceFabricServiceProject>True</IsServiceFabricServiceProject>
-    <ServerGarbageCollection>True</ServerGarbageCollection>
-    <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
-    <TargetLatestRuntimePatch>False</TargetLatestRuntimePatch>
+    <UpdateServiceFabricManifestEnabled>True</UpdateServiceFabricManifestEnabled>
+    <ServicePackagePath>PackageRoot</ServicePackagePath>
+    <ServicePackagePrefix>$(MSBuildProjectName)</ServicePackagePrefix>
+    <FabActUtilWorkingDir>$(BaseIntermediateOutputPath)\FabActUtilTemp</FabActUtilWorkingDir>
+    <Platforms>x64</Platforms>
+    <Platform>x64</Platform>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ServiceFabric.Services" Version="3.3.670.0" />
+    <PackageReference Include="Autofac" Version="4.9.3" />
+    <PackageReference Include="Autofac.ServiceFabric" Version="2.2.0" />
+    <PackageReference Include="Eshopworld.Telemetry" Version="2.1.4" />
+    <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.24.1" />
+    <PackageReference Include="Microsoft.Azure.Management.ServiceBus.Fluent" Version="1.24.1" />
+    <PackageReference Include="Microsoft.Azure.ServiceBus" Version="4.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.AzureKeyVault" Version="2.2.0" />
+    <PackageReference Include="Microsoft.ServiceFabric.Services" Version="3.4.658" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CaptainHook.Interfaces\CaptainHook.Interfaces.csproj" />
   </ItemGroup>
 
 </Project>

@@ -54,7 +54,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                 mockBigBrother.Object,
                 config);
 
-            await genericWebhookHandler.CallAsync(new MessageData { Payload = payload }, new Dictionary<string, object>(), _cancellationToken);
+            await genericWebhookHandler.CallAsync(new MessageData(payload, "TestType"), new Dictionary<string, object>(), _cancellationToken);
             Assert.Equal(1, mockHttp.GetMatchCount(request));
         }
 
@@ -82,7 +82,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                 mockBigBrother.Object,
                 config);
 
-            await genericWebhookHandler.CallAsync(new MessageData { Payload = payload }, new Dictionary<string, object>(), _cancellationToken);
+            await genericWebhookHandler.CallAsync(new MessageData(payload, "TestType"), new Dictionary<string, object>(), _cancellationToken);
             Assert.Equal(1, mockHttp.GetMatchCount(request));
         }
 

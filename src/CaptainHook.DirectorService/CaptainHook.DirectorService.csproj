@@ -2,14 +2,20 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetLatestRuntimePatch>True</TargetLatestRuntimePatch>
+
+    <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
     <LangVersion>latest</LangVersion>
-    <IsServiceFabricServiceProject>True</IsServiceFabricServiceProject>
-    <ServerGarbageCollection>True</ServerGarbageCollection>
-    <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
-    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
+    <DebugType>Full</DebugType>
+
+    <OutputType>Exe</OutputType>
     <IsServiceFabricServiceProject>True</IsServiceFabricServiceProject>
     <UpdateServiceFabricManifestEnabled>True</UpdateServiceFabricManifestEnabled>
-    <OutputType>Exe</OutputType>
+    <ServicePackagePath>PackageRoot</ServicePackagePath>
+    <ServicePackagePrefix>$(MSBuildProjectName)</ServicePackagePrefix>
+    <FabActUtilWorkingDir>$(BaseIntermediateOutputPath)\FabActUtilTemp</FabActUtilWorkingDir>
+    <Platforms>x64</Platforms>
+    <Platform>x64</Platform>
   </PropertyGroup>
 
   <ItemGroup>

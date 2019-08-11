@@ -14,11 +14,7 @@ namespace CaptainHook.Tests
                 {"TransportModel", new { Name = "Hello World" }}
             };
 
-            var messageData = new MessageData
-            {
-                Payload = dictionary.ToJson(),
-                Type = "TestType",
-            };
+            var messageData = new MessageData(dictionary.ToJson(), "TestType");
 
             return (messageData, dictionary);
         }
