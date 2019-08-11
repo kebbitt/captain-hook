@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CaptainHook.Common;
-using CaptainHook.Common.Telemetry;
 using CaptainHook.Common.Telemetry.Actor;
 using CaptainHook.Interfaces;
 
@@ -109,10 +108,8 @@ namespace CaptainHook.PoolManagerActor
             });
         }
 
-        public async Task<Guid> DoWork(string payload, string type)
+        public async Task DoWork(MessageData messageData)
         {
-            // need to handle the possibility of the resources in the pool being all busy!
-            var handle = Guid.NewGuid();
             try
             {
                 var handlerId = _free.FirstOrDefault();
@@ -122,7 +119,7 @@ namespace CaptainHook.PoolManagerActor
                 }
 
                 _free.Remove(handlerId);
-                _busy.Add(handle, new MessageHook
+                _busy.Add(messageData.Handle, new MessageHook
                 {
                     HandlerId = handlerId,
                     Type = type
@@ -131,7 +128,7 @@ namespace CaptainHook.PoolManagerActor
                 await StateManager.AddOrUpdateStateAsync(nameof(_free), _free, (s, value) => value);
                 await StateManager.AddOrUpdateStateAsync(nameof(_busy), _busy, (s, value) => value);
 
-                await _actorProxyFactory.CreateActorProxy<IEventHandlerActor>(new ActorId(handlerId)).Handle(handle, payload, type);
+                await _actorProxyFactory.CreateActorProxy<IEventHandlerActor>(new ActorId(handlerId)).Handle(handle, messageData, type);
 
                 return handle;
             }

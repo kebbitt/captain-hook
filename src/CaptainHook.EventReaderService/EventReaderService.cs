@@ -11,6 +11,8 @@ using CaptainHook.Interfaces;
 using Eshopworld.Core;
 using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.ServiceBus.Core;
+using Microsoft.ServiceFabric.Actors;
+using Microsoft.ServiceFabric.Actors.Client;
 using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
@@ -20,24 +22,26 @@ namespace CaptainHook.EventReaderService
 {
     /// <summary>
     /// An instance of this class is created for each service replica by the Service Fabric runtime.
+    /// Reads the messages from the subscription.
+    /// Keeps an list of in flight messages and tokens which can be used for renewal as well as deleting the message from the subscription when it's complete
     /// </summary>
     public class EventReaderService : StatefulService, IEventReaderService
     {
         internal const string SubscriptionName = "captain-hook";
 
-        // TAKE NUMBER OF HANDLERS INTO CONSIDERATION, DO NOT BATCH MORE THEN HANDLERS
         private const int BatchSize = 1; // make this dynamic - based on the number of active handlers - more handlers, lower batch
 
-        internal readonly IBigBrother Bb;
-        internal readonly ConfigurationSettings Settings;
-        internal readonly string EventType;
+        private readonly IBigBrother _bigBrother;
+        private readonly ConfigurationSettings _settings;
+        private readonly string _eventType;
 
-        internal readonly Dictionary<Guid, string> LockTokens = new Dictionary<Guid, string>();
-        internal readonly Dictionary<Guid, int> InFlightMessages = new Dictionary<Guid, int>();
+        //todo this should be in the state of the reader, we should be able to deploy and continue from where we were before the deployment
+        private readonly Dictionary<Guid, string> _lockTokens = new Dictionary<Guid, string>();
+        private readonly Dictionary<Guid, int> _inFlightMessages = new Dictionary<Guid, int>();
 
-        internal IReliableDictionary2<Guid, MessageDataHandle> MessageHandles;
-        internal HashSet<int> FreeHandlers = new HashSet<int>();
-        internal MessageReceiver Receiver;
+        private IReliableDictionary2<Guid, MessageDataHandle> _messageHandles;
+        private HashSet<int> _freeHandlers = new HashSet<int>();
+        private MessageReceiver _receiver;
 
 #if DEBUG
         internal int HandlerCount = 1;
@@ -45,12 +49,12 @@ namespace CaptainHook.EventReaderService
         internal int HandlerCount = 10;
 #endif
 
-        public EventReaderService(StatefulServiceContext context, IBigBrother bb, ConfigurationSettings settings)
+        public EventReaderService(StatefulServiceContext context, IBigBrother bigBrother, ConfigurationSettings settings)
             : base(context)
         {
-            Bb = bb;
-            Settings = settings;
-            EventType = Encoding.UTF8.GetString(context.InitializationData);
+            _bigBrother = bigBrother;
+            _settings = settings;
+            _eventType = Encoding.UTF8.GetString(context.InitializationData);
         }
 
         /// <summary>
@@ -68,9 +72,9 @@ namespace CaptainHook.EventReaderService
         internal async Task SetupServiceBus()
         {
             var azureTopic = await ServiceBusNamespaceExtensions.SetupTopic(
-                Settings.AzureSubscriptionId,
-                Settings.ServiceBusNamespace,
-                TypeExtensions.GetEntityName(EventType));
+                _settings.AzureSubscriptionId,
+                _settings.ServiceBusNamespace,
+                TypeExtensions.GetEntityName(_eventType));
 
             await azureTopic.CreateSubscriptionIfNotExists(SubscriptionName);
         }
@@ -79,24 +83,24 @@ namespace CaptainHook.EventReaderService
         {
             using (var tx = StateManager.CreateTransaction())
             {
-                var enumerator = (await MessageHandles.CreateKeyEnumerableAsync(tx)).GetAsyncEnumerator();
+                var enumerator = (await _messageHandles.CreateKeyEnumerableAsync(tx)).GetAsyncEnumerator();
 
                 while (await enumerator.MoveNextAsync(cancellationToken))
                 {
                     if (cancellationToken.IsCancellationRequested) return;
 
-                    var handleData = await MessageHandles.TryGetValueAsync(tx, enumerator.Current);
+                    var handleData = await _messageHandles.TryGetValueAsync(tx, enumerator.Current);
                     if (!handleData.HasValue) continue;
 
-                    LockTokens.Add(handleData.Value.Handle, handleData.Value.LockToken);
-                    InFlightMessages.Add(handleData.Value.Handle, handleData.Value.HandlerId);
+                    _lockTokens.Add(handleData.Value.Handle, handleData.Value.LockToken);
+                    _inFlightMessages.Add(handleData.Value.Handle, handleData.Value.HandlerId);
                 }
 
                 await tx.CommitAsync();
 
-                var maxUsedHandlers = InFlightMessages.Values.OrderByDescending(i => i).FirstOrDefault();
+                var maxUsedHandlers = _inFlightMessages.Values.OrderByDescending(i => i).FirstOrDefault();
                 if (maxUsedHandlers > HandlerCount) HandlerCount = maxUsedHandlers;
-                FreeHandlers = Enumerable.Range(1, HandlerCount).Except(InFlightMessages.Values).ToHashSet();
+                _freeHandlers = Enumerable.Range(1, HandlerCount).Except(_inFlightMessages.Values).ToHashSet();
             }
         }
 
@@ -107,42 +111,43 @@ namespace CaptainHook.EventReaderService
         /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
-            MessageHandles = await StateManager.GetOrAddAsync<IReliableDictionary2<Guid, MessageDataHandle>>(nameof(MessageDataHandle));
+            _messageHandles = await StateManager.GetOrAddAsync<IReliableDictionary2<Guid, MessageDataHandle>>(nameof(MessageDataHandle));
 
             await BuildInMemoryState(cancellationToken);
             await SetupServiceBus();
 
-            Receiver = new MessageReceiver(
-                Settings.ServiceBusConnectionString,
-                EntityNameHelper.FormatSubscriptionPath(TypeExtensions.GetEntityName(EventType), SubscriptionName),
+            _receiver = new MessageReceiver(
+                _settings.ServiceBusConnectionString,
+                EntityNameHelper.FormatSubscriptionPath(TypeExtensions.GetEntityName(_eventType), SubscriptionName),
                 ReceiveMode.PeekLock,
                 new RetryExponential(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(500), 3),
                 BatchSize);
 
             while (cancellationToken.IsCancellationRequested)
             {
-                if (Receiver.IsClosedOrClosing) continue; // TODO: put a circuit breaker here - also add recycling of the receiver to improve reliability
+                //todo try catch and keep reading the subscription
+                if (_receiver.IsClosedOrClosing) continue;
 
-                var messages = await Receiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
+                var messages = await _receiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
                 if (messages == null) continue;
 
                 foreach (var message in messages)
                 {
-                    var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), EventType);
+                    var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _eventType);
 
-                    var handlerId = FreeHandlers.FirstOrDefault();
+                    var handlerId = _freeHandlers.FirstOrDefault();
                     if (handlerId == 0)
                     {
                         handlerId = ++HandlerCount;
                     }
                     else
                     {
-                        FreeHandlers.Remove(handlerId);
+                        _freeHandlers.Remove(handlerId);
                     }
 
                     messageData.HandlerId = handlerId;
-                    InFlightMessages.Add(messageData.Handle, handlerId);
-                    LockTokens.Add(messageData.Handle, message.SystemProperties.LockToken);
+                    _inFlightMessages.Add(messageData.Handle, handlerId);
+                    _lockTokens.Add(messageData.Handle, message.SystemProperties.LockToken);
 
                     var handleData = new MessageDataHandle
                     {
@@ -154,21 +159,46 @@ namespace CaptainHook.EventReaderService
 
                     using (var tx = StateManager.CreateTransaction())
                     {
-                        await MessageHandles.AddAsync(tx, handleData.Handle, handleData);
+                        await _messageHandles.AddAsync(tx, handleData.Handle, handleData);
 
                         // TODO: This doesn't work as-is anymore, since there are multiple service instances for the handler actor service
-                        // TODO: Shouldn't attempt to rebuild the service instance name, but instead serialize a JSon initializer payload with eventtype + handler instance name
-                        //await ActorProxy.Create<IEventHandlerActor>(new ActorId(messageData.EventHandlerActorId)).HandleMessage(messageData);
-
+                        await ActorProxy.Create<IEventHandlerActor>(new ActorId(messageData.EventHandlerActorId)).Handle(messageData);
                         await tx.CommitAsync();
                     }
                 }
             }
         }
 
-        public Task CompleteMessage(MessageData messageData)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="messageData"></param>
+        /// <param name="messageSuccess"></param>
+        /// <returns></returns>
+        public async Task CompleteMessage(MessageData messageData, bool messageSuccess)
         {
-            return Task.CompletedTask;
+            try
+            {
+                if (messageSuccess)
+                {
+                    await _receiver.CompleteAsync(_lockTokens[messageData.Handle]);
+                }
+
+                _lockTokens.Remove(messageData.Handle);
+                _inFlightMessages.Remove(messageData.Handle);
+
+                using (var tx = StateManager.CreateTransaction())
+                {
+                    await _messageHandles.TryRemoveAsync(tx, messageData.Handle);
+
+                    await tx.CommitAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                _bigBrother.Publish(e.ToExceptionEvent());
+                throw;
+            }
         }
     }
 }

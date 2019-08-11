@@ -1,4 +1,6 @@
-﻿namespace CaptainHook.Interfaces
+﻿using CaptainHook.Common;
+
+namespace CaptainHook.Interfaces
 {
     using System;
     using System.Threading.Tasks;
@@ -10,7 +12,7 @@
     /// </summary>
     public interface IPoolManagerActor : IActor
     {
-        Task<Guid> DoWork(string payload, string type);
+        Task DoWork(MessageData messageData);
 
         Task CompleteWork(Guid handle, bool messageDelivered);  
     }

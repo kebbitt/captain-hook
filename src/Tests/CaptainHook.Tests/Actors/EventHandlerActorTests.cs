@@ -1,6 +1,6 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
+using CaptainHook.Common;
 using CaptainHook.EventHandlerActor.Handlers;
 using Eshopworld.Core;
 using Eshopworld.Tests.Core;
@@ -21,8 +21,8 @@ namespace CaptainHook.Tests.Actors
             var bigBrotherMock = new Mock<IBigBrother>().Object;
 
             var eventHandlerActor = CreateEventHandlerActor(new ActorId(1), bigBrotherMock);
-
-            await eventHandlerActor.Handle(Guid.NewGuid(), string.Empty, "test.type");
+            
+            await eventHandlerActor.Handle(new MessageData(string.Empty, "test.type"));
 
             var timers = eventHandlerActor.GetActorTimers();
             Assert.True(timers.Any());

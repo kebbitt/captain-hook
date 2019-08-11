@@ -13,8 +13,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.Common", "Capta
 EndProject
 Project("{A07B5EB6-E848-4116-A8D0-A826331D98C6}") = "CaptainHook.Fabric", "CaptainHook.Fabric\CaptainHook.Fabric.sfproj", "{D44FA61E-30BD-487C-97CB-877E596872A8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.PoolManagerActor", "CaptainHook.PoolManagerActor\CaptainHook.PoolManagerActor.csproj", "{4035A243-CDC8-4A50-B759-CA51810454FD}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C2A4301F-0F3A-4880-A8A6-C9D110FFFD69}"
 	ProjectSection(SolutionItems) = preProject
 		codecoverage.runsettings = codecoverage.runsettings
@@ -70,12 +68,6 @@ Global
 		{D44FA61E-30BD-487C-97CB-877E596872A8}.Release|x64.ActiveCfg = Release|x64
 		{D44FA61E-30BD-487C-97CB-877E596872A8}.Release|x64.Build.0 = Release|x64
 		{D44FA61E-30BD-487C-97CB-877E596872A8}.Release|x64.Deploy.0 = Release|x64
-		{4035A243-CDC8-4A50-B759-CA51810454FD}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{4035A243-CDC8-4A50-B759-CA51810454FD}.Debug|x64.ActiveCfg = Debug|x64
-		{4035A243-CDC8-4A50-B759-CA51810454FD}.Debug|x64.Build.0 = Debug|x64
-		{4035A243-CDC8-4A50-B759-CA51810454FD}.Release|Any CPU.ActiveCfg = Release|x64
-		{4035A243-CDC8-4A50-B759-CA51810454FD}.Release|x64.ActiveCfg = Release|x64
-		{4035A243-CDC8-4A50-B759-CA51810454FD}.Release|x64.Build.0 = Release|x64
 		{A8BA8475-6198-4CB2-9D5B-C70356D9135B}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{A8BA8475-6198-4CB2-9D5B-C70356D9135B}.Debug|x64.ActiveCfg = Debug|x64
 		{A8BA8475-6198-4CB2-9D5B-C70356D9135B}.Debug|x64.Build.0 = Debug|x64

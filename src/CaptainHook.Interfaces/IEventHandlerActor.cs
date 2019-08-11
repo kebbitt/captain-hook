@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using CaptainHook.Common;
 using Microsoft.ServiceFabric.Actors;
 
 namespace CaptainHook.Interfaces
@@ -10,6 +11,11 @@ namespace CaptainHook.Interfaces
     /// </summary>
     public interface IEventHandlerActor : IActor
     {
-        Task Handle(Guid handle, string payload, string type);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="messageData"></param>
+        /// <returns></returns>
+        Task Handle(MessageData messageData);
     }
 }

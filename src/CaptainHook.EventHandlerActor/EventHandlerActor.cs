@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
-using CaptainHook.Common.Telemetry;
 using CaptainHook.Common.Telemetry.Actor;
 using CaptainHook.EventHandlerActor.Handlers;
 using CaptainHook.Interfaces;
@@ -82,14 +81,14 @@ namespace CaptainHook.EventHandlerActor
             return base.OnDeactivateAsync();
         }
 
-        public async Task Handle(Guid handle, string payload, string type)
+        public async Task Handle(MessageData messageData)
         {
-            var messageData = new MessageData(payload, type);
-            await StateManager.AddOrUpdateStateAsync(handle.ToString(), messageData, (s, pair) => pair);
+            await StateManager.AddOrUpdateStateAsync(messageData.Handle.ToString(), messageData, (s, pair) => pair);
 
+            //todo considering if this is needed any more given we have a better decoupling approach and the reader is not a reliable service.
             _handleTimer = RegisterTimer(
                 InternalHandle,
-                handle.ToString(),
+                messageData.Handle.ToString(),
                 TimeSpan.FromMilliseconds(100),
                 TimeSpan.MaxValue);
         }
