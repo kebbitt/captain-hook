@@ -3,9 +3,5 @@
   <Parameters>
     <Parameter Name="KeyVault_Base_Uri" Value="https://esw-tooling-ci-we.vault.azure.net/" />
     <Parameter Name="AspNetCore_Environment" Value="CI" />
-
-    <Parameter Name="MessagingDirectorActorService_PartitionCount" Value="1" />
-    <Parameter Name="EventHandlerActorService_PartitionCount" Value="1" />
-    <Parameter Name="EventReaderActorService_PartitionCount" Value="1" />
   </Parameters>
 </Application>

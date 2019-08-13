@@ -17,6 +17,10 @@
         <Program>CaptainHook.DirectorService.exe</Program>
       </ExeHost>
     </EntryPoint>
+    <EnvironmentVariables>
+      <EnvironmentVariable Name="KEYVAULT_BASE_URI" Value="N/A" />
+      <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="N/A" />
+    </EnvironmentVariables>
   </CodePackage>
 
   <!-- Config package is the contents of the Config directoy under PackageRoot that contains an 
