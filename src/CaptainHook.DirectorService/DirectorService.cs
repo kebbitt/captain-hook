@@ -81,12 +81,12 @@ namespace CaptainHook.DirectorService
                 var events = new[]
                 {
                     "Core.Events.Test.TrackingdDomainEvent",
-                    //"checkout.domain.infrastructure.domainevents.retailerorderconfirmationdomainevent",
-                    //"checkout.domain.infrastructure.domainevents.platformordercreatedomainevent",
-                    //"nike.snkrs.core.events.productrefreshevent",
-                    //"nike.snkrs.core.events.productupdatedevent",
-                    //"nike.snkrs.controltowerapi.models.events.nikelaunchdatareceivedevent",
-                    //"bullfrog.domainevents.scalechange"
+                    "Checkout.Domain.Infrastructure.DomainEvents.RetailerOrderConfirmationDomainEvent",
+                    "Checkout.Domain.Infrastructure.DomainEvents.PlatformOrderCreateDomainEvent",
+                    "Nike.Snkrs.Core.Events.ProductRefreshEvent",
+                    "Nike.Snkrs.Core.Events.ProductUpdatedEvent",
+                    "Nike.Snkrs.ControlTowerApi.Models.Events.NikeLaunchDataReceivedEvent",
+                    "Bullfrog.DomainEvents.ScaleChange"
                 };
 
                 var serviceList = (await _fabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}")))
