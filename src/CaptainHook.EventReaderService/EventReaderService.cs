@@ -123,7 +123,7 @@ namespace CaptainHook.EventReaderService
                 new RetryExponential(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(500), 3),
                 BatchSize);
 
-            while (cancellationToken.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 //todo try catch and keep reading the subscription
                 if (_receiver.IsClosedOrClosing) continue;

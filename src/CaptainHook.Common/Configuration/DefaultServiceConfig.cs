@@ -3,7 +3,7 @@
     /// <summary>
     /// Default service setting used by the director to create instances of a service with the fabric client
     /// </summary>
-    public class DefaultFabricSettings
+    public class DefaultServiceConfig
     {
         public int DefaultTargetReplicaSetSize { get; set; }
 
