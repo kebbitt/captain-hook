@@ -13,20 +13,21 @@ namespace CaptainHook.DirectorService
 {
     public class DirectorService : StatefulService
     {
-        internal readonly IBigBrother Bb;
+        internal readonly IBigBrother BigBrother;
         internal readonly FabricClient FabricClient;
 
         /// <summary>
         /// Initializes a new instance of <see cref="DirectorService"/>.
         /// </summary>
         /// <param name="context">The injected <see cref="StatefulServiceContext"/>.</param>
-        /// <param name="bb">The injected <see cref="IBigBrother"/> telemetry interface.</param>
+        /// <param name="bigBrother">The injected <see cref="IBigBrother"/> telemetry interface.</param>
         /// <param name="fabricClient">The injected <see cref="FabricClient"/>.</param>
-        public DirectorService(StatefulServiceContext context, IBigBrother bb,FabricClient fabricClient)
+        public DirectorService(StatefulServiceContext context, IBigBrother bigBrother, FabricClient fabricClient)
             : base(context)
         {
-            Bb = bb;
+            BigBrother = bigBrother;
             FabricClient = fabricClient;
+            var config = context.CodePackageActivationContext.GetConfigurationPackageObject("DefaultServiceConfig");
         }
 
         /// <summary>
@@ -50,13 +51,13 @@ namespace CaptainHook.DirectorService
 
                 var events = new[]
                 {
-                    "core.events.test.trackingdomainevent",
-                    "checkout.domain.infrastructure.domainevents.retailerorderconfirmationdomainevent",
-                    "checkout.domain.infrastructure.domainevents.platformordercreatedomainevent",
-                    "nike.snkrs.core.events.productrefreshevent",
-                    "nike.snkrs.core.events.productupdatedevent",
-                    "nike.snkrs.controltowerapi.models.events.nikelaunchdatareceivedevent",
-                    "bullfrog.domainevents.scalechange"
+                    "Core.Events.Test.TrackingdDomainEvent",
+                    //"checkout.domain.infrastructure.domainevents.retailerorderconfirmationdomainevent",
+                    //"checkout.domain.infrastructure.domainevents.platformordercreatedomainevent",
+                    //"nike.snkrs.core.events.productrefreshevent",
+                    //"nike.snkrs.core.events.productupdatedevent",
+                    //"nike.snkrs.controltowerapi.models.events.nikelaunchdatareceivedevent",
+                    //"bullfrog.domainevents.scalechange"
                 };
 
                 var serviceList = (await FabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}")))
@@ -67,6 +68,7 @@ namespace CaptainHook.DirectorService
                 {
                     if (cancellationToken.IsCancellationRequested) return;
 
+                    //todo make the names of the types PascalCaseing before they are created.
                     var readerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServicePrefix}.{type}";
                     if (!serviceList.Contains(readerServiceNameUri))
                     {
@@ -132,7 +134,7 @@ namespace CaptainHook.DirectorService
             }
             catch (Exception ex)
             {
-                Bb.Publish(ex.ToExceptionEvent());
+                BigBrother.Publish(ex.ToExceptionEvent());
                 throw;
             }
         }

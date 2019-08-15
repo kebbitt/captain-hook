@@ -6,5 +6,8 @@
     <Parameter Name="CaptainHook.DirectorService_PartitionCount" Value="1" />
     <Parameter Name="CaptainHook.DirectorService_MinReplicaSetSize" Value="1" />
     <Parameter Name="CaptainHook.DirectorService_TargetReplicaSetSize" Value="1" />
+    <Parameter Name="CaptainHook.DirectorService_DefaultMinReplicaSetSize" Value="1"/>
+    <Parameter Name="CaptainHook.DirectorService_DefaultTargetReplicaSetSize" Value="1"/>
+    <Parameter Name="CaptainHook.DirectorService_DefaultPartitionCount" Value="1"/>
   </Parameters>
 </Application>

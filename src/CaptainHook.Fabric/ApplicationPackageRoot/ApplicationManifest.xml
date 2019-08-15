@@ -1,11 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ApplicationTypeName="CaptainHookType" ApplicationTypeVersion="1.0.0" xmlns="http://schemas.microsoft.com/2011/01/fabric">
   <Parameters>
+    <Parameter Name="KeyVault_Base_Uri" DefaultValue="N/A" />
+    <Parameter Name="AspNetCore_Environment" DefaultValue="N/A" />
+    <Parameter Name="CaptainHook.DirectorService_DefaultMinReplicaSetSize" DefaultValue="3"/>
+    <Parameter Name="CaptainHook.DirectorService_DefaultTargetReplicaSetSize" DefaultValue="3"/>
+    <Parameter Name="CaptainHook.DirectorService_DefaultPartitionCount" DefaultValue="1"/>
     <Parameter Name="CaptainHook.DirectorService_MinReplicaSetSize" DefaultValue="3" />
     <Parameter Name="CaptainHook.DirectorService_PartitionCount" DefaultValue="1" />
     <Parameter Name="CaptainHook.DirectorService_TargetReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="KeyVault_Base_Uri" DefaultValue="N/A" />
-    <Parameter Name="AspNetCore_Environment" DefaultValue="N/A" />
   </Parameters>
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion 
        should match the Name and Version attributes of the ServiceManifest element defined in the 
@@ -19,6 +22,17 @@
   </ServiceManifestImport>
   <ServiceManifestImport>
     <ServiceManifestRef ServiceManifestName="CaptainHook.DirectorServicePkg" ServiceManifestVersion="1.0.0" />
+    <ConfigOverrides>
+      <ConfigOverride Name="Config">
+        <Settings>
+          <Section Name="DefaultServiceConfig">
+            <Parameter Name="DefaultMinReplicaSetSize" Value="[CaptainHook.DirectorService_DefaultMinReplicaSetSize]"/>
+            <Parameter Name="DefaultTargetReplicaSetSize" Value="[CaptainHook.DirectorService_DefaultTargetReplicaSetSize]"/>
+            <Parameter Name="DefaultPartitionCount" Value="[CaptainHook.DirectorService_DefaultPartitionCount]"/>
+          </Section>
+        </Settings>
+      </ConfigOverride>
+    </ConfigOverrides>
     <EnvironmentOverrides CodePackageRef="Code">
       <EnvironmentVariable Name="KEYVAULT_BASE_URI" Value="[KeyVault_Base_Uri]" />
       <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="[AspNetCore_Environment]" />

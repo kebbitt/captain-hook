@@ -7,10 +7,9 @@
   <!-- This is used for securing StateManager's replication traffic. -->
   <Section Name="ReplicatorSecurityConfig" />
 
-  <!-- Add your custom configuration sections and parameters here. -->
-  <!--
-  <Section Name="MyConfigSection">
-    <Parameter Name="MyParameter" Value="Value1" />
+  <Section Name="DefaultServiceConfig">
+    <Parameter Name="DefaultMinReplicaSetSize" Value="3"/>
+    <Parameter Name="DefaultTargetReplicaSetSize" Value="3"/>
+    <Parameter Name="DefaultPartitionCount" Value="1"/>
   </Section>
-  -->
 </Settings>
