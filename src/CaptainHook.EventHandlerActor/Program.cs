@@ -117,6 +117,7 @@ namespace CaptainHook.EventHandlerActor
             }
             catch (Exception e)
             {
+                ActorEventSource.Current.ActorHostInitializationFailed(e.ToString());
                 BigBrother.Write(e);
                 throw;
             }

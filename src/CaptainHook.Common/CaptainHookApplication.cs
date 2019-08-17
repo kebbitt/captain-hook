@@ -21,6 +21,8 @@
 
                 public const string EventReaderServiceType = "CaptainHook.EventReaderServiceType";
 
+                public const string DirectorServiceName = "Director";
+
                 public const string DirectorServiceType = "CaptainHook.DirectorServiceType";
 
                 public const string EventDispatcherServiceName = "Dispatcher";

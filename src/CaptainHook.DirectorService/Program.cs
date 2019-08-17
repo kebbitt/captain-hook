@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Fabric;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,11 +62,18 @@ namespace CaptainHook.DirectorService
                 builder.RegisterServiceFabricSupport();
                 builder.RegisterStatefulService<DirectorService>(Constants.CaptainHookApplication.Services.DirectorServiceType);
 
-                using (builder.Build()) { await Task.Delay(Timeout.Infinite); } // block
+                using (builder.Build())
+                {
+                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, Constants.CaptainHookApplication.Services.DirectorServiceName);
+
+                    await Task.Delay(Timeout.Infinite);
+                }
             }
             catch (Exception e)
             {
+                ServiceEventSource.Current.ServiceHostInitializationFailed(e.ToString());
                 BigBrother.Write(e);
+                throw;
             }
         }
     }

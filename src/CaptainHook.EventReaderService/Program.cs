@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
@@ -47,11 +48,17 @@ namespace CaptainHook.EventReaderService
                 builder.RegisterServiceFabricSupport();
                 builder.RegisterStatefulService<EventReaderService>(Constants.CaptainHookApplication.Services.EventReaderServiceType);
 
-                using (builder.Build()) { await Task.Delay(Timeout.Infinite); }
+                using (builder.Build())
+                {
+                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, Constants.CaptainHookApplication.Services.EventReaderServiceType);
+                    await Task.Delay(Timeout.Infinite);
+                }
             }
             catch (Exception e)
             {
+                ServiceEventSource.Current.ServiceHostInitializationFailed(e.ToString());
                 BigBrother.Write(e);
+                throw;
             }
         }
     }
