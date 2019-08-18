@@ -36,6 +36,10 @@ namespace CaptainHook.DirectorService
                 var settings = new ConfigurationSettings();
                 config.Bind(settings);
 
+                //Get configs from the Config Package
+                var activationContext = FabricRuntime.GetActivationContext();
+                var defaultServicesSettings = ConfigFabricCodePackage(activationContext);
+
                 var bb = new BigBrother(settings.InstrumentationKey, settings.InstrumentationKey);
                 bb.UseEventSourceSink().ForExceptions();
 
@@ -47,9 +51,15 @@ namespace CaptainHook.DirectorService
                 builder.RegisterInstance(settings)
                        .SingleInstance();
 
+                builder.RegisterInstance(defaultServicesSettings)
+                    .SingleInstance();
+
                 builder.RegisterType<FabricClient>().SingleInstance();
 
                 //todo cosmos config and rules stuff - come back to this later
+                // - we need to ensure rules which are in the db are created
+                // - rules which are updated are updated in the handlers and dispatchers
+                // - rules which are deleted can only be soft deleted - cosmos change feed does not support hard deletes
                 //var cosmosClient = new CosmosClient(settings.CosmosConnectionString);
                 //builder.RegisterInstance(cosmosClient);
 
@@ -75,6 +85,42 @@ namespace CaptainHook.DirectorService
                 BigBrother.Write(e);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Parsing the config package configs for this services
+        /// </summary>
+        /// <param name="activationContext"></param>
+        /// <returns></returns>
+        private static DefaultServiceSettings ConfigFabricCodePackage(ICodePackageActivationContext activationContext)
+        {
+            var configurationPackage = activationContext.GetConfigurationPackageObject("Config");
+            var section = configurationPackage.Settings.Sections[nameof(Constants.CaptainHookApplication.DefaultServiceConfig)];
+
+            return new DefaultServiceSettings
+            {
+                DefaultMinReplicaSetSize = GetValue(Constants.CaptainHookApplication.DefaultServiceConfig.DefaultMinReplicaSetSize, section),
+                DefaultPartitionCount = GetValue(Constants.CaptainHookApplication.DefaultServiceConfig.DefaultPartitionCount, section),
+                DefaultTargetReplicaSetSize = GetValue(Constants.CaptainHookApplication.DefaultServiceConfig.TargetReplicaSetSize, section)
+            };
+        }
+
+        /// <summary>
+        /// Simple helper to parse the ConfigurationSection from ServiceFabric for particular values.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="section"></param>
+        /// <returns></returns>
+        private static int GetValue(string key, System.Fabric.Description.ConfigurationSection section)
+        {
+            var result = int.TryParse(section.Parameters[key].Value, out var value);
+
+            if (!result)
+            {
+                throw new Exception($"Code package could not be parsed for value {key}");
+            }
+
+            return value;
         }
     }
 }
