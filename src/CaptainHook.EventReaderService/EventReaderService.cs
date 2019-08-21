@@ -162,7 +162,8 @@ namespace CaptainHook.EventReaderService
                         await _messageHandles.AddAsync(tx, handleData.Handle, handleData);
 
                         // TODO: This doesn't work as-is anymore, since there are multiple service instances for the handler actor service
-                        await ActorProxy.Create<IEventHandlerActor>(new ActorId(messageData.EventHandlerActorId)).Handle(messageData);
+                        var handlerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventHandlerServiceName}";
+                        await ActorProxy.Create<IEventHandlerActor>(new ActorId(messageData.EventHandlerActorId), new Uri(handlerServiceNameUri)).Handle(messageData);
                         await tx.CommitAsync();
                     }
                 }
