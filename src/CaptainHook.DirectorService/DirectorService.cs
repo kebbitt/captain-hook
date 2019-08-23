@@ -101,6 +101,26 @@ namespace CaptainHook.DirectorService
                             cancellationToken );
                     }
 
+                    var handlerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventHandlerServiceName}.{type}";
+
+                    if (!serviceList.Contains(handlerServiceNameUri))
+                    {
+                        await _fabricClient.ServiceManager.CreateServiceAsync(
+                            new StatefulServiceDescription
+                            {
+                                ApplicationName = new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}"),
+                                HasPersistedState = true,
+                                MinReplicaSetSize = _defaultServiceSettings.DefaultMinReplicaSetSize,
+                                TargetReplicaSetSize = _defaultServiceSettings.DefaultTargetReplicaSetSize,
+                                PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
+                                ServiceTypeName = Constants.CaptainHookApplication.Services.EventHandlerServiceType,
+                                ServiceName = new Uri(handlerServiceNameUri),
+                                InitializationData = Encoding.UTF8.GetBytes(type)
+                            },
+                            TimeSpan.FromSeconds(30),
+                            cancellationToken);
+                    }
+
                     //var handlerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventHandlerServiceName}.{type}";
                     //if (!serviceList.Contains(handlerServiceNameUri))
                     //{
