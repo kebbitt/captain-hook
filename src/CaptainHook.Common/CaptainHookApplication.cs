@@ -31,7 +31,7 @@
 
                 public const string EventHandlerServiceName = "EventHandler";
 
-                public const string EventHandlerServiceType = "CaptainHook.EventHandlerActorServiceType";
+                public const string EventHandlerActorServiceType = "EventHandlerActorServiceType";
             }
         }
     }

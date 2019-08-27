@@ -3,7 +3,7 @@
   <ServiceTypes>
     <StatefulServiceType ServiceTypeName="EventHandlerActorServiceType" HasPersistedState="true">
       <Extensions>
-        <Extension Name="__GeneratedServiceType__" GeneratedId="40d70313-de98-4e0e-a55b-afa6f8b013a0|Persisted">
+        <Extension Name="__GeneratedServiceType__" GeneratedId="8ad6d709-eda6-41e3-b21c-2c5905659a98|Persisted">
           <GeneratedNames xmlns="http://schemas.microsoft.com/2015/03/fabact-no-schema">
             <DefaultService Name="EventHandlerActorService" />
             <ReplicatorEndpoint Name="EventHandlerActorServiceReplicatorEndpoint" />
@@ -30,7 +30,6 @@
   <ConfigPackage Name="Config" Version="1.0.0" />
   <Resources>
     <Endpoints>
-      <Endpoint Name="CaptainHook.EventHandlerActorServiceEndpointV2_1" />
       <Endpoint Name="EventHandlerActorServiceEndpointV2_1" />
       <Endpoint Name="EventHandlerActorServiceReplicatorEndpoint" />
     </Endpoints>

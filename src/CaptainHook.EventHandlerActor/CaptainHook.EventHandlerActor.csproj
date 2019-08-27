@@ -39,8 +39,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Configuration">
-    </Reference>
+    <Folder Include="Handlers\" />
   </ItemGroup>
-
 </Project>

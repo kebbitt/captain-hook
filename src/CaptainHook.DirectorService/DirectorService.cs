@@ -113,7 +113,7 @@ namespace CaptainHook.DirectorService
                                 MinReplicaSetSize = _defaultServiceSettings.DefaultMinReplicaSetSize,
                                 TargetReplicaSetSize = _defaultServiceSettings.DefaultTargetReplicaSetSize,
                                 PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
-                                ServiceTypeName = Constants.CaptainHookApplication.Services.EventHandlerServiceType,
+                                ServiceTypeName = Constants.CaptainHookApplication.Services.EventHandlerActorServiceType,
                                 ServiceName = new Uri(handlerServiceNameUri),
                                 InitializationData = Encoding.UTF8.GetBytes(type)
                             },
@@ -133,7 +133,7 @@ namespace CaptainHook.DirectorService
                     //    //        DefaultMinReplicaSetSize = 3,
                     //    //        TargetReplicaSetSize = 3,
                     //    //        PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
-                    //    //        ServiceTypeName = CaptainHookApplication.EventHandlerServiceType,
+                    //    //        ServiceTypeName = CaptainHookApplication.EventHandlerActorServiceType,
                     //    //        ServiceName = new Uri(handlerServiceNameUri)
                     //    //    });
                     //}
