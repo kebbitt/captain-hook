@@ -4,6 +4,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
+using CaptainHook.Common.Telemetry.Web;
+using CaptainHook.EventHandlerActor.Handlers.Authentication;
 using Eshopworld.Core;
 
 namespace CaptainHook.EventHandlerActor.Handlers

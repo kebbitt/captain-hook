@@ -125,8 +125,10 @@ namespace CaptainHook.EventReaderService
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                //todo try catch and keep reading the subscription
                 if (_receiver.IsClosedOrClosing) continue;
+
+                //don't take any more messages unless we have free handles
+                if (_freeHandlers.Count == 0) continue;
 
                 var messages = await _receiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
                 if (messages == null) continue;
@@ -146,6 +148,7 @@ namespace CaptainHook.EventReaderService
                     }
 
                     messageData.HandlerId = handlerId;
+                    messageData.CorrelationId = Guid.NewGuid().ToString();
                     _inFlightMessages.Add(messageData.Handle, handlerId);
                     _lockTokens.Add(messageData.Handle, message.SystemProperties.LockToken);
 
@@ -153,19 +156,19 @@ namespace CaptainHook.EventReaderService
                     {
                         Handle = messageData.Handle,
                         HandlerId = handlerId,
-                        LockToken = message.SystemProperties.LockToken
+                        LockToken = message.SystemProperties.LockToken,
+                        
                     };
-
 
                     using (var tx = StateManager.CreateTransaction())
                     {
                         await _messageHandles.AddAsync(tx, handleData.Handle, handleData);
 
-                        // TODO: This doesn't work as-is anymore, since there are multiple service instances for the handler actor service
-                        var handlerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventHandlerServiceName}.{_eventType}";
+                        await ActorProxy.Create<IEventHandlerActor>(
+                            new ActorId(messageData.EventHandlerActorId), 
+                            serviceName:$"{Constants.CaptainHookApplication.Services.EventHandlerServiceName}.{_eventType}")
+                            .Handle(messageData);
 
-                        await ActorProxy.Create<IEventHandlerActor>(new ActorId(messageData.EventHandlerActorId), serviceName:$"{Constants.CaptainHookApplication.Services.EventHandlerServiceName}.{_eventType}").Handle(messageData);
-                        //await ActorServiceProxy.Create<IEventHandlerActor>(new Uri(handlerServiceNameUri), new ActorId(messageData.EventHandlerActorId)).Handle(messageData);
                         await tx.CommitAsync();
                     }
                 }
@@ -176,19 +179,21 @@ namespace CaptainHook.EventReaderService
         /// 
         /// </summary>
         /// <param name="messageData"></param>
-        /// <param name="messageSuccess"></param>
+        /// <param name="messageDelivered"></param>
         /// <returns></returns>
-        public async Task CompleteMessage(MessageData messageData, bool messageSuccess)
+        public async Task CompleteMessage(MessageData messageData, bool messageDelivered)
         {
             try
             {
-                if (messageSuccess)
+                //let the message naturally expire for redelivery if it is an a successfully delivery.
+                if (messageDelivered)
                 {
                     await _receiver.CompleteAsync(_lockTokens[messageData.Handle]);
                 }
 
                 _lockTokens.Remove(messageData.Handle);
                 _inFlightMessages.Remove(messageData.Handle);
+                _freeHandlers.Add(messageData.HandlerId);
 
                 using (var tx = StateManager.CreateTransaction())
                 {

@@ -10,8 +10,9 @@ using CaptainHook.Interfaces;
 using Eshopworld.Core;
 using Eshopworld.Telemetry;
 using Microsoft.ServiceFabric.Actors;
-using Microsoft.ServiceFabric.Actors.Client;
 using Microsoft.ServiceFabric.Actors.Runtime;
+using Microsoft.ServiceFabric.Services.Client;
+using Microsoft.ServiceFabric.Services.Remoting.Client;
 
 namespace CaptainHook.EventHandlerActor
 {
@@ -85,48 +86,28 @@ namespace CaptainHook.EventHandlerActor
         {
             await StateManager.AddOrUpdateStateAsync(messageData.Handle.ToString(), messageData, (s, pair) => pair);
 
-            //todo considering if this is needed any more given we have a better decoupling approach and the reader is not a reliable service.
             _handleTimer = RegisterTimer(
                 InternalHandle,
-                messageData.Handle.ToString(),
+                messageData,
                 TimeSpan.FromMilliseconds(100),
                 TimeSpan.MaxValue);
         }
 
         private async Task InternalHandle(object state)
         {
-            var correlationId = Guid.NewGuid();
-            var handle = Guid.NewGuid();
             var messageDelivered = true;
+            MessageData messageData = null;
+            //todo if actor is moved or updated we need to handle existing message which is being processed and in state management
             try
             {
                 UnregisterTimer(_handleTimer);
 
-                if (state != null)
+                messageData = state as MessageData;
+                if (messageData == null)
                 {
-                    var result = Guid.TryParse(state.ToString(), out handle);
-                    if (!result)
-                    {
-                        _bigBrother.Publish(new ActorError($"{state} could not be parsed to a guid so removing it.", this));
-                        return;
-                    }
-                }
-                else
-                {
-                    _bigBrother.Publish(new ActorError($"Timer state was null so cannot process any message", this));
+                    _bigBrother.Publish(new ActorError($" actor timer state could not be parsed to a guid so removing it.", this));
                     return;
                 }
-
-                var messageDataConditional = await StateManager.TryGetStateAsync<MessageData>(handle.ToString());
-                if (!messageDataConditional.HasValue)
-                {
-                    _bigBrother.Publish(new ActorError("message from state manager was empty", this));
-                    return;
-                }
-
-                var messageData = messageDataConditional.Value;
-                handle = messageData.Handle;
-                messageData.CorrelationId = correlationId.ToString();
 
                 var handler = _eventHandlerFactory.CreateEventHandler(messageData.Type);
                 await handler.CallAsync(messageData, new Dictionary<string, object>(), _cancellationTokenSource.Token);
@@ -135,11 +116,17 @@ namespace CaptainHook.EventHandlerActor
             {
                 messageDelivered = false;
                 BigBrother.Write(e.ToExceptionEvent());
+                messageDelivered = false;
             }
             finally
             {
-                await StateManager.RemoveStateAsync(handle.ToString());
-                await ActorProxy.Create<IPoolManagerActor>(new ActorId(0)).CompleteWork(handle, messageDelivered);
+                if (messageData != null)
+                {
+                    await StateManager.RemoveStateAsync(messageData.Handle.ToString());
+
+                    var readerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceName}.{messageData.Type}";
+                    await ServiceProxy.Create<IEventReaderService>(new Uri(readerServiceNameUri), new ServicePartitionKey(1)).CompleteMessage(messageData, messageDelivered);
+                }
             }
         }
     }

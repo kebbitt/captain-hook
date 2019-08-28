@@ -10,8 +10,8 @@ namespace CaptainHook.Interfaces
         /// Completes a message, deletes the message from the service bus if the message processing is a success
         /// </summary>
         /// <param name="messageData"></param>
-        /// <param name="messageSuccess"></param>
+        /// <param name="messageDelivered"></param>
         /// <returns></returns>
-        Task CompleteMessage(MessageData messageData, bool messageSuccess);
+        Task CompleteMessage(MessageData messageData, bool messageDelivered);
     }
 }
