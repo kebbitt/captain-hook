@@ -79,9 +79,28 @@ namespace CaptainHook.DirectorService
 
                 foreach (var type in events)
                 {
+                    var handlerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventHandlerServiceName}.{type}";
+
+                    if (!serviceList.Contains(handlerServiceNameUri))
+                    {
+                        await _fabricClient.ServiceManager.CreateServiceAsync(
+                            new StatefulServiceDescription
+                            {
+                                ApplicationName = new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}"),
+                                HasPersistedState = true,
+                                MinReplicaSetSize = _defaultServiceSettings.DefaultMinReplicaSetSize,
+                                TargetReplicaSetSize = _defaultServiceSettings.DefaultTargetReplicaSetSize,
+                                PartitionSchemeDescription = new UniformInt64RangePartitionSchemeDescription(10),
+                                ServiceTypeName = Constants.CaptainHookApplication.Services.EventHandlerActorServiceType,
+                                ServiceName = new Uri(handlerServiceNameUri),
+                                InitializationData = Encoding.UTF8.GetBytes(type)
+                            },
+                            TimeSpan.FromSeconds(30),
+                            cancellationToken);
+                    }
+
                     if (cancellationToken.IsCancellationRequested) return;
 
-                    //todo make the names of the types PascalCaseing before they are created.
                     var readerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceName}.{type}";
                     if (!serviceList.Contains(readerServiceNameUri))
                     {
@@ -100,44 +119,8 @@ namespace CaptainHook.DirectorService
                             TimeSpan.FromSeconds(30), 
                             cancellationToken );
                     }
-
-                    var handlerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventHandlerServiceName}.{type}";
-
-                    if (!serviceList.Contains(handlerServiceNameUri))
-                    {
-                        await _fabricClient.ServiceManager.CreateServiceAsync(
-                            new StatefulServiceDescription
-                            {
-                                ApplicationName = new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}"),
-                                HasPersistedState = true,
-                                MinReplicaSetSize = _defaultServiceSettings.DefaultMinReplicaSetSize,
-                                TargetReplicaSetSize = _defaultServiceSettings.DefaultTargetReplicaSetSize,
-                                PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
-                                ServiceTypeName = Constants.CaptainHookApplication.Services.EventHandlerActorServiceType,
-                                ServiceName = new Uri(handlerServiceNameUri),
-                                InitializationData = Encoding.UTF8.GetBytes(type)
-                            },
-                            TimeSpan.FromSeconds(30),
-                            cancellationToken);
-                    }
-
-                    //var handlerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventHandlerServiceName}.{type}";
-                    //if (!serviceList.Contains(handlerServiceNameUri))
-                    //{
-                    //    // TODO: Untested - so commented out - not sure if actor services are exactly like stateful services
-                    //    //await FabricClient.ServiceManager.CreateServiceAsync(
-                    //    //    new StatefulServiceDescription
-                    //    //    {
-                    //    //        ApplicationName = new Uri($"fabric:/{CaptainHookApplication.ApplicationName}"),
-                    //    //        HasPersistedState = true,
-                    //    //        DefaultMinReplicaSetSize = 3,
-                    //    //        TargetReplicaSetSize = 3,
-                    //    //        PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
-                    //    //        ServiceTypeName = CaptainHookApplication.EventHandlerActorServiceType,
-                    //    //        ServiceName = new Uri(handlerServiceNameUri)
-                    //    //    });
-                    //}
                 }
+
 
                 // TODO: Can't do this for internal eshopworld.com|net hosts, otherwise the sharding would be crazy - need to aggregate internal hosts by domain
                 //var uniqueHosts = Rules.Select(r => new Uri(r.HookUri).Host).Distinct();
