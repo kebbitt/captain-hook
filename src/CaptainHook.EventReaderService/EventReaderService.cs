@@ -166,7 +166,7 @@ namespace CaptainHook.EventReaderService
 
                         await ActorProxy.Create<IEventHandlerActor>(
                             new ActorId(messageData.EventHandlerActorId), 
-                            serviceName:$"{Constants.CaptainHookApplication.Services.EventHandlerServiceName}.{_eventType}")
+                            serviceName:$"{Constants.CaptainHookApplication.Services.EventHandlerServiceName}")
                             .Handle(messageData);
 
                         await tx.CommitAsync();

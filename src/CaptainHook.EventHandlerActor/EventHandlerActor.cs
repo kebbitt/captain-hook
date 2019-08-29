@@ -109,6 +109,12 @@ namespace CaptainHook.EventHandlerActor
                     return;
                 }
 
+                if (string.IsNullOrWhiteSpace(messageData.Type))
+                {
+                    _bigBrother.Publish(new ActorError($"message is missing type - it cannot be processed", this));
+                    return;
+                }
+
                 var handler = _eventHandlerFactory.CreateEventHandler(messageData.Type);
                 await handler.CallAsync(messageData, new Dictionary<string, object>(), _cancellationTokenSource.Token);
             }
@@ -125,7 +131,7 @@ namespace CaptainHook.EventHandlerActor
                     await StateManager.RemoveStateAsync(messageData.Handle.ToString());
 
                     var readerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceName}.{messageData.Type}";
-                    await ServiceProxy.Create<IEventReaderService>(new Uri(readerServiceNameUri), new ServicePartitionKey(1)).CompleteMessage(messageData, messageDelivered);
+                    await ServiceProxy.Create<IEventReaderService>(new Uri(readerServiceNameUri)).CompleteMessage(messageData, messageDelivered);
                 }
             }
         }

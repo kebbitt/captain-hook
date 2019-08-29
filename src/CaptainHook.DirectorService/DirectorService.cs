@@ -77,28 +77,27 @@ namespace CaptainHook.DirectorService
                                   .Select(s => s.ServiceName.AbsoluteUri)
                                   .ToList();
 
+                var handlerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventHandlerServiceName}";
+
+                if (!serviceList.Contains(handlerServiceNameUri))
+                {
+                    await _fabricClient.ServiceManager.CreateServiceAsync(
+                        new StatefulServiceDescription
+                        {
+                            ApplicationName = new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}"),
+                            HasPersistedState = true,
+                            MinReplicaSetSize = _defaultServiceSettings.DefaultMinReplicaSetSize,
+                            TargetReplicaSetSize = _defaultServiceSettings.DefaultTargetReplicaSetSize,
+                            PartitionSchemeDescription = new UniformInt64RangePartitionSchemeDescription(10),
+                            ServiceTypeName = Constants.CaptainHookApplication.Services.EventHandlerActorServiceType,
+                            ServiceName = new Uri(handlerServiceNameUri)
+                        },
+                        TimeSpan.FromSeconds(30),
+                        cancellationToken);
+                }
+
                 foreach (var type in events)
                 {
-                    var handlerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventHandlerServiceName}.{type}";
-
-                    if (!serviceList.Contains(handlerServiceNameUri))
-                    {
-                        await _fabricClient.ServiceManager.CreateServiceAsync(
-                            new StatefulServiceDescription
-                            {
-                                ApplicationName = new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}"),
-                                HasPersistedState = true,
-                                MinReplicaSetSize = _defaultServiceSettings.DefaultMinReplicaSetSize,
-                                TargetReplicaSetSize = _defaultServiceSettings.DefaultTargetReplicaSetSize,
-                                PartitionSchemeDescription = new UniformInt64RangePartitionSchemeDescription(10),
-                                ServiceTypeName = Constants.CaptainHookApplication.Services.EventHandlerActorServiceType,
-                                ServiceName = new Uri(handlerServiceNameUri),
-                                InitializationData = Encoding.UTF8.GetBytes(type)
-                            },
-                            TimeSpan.FromSeconds(30),
-                            cancellationToken);
-                    }
-
                     if (cancellationToken.IsCancellationRequested) return;
 
                     var readerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceName}.{type}";

@@ -19,13 +19,13 @@ namespace CaptainHook.Common
         /// </summary>
         public string CorrelationId { get; set; }
 
-        public Guid Handle { get; }
+        public Guid Handle { get; set; }
 
         public int HandlerId { get; set; }
 
-        public string Payload { get; }
+        public string Payload { get; set; }
 
-        public string Type { get; }
+        public string Type { get; set; }
 
         public string EventHandlerActorId => $"{Type}-{HandlerId}";
 
