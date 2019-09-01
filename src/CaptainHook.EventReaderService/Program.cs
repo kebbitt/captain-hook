@@ -34,17 +34,13 @@ namespace CaptainHook.EventReaderService
                 var settings = new ConfigurationSettings();
                 config.Bind(settings);
 
-                var bb = new BigBrother(settings.InstrumentationKey, settings.InstrumentationKey);
-                bb.UseEventSourceSink().ForExceptions();
+                var bigBrother = new BigBrother(settings.InstrumentationKey, settings.InstrumentationKey);
+                bigBrother.UseEventSourceSink().ForExceptions();
 
                 var builder = new ContainerBuilder();
-                builder.RegisterInstance(bb)
-                    .As<IBigBrother>()
-                    .SingleInstance();
-
-                builder.RegisterInstance(settings)
-                    .SingleInstance();
-
+                builder.RegisterInstance(bigBrother).As<IBigBrother>().SingleInstance();
+                builder.RegisterInstance(settings).SingleInstance();
+                builder.RegisterType<IMessageProviderFactory>().As<MessageProviderFactory>().InstancePerLifetimeScope();
                 builder.RegisterServiceFabricSupport();
                 builder.RegisterStatefulService<EventReaderService>(Constants.CaptainHookApplication.Services.EventReaderServiceType);
 

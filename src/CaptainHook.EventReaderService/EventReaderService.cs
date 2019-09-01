@@ -9,7 +9,6 @@ using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
 using CaptainHook.Interfaces;
 using Eshopworld.Core;
-using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.ServiceBus.Core;
 using Microsoft.ServiceFabric.Actors;
 using Microsoft.ServiceFabric.Actors.Client;
@@ -32,6 +31,7 @@ namespace CaptainHook.EventReaderService
         private const int BatchSize = 1; // make this dynamic - based on the number of active handlers - more handlers, lower batch
 
         private readonly IBigBrother _bigBrother;
+        private readonly IMessageProviderFactory _messageProviderFactoryFactory;
         private readonly ConfigurationSettings _settings;
         private readonly string _eventType;
 
@@ -41,7 +41,7 @@ namespace CaptainHook.EventReaderService
 
         private IReliableDictionary2<Guid, MessageDataHandle> _messageHandles;
         private HashSet<int> _freeHandlers = new HashSet<int>();
-        private MessageReceiver _receiver;
+        private IMessageReceiver _receiver;
 
 #if DEBUG
         internal int HandlerCount = 1;
@@ -49,10 +49,15 @@ namespace CaptainHook.EventReaderService
         internal int HandlerCount = 10;
 #endif
 
-        public EventReaderService(StatefulServiceContext context, IBigBrother bigBrother, ConfigurationSettings settings)
+        public EventReaderService(
+            StatefulServiceContext context, 
+            IBigBrother bigBrother, 
+            IMessageProviderFactory messageProviderFactoryFactory,
+            ConfigurationSettings settings)
             : base(context)
         {
             _bigBrother = bigBrother;
+            _messageProviderFactoryFactory = messageProviderFactoryFactory;
             _settings = settings;
             _eventType = Encoding.UTF8.GetString(context.InitializationData);
         }
@@ -77,6 +82,11 @@ namespace CaptainHook.EventReaderService
                 TypeExtensions.GetEntityName(_eventType));
 
             await azureTopic.CreateSubscriptionIfNotExists(SubscriptionName);
+
+            _receiver = _messageProviderFactoryFactory.Builder(
+                _settings.ServiceBusConnectionString,
+                TypeExtensions.GetEntityName(_eventType),
+                SubscriptionName);
         }
 
         internal async Task BuildInMemoryState(CancellationToken cancellationToken)
@@ -116,18 +126,11 @@ namespace CaptainHook.EventReaderService
             await BuildInMemoryState(cancellationToken);
             await SetupServiceBus();
 
-            _receiver = new MessageReceiver(
-                _settings.ServiceBusConnectionString,
-                EntityNameHelper.FormatSubscriptionPath(TypeExtensions.GetEntityName(_eventType), SubscriptionName),
-                ReceiveMode.PeekLock,
-                new RetryExponential(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(500), 3),
-                BatchSize);
-
             while (!cancellationToken.IsCancellationRequested)
             {
                 if (_receiver.IsClosedOrClosing) continue;
 
-                //don't take any more messages unless we have free handles
+                //todo harden this up - don't take any more messages unless we have free handles
                 if (_freeHandlers.Count == 0) continue;
 
                 var messages = await _receiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
@@ -156,8 +159,7 @@ namespace CaptainHook.EventReaderService
                     {
                         Handle = messageData.Handle,
                         HandlerId = handlerId,
-                        LockToken = message.SystemProperties.LockToken,
-                        
+                        LockToken = message.SystemProperties.LockToken
                     };
 
                     using (var tx = StateManager.CreateTransaction())

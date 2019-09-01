@@ -11,7 +11,6 @@ using Eshopworld.Core;
 using Eshopworld.Telemetry;
 using Microsoft.ServiceFabric.Actors;
 using Microsoft.ServiceFabric.Actors.Runtime;
-using Microsoft.ServiceFabric.Services.Client;
 using Microsoft.ServiceFabric.Services.Remoting.Client;
 
 namespace CaptainHook.EventHandlerActor
