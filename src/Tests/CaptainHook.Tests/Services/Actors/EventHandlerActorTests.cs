@@ -13,6 +13,7 @@ using Eshopworld.Tests.Core;
 using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.ServiceBus.Core;
 using Microsoft.ServiceFabric.Actors;
+using Microsoft.ServiceFabric.Actors.Client;
 using Microsoft.ServiceFabric.Actors.Runtime;
 using Moq;
 using ServiceFabric.Mocks;
@@ -22,9 +23,12 @@ namespace CaptainHook.Tests.Services.Actors
 {
     public class EventReaderTests
     {
+        [Fact]
+        [IsLayer0]
         public async Task CanGetMessages()
         {
             var context = MockStatefulServiceContextFactory.Default;
+            var actorFactory = new ActorProxyFactory();
             var mockedBigBrother = new Mock<IBigBrother>();
             var config = new ConfigurationSettings();
 
@@ -39,7 +43,12 @@ namespace CaptainHook.Tests.Services.Actors
                 It.IsAny<string>(),
                 It.IsAny<string>())).Returns(mockMessageProvider.Object);
 
-            var service = new EventReaderService.EventReaderService(context, mockedBigBrother.Object, mockMessageProviderFactory.Object, config);
+            var service = new EventReaderService.EventReaderService(
+                context, 
+                mockedBigBrother.Object,
+                mockMessageProviderFactory.Object,
+                actorFactory,
+                config);
 
             await service.InvokeRunAsync(CancellationToken.None);
 

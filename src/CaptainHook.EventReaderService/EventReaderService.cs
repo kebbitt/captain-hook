@@ -32,6 +32,7 @@ namespace CaptainHook.EventReaderService
 
         private readonly IBigBrother _bigBrother;
         private readonly IMessageProviderFactory _messageProviderFactoryFactory;
+        private readonly IActorProxyFactory _proxyFactory;
         private readonly ConfigurationSettings _settings;
         private readonly string _eventType;
 
@@ -50,14 +51,16 @@ namespace CaptainHook.EventReaderService
 #endif
 
         public EventReaderService(
-            StatefulServiceContext context, 
-            IBigBrother bigBrother, 
+            StatefulServiceContext context,
+            IBigBrother bigBrother,
             IMessageProviderFactory messageProviderFactoryFactory,
+            IActorProxyFactory proxyFactory,
             ConfigurationSettings settings)
             : base(context)
         {
             _bigBrother = bigBrother;
             _messageProviderFactoryFactory = messageProviderFactoryFactory;
+            _proxyFactory = proxyFactory;
             _settings = settings;
             _eventType = Encoding.UTF8.GetString(context.InitializationData);
         }
@@ -166,9 +169,9 @@ namespace CaptainHook.EventReaderService
                     {
                         await _messageHandles.AddAsync(tx, handleData.Handle, handleData);
 
-                        await ActorProxy.Create<IEventHandlerActor>(
-                            new ActorId(messageData.EventHandlerActorId), 
-                            serviceName:$"{Constants.CaptainHookApplication.Services.EventHandlerServiceName}")
+                        await _proxyFactory.CreateActorProxy<IEventHandlerActor>(
+                            new ActorId(messageData.EventHandlerActorId),
+                            serviceName: $"{Constants.CaptainHookApplication.Services.EventHandlerServiceName}")
                             .Handle(messageData);
 
                         await tx.CommitAsync();
