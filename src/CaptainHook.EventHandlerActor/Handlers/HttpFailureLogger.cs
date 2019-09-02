@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
 using CaptainHook.Common.Telemetry;
@@ -9,6 +10,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
     /// <summary>
     /// Wrapper for logging http failures in CH which include data re the endpoint being hit and the event from which the request came
     /// </summary>
+    [Obsolete("Need to wrap the http handlers in a polly rather than wrap the retries in a http client")]
     public class HttpFailureLogger
     {
         private readonly IBigBrother _bigBrother;

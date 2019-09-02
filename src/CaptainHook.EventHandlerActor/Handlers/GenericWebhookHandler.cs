@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Autofac.Features.Indexed;
 using CaptainHook.Common;
-using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
-using CaptainHook.Common.Telemetry;
-using CaptainHook.EventHandlerActor.Handlers.Authentication;
 using Eshopworld.Core;
+
 namespace CaptainHook.EventHandlerActor.Handlers
 {
     /// <summary>
@@ -18,23 +14,23 @@ namespace CaptainHook.EventHandlerActor.Handlers
     public class GenericWebhookHandler : IHandler
     {
         protected readonly IBigBrother BigBrother;
-        private readonly IIndex<string, HttpClient> _httpClients;
+        protected readonly IHttpClientBuilder HttpClientBuilder;
         protected readonly IRequestBuilder RequestBuilder;
+        protected readonly IRequestLogger RequestLogger;
         protected readonly WebhookConfig WebhookConfig;
-        private readonly IAuthenticationHandlerFactory _authenticationHandlerFactory;
 
         public GenericWebhookHandler(
-            IAuthenticationHandlerFactory authenticationHandlerFactory,
+            IHttpClientBuilder httpClientBuilder,
             IRequestBuilder requestBuilder,
+            IRequestLogger requestLogger,
             IBigBrother bigBrother,
-            IIndex<string, HttpClient> httpClients,
             WebhookConfig webhookConfig)
         {
             BigBrother = bigBrother;
-            _httpClients = httpClients;
             RequestBuilder = requestBuilder;
+            RequestLogger = requestLogger;
             WebhookConfig = webhookConfig;
-            this._authenticationHandlerFactory = authenticationHandlerFactory;
+            HttpClientBuilder = httpClientBuilder;
         }
 
         /// <summary>
@@ -54,62 +50,25 @@ namespace CaptainHook.EventHandlerActor.Handlers
                     throw new Exception("injected wrong implementation");
                 }
 
+                //todo refactor into a single call and a dto
                 var uri = RequestBuilder.BuildUri(WebhookConfig, messageData.Payload);
                 var httpVerb = RequestBuilder.SelectHttpVerb(WebhookConfig, messageData.Payload);
                 var payload = RequestBuilder.BuildPayload(this.WebhookConfig, messageData.Payload, metadata);
                 var authenticationScheme = RequestBuilder.SelectAuthenticationScheme(WebhookConfig, messageData.Payload);
                 var config = RequestBuilder.SelectWebhookConfig(WebhookConfig, messageData.Payload);
 
-                var httpClient = await GetHttpClient(cancellationToken, config, authenticationScheme, messageData.CorrelationId);
+                var httpClient = await HttpClientBuilder.BuildAsync(config, authenticationScheme, messageData.CorrelationId, cancellationToken);
 
                 var handler = new HttpFailureLogger(BigBrother, messageData, uri.AbsoluteUri, httpVerb);
                 var response = await httpClient.ExecuteAsJsonReliably(httpVerb, uri, payload, handler, token: cancellationToken);
 
-                BigBrother.Publish(
-                    new WebhookEvent(
-                        messageData.Handle, 
-                        messageData.Type, 
-                        $"Response status code {response.StatusCode}", 
-                        uri.AbsoluteUri, 
-                        httpVerb, 
-                        response.StatusCode, 
-                        messageData.CorrelationId));
+                await RequestLogger.LogAsync(httpClient, response, messageData, uri, httpVerb);
             }
             catch (Exception e)
             {
                 BigBrother.Publish(e.ToExceptionEvent());
                 throw;
             }
-        }
-
-        /// <summary>
-        /// Gets a configured http client for use in a request from the http client factory
-        /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <param name="config"></param>
-        /// <param name="authenticationScheme"></param>
-        /// <param name="correlationId"></param>
-        /// <returns></returns>
-        protected async Task<HttpClient> GetHttpClient(CancellationToken cancellationToken, WebhookConfig config, AuthenticationType authenticationScheme, string correlationId)
-        {
-            var uri = new Uri(config.Uri);
-
-            if (!_httpClients.TryGetValue(uri.Host, out var httpClient))
-            {
-                throw new ArgumentNullException(nameof(httpClient), $"HttpClient for {uri.Host} was not found");
-            }
-
-            if (authenticationScheme == AuthenticationType.None)
-            {
-                return httpClient;
-            }
-
-            var acquireTokenHandler = await _authenticationHandlerFactory.GetAsync(uri, cancellationToken);
-            await acquireTokenHandler.GetTokenAsync(httpClient, cancellationToken);
-
-            httpClient.DefaultRequestHeaders.Add("X-Correlation-ID", correlationId);
-
-            return httpClient;
         }
     }
 }

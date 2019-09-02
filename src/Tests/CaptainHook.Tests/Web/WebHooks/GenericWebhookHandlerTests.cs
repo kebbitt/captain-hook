@@ -8,14 +8,14 @@ using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
 using CaptainHook.EventHandlerActor.Handlers;
 using CaptainHook.EventHandlerActor.Handlers.Authentication;
-using CaptainHook.Tests.Authentication;
+using CaptainHook.Tests.Web.Authentication;
 using Eshopworld.Core;
 using Eshopworld.Tests.Core;
 using Moq;
 using RichardSzalay.MockHttp;
 using Xunit;
 
-namespace CaptainHook.Tests.WebHooks
+namespace CaptainHook.Tests.Web.WebHooks
 {
     public class GenericWebhookHandlerTests
     {
@@ -58,14 +58,21 @@ namespace CaptainHook.Tests.WebHooks
                 .WithContentType("application/json", messageData.Payload)
                 .Respond(HttpStatusCode.OK, "application/json", string.Empty);
 
-            var httpClients = new IndexDictionary<string, HttpClient> {{new Uri(config.Uri).Host, mockHttp.ToHttpClient()}};
+            var mockBigBrother = new Mock<IBigBrother>();
+            var httpClients = new IndexDictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } };
+
+            var mockAuthHandlerFactory = new Mock<IAuthenticationHandlerFactory>();
+            var httpClientBuilder = new HttpClientBuilder(mockAuthHandlerFactory.Object, httpClients);
+            var requestBuilder = new RequestBuilder();
+            var requestLogger = new RequestLogger(mockBigBrother.Object);
 
             var genericWebhookHandler = new GenericWebhookHandler(
-                new Mock<IAuthenticationHandlerFactory>().Object,
-                new RequestBuilder(),
-                new Mock<IBigBrother>().Object,
-                httpClients,
+                httpClientBuilder,
+                requestBuilder,
+                requestLogger,
+                mockBigBrother.Object,
                 config);
+
 
             await genericWebhookHandler.CallAsync(messageData, new Dictionary<string, object>(), _cancellationToken);
 
