@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Fabric;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,34 +10,70 @@ using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
 using CaptainHook.EventHandlerActor.Handlers;
 using CaptainHook.EventReaderService;
+using CaptainHook.Interfaces;
 using Eshopworld.Core;
 using Eshopworld.Tests.Core;
 using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.ServiceBus.Core;
 using Microsoft.ServiceFabric.Actors;
-using Microsoft.ServiceFabric.Actors.Client;
 using Microsoft.ServiceFabric.Actors.Runtime;
 using Moq;
+using Newtonsoft.Json;
 using ServiceFabric.Mocks;
 using Xunit;
 
 namespace CaptainHook.Tests.Services.Actors
 {
+    public class MockStatefulServiceContextFactory
+    {
+        public const string ServiceTypeName = "MockServiceType";
+        public const string ServiceName = "fabric:/MockApp/MockStatefulService";
+
+        public static StatefulServiceContext Default { get; } = ServiceFabric.Mocks.MockStatefulServiceContextFactory.Create(MockCodePackageActivationContext.Default, "MockServiceType", new Uri("fabric:/MockApp/MockStatefulService"), Guid.NewGuid(), long.MaxValue);
+
+        public static StatefulServiceContext Create(
+            ICodePackageActivationContext codePackageActivationContext,
+            string serviceTypeName,
+            Uri serviceName,
+            Guid partitionId,
+            long replicaId)
+        {
+            return new StatefulServiceContext(new NodeContext("Node0", new NodeId((BigInteger)0, (BigInteger)1), (BigInteger)0, "NodeType1", "MOCK.MACHINE"), codePackageActivationContext, serviceTypeName, serviceName, (byte[])null, partitionId, replicaId);
+        }
+    }
+
+    public class MockStatefulServiceContextFactory
+    {
+        public StatefulServiceContext Create()
+    }
+
+
     public class EventReaderTests
     {
-        [Fact]
+        [Theory]
         [IsLayer0]
-        public async Task CanGetMessages()
+        [InlineData("test.type", "test.type-1")]
+        public async Task CanGetMessages(string eventName, string handlerName)
         {
-            var context = MockStatefulServiceContextFactory.Default;
-            var actorFactory = new ActorProxyFactory();
+            var context = MockStatefulServiceContextFactory.Create(
+                MockCodePackageActivationContext.Default, 
+                Constants.CaptainHookApplication.Services.EventReaderServiceType,
+                new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceName}.{eventName}"), 
+                Guid.NewGuid(), 
+                long.MaxValue);
+
             var mockedBigBrother = new Mock<IBigBrother>();
             var config = new ConfigurationSettings();
+
+            var message = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new MessageData("Hello World", eventName)));
 
             var mockMessageProvider = new Mock<IMessageReceiver>();
             mockMessageProvider.Setup(s => s.ReceiveAsync(
                 It.IsAny<int>(),
-                It.IsAny<TimeSpan>())).ReturnsAsync(new List<Message> { new Message(Encoding.UTF8.GetBytes("HelloWorld")) });
+                It.IsAny<TimeSpan>())).ReturnsAsync(new List<Message> { new Message(message) });
+
+            var mockActorProxyFactory = new MockActorProxyFactory();
+            mockActorProxyFactory.RegisterActor(CreateMockEventHandlerActor(new ActorId(handlerName), mockedBigBrother.Object));
 
             var mockMessageProviderFactory = new Mock<IMessageProviderFactory>();
             mockMessageProviderFactory.Setup(s => s.Builder(
@@ -44,10 +82,10 @@ namespace CaptainHook.Tests.Services.Actors
                 It.IsAny<string>())).Returns(mockMessageProvider.Object);
 
             var service = new EventReaderService.EventReaderService(
-                context, 
+                context,
                 mockedBigBrother.Object,
                 mockMessageProviderFactory.Object,
-                actorFactory,
+                mockActorProxyFactory,
                 config);
 
             await service.InvokeRunAsync(CancellationToken.None);
@@ -75,6 +113,26 @@ namespace CaptainHook.Tests.Services.Actors
         public async Task CheckHandlesInInMemoryState()
         {
 
+        }
+
+        private static IEventHandlerActor CreateMockEventHandlerActor(ActorId id, IBigBrother bb)
+        {
+            ActorBase ActorFactory(ActorService service, ActorId actorId) => new MockEventHandlerActor(service, id);
+            var svc = MockActorServiceFactory.CreateActorServiceForActor<MockEventHandlerActor>(ActorFactory);
+            var actor = svc.Activate(id);
+            return actor;
+        }
+
+        private class MockEventHandlerActor : Actor, IEventHandlerActor
+        {
+            public MockEventHandlerActor(ActorService actorService, ActorId actorId) : base(actorService, actorId)
+            {
+            }
+
+            public Task Handle(MessageData messageData)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 
