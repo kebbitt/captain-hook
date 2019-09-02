@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
@@ -19,159 +20,26 @@ using Xunit;
 
 namespace CaptainHook.Tests.Services.Actors
 {
-    public class MessageProviderFactoryMock : IMessageProviderFactory
-    {
-        public IMessageReceiver Builder(string serviceBusConnectionString, string topicName, string subscription)
-        {
-            return new MessageReceiverMock();
-        }
-
-        public int ReceiverBatchSize { get; set; }
-        public int BackoffMin { get; set; }
-        public int BackoffMax { get; set; }
-    }
-
-    public class MessageReceiverMock : IMessageReceiver
-    {
-        public Task CloseAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RegisterPlugin(ServiceBusPlugin serviceBusPlugin)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void UnregisterPlugin(string serviceBusPluginName)
-        {
-            throw new NotImplementedException();
-        }
-
-        public string ClientId { get; }
-
-        public bool IsClosedOrClosing { get; }
-        public string Path { get; }
-        public TimeSpan OperationTimeout { get; set; }
-        public ServiceBusConnection ServiceBusConnection { get; }
-        public bool OwnsConnection { get; }
-        public IList<ServiceBusPlugin> RegisteredPlugins { get; }
-        public void RegisterMessageHandler(Func<Message, CancellationToken, Task> handler, Func<ExceptionReceivedEventArgs, Task> exceptionReceivedHandler)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RegisterMessageHandler(Func<Message, CancellationToken, Task> handler, MessageHandlerOptions messageHandlerOptions)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task CompleteAsync(string lockToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AbandonAsync(string lockToken, IDictionary<string, object> propertiesToModify = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task DeadLetterAsync(string lockToken, IDictionary<string, object> propertiesToModify = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task DeadLetterAsync(string lockToken, string deadLetterReason, string deadLetterErrorDescription = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public int PrefetchCount { get; set; }
-        public ReceiveMode ReceiveMode { get; }
-        public Task<Message> ReceiveAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Message> ReceiveAsync(TimeSpan operationTimeout)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IList<Message>> ReceiveAsync(int maxMessageCount)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IList<Message>> ReceiveAsync(int maxMessageCount, TimeSpan operationTimeout)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Message> ReceiveDeferredMessageAsync(long sequenceNumber)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IList<Message>> ReceiveDeferredMessageAsync(IEnumerable<long> sequenceNumbers)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task CompleteAsync(IEnumerable<string> lockTokens)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task DeferAsync(string lockToken, IDictionary<string, object> propertiesToModify = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task RenewLockAsync(Message message)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<DateTime> RenewLockAsync(string lockToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Message> PeekAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IList<Message>> PeekAsync(int maxMessageCount)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Message> PeekBySequenceNumberAsync(long fromSequenceNumber)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IList<Message>> PeekBySequenceNumberAsync(long fromSequenceNumber, int messageCount)
-        {
-            throw new NotImplementedException();
-        }
-
-        public long LastPeekedSequenceNumber { get; }
-    }
-
-
     public class EventReaderTests
     {
         public async Task CanGetMessages()
         {
             var context = MockStatefulServiceContextFactory.Default;
-            var stateManager = new MockReliableStateManager();
             var mockedBigBrother = new Mock<IBigBrother>();
             var config = new ConfigurationSettings();
-            var messageProviderFactory = new MessageProviderFactoryMock();
-            var service = new EventReaderService.EventReaderService(context, mockedBigBrother.Object, messageProviderFactory, config);
+
+            var mockMessageProvider = new Mock<IMessageReceiver>();
+            mockMessageProvider.Setup(s => s.ReceiveAsync(
+                It.IsAny<int>(),
+                It.IsAny<TimeSpan>())).ReturnsAsync(new List<Message> { new Message(Encoding.UTF8.GetBytes("HelloWorld")) });
+
+            var mockMessageProviderFactory = new Mock<IMessageProviderFactory>();
+            mockMessageProviderFactory.Setup(s => s.Builder(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>())).Returns(mockMessageProvider.Object);
+
+            var service = new EventReaderService.EventReaderService(context, mockedBigBrother.Object, mockMessageProviderFactory.Object, config);
 
             await service.InvokeRunAsync(CancellationToken.None);
 
@@ -223,7 +91,7 @@ namespace CaptainHook.Tests.Services.Actors
             var bigBrotherMock = new Mock<IBigBrother>().Object;
 
             var eventHandlerActor = CreateEventHandlerActor(new ActorId(1), bigBrotherMock);
-            
+
             await eventHandlerActor.Handle(new MessageData(string.Empty, "test.type"));
 
             var timers = eventHandlerActor.GetActorTimers();
