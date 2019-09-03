@@ -36,7 +36,7 @@ namespace CaptainHook.EventReaderActor
         private const string SubscriptionName = "captain-hook";
 
         // TAKE NUMBER OF HANDLERS INTO CONSIDERATION, DO NOT BATCH MORE THEN HANDLERS
-        private const int BatchSize = 1; // make this configurable
+        private const int BatchSize = 10; // make this configurable
 
         private readonly IBigBrother _bigBrother;
         private readonly ConfigurationSettings _settings;
