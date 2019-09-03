@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Fabric;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,30 +22,6 @@ using Xunit;
 
 namespace CaptainHook.Tests.Services.Actors
 {
-    public class MockStatefulServiceContextFactory
-    {
-        public const string ServiceTypeName = "MockServiceType";
-        public const string ServiceName = "fabric:/MockApp/MockStatefulService";
-
-        public static StatefulServiceContext Default { get; } = ServiceFabric.Mocks.MockStatefulServiceContextFactory.Create(MockCodePackageActivationContext.Default, "MockServiceType", new Uri("fabric:/MockApp/MockStatefulService"), Guid.NewGuid(), long.MaxValue);
-
-        public static StatefulServiceContext Create(
-            ICodePackageActivationContext codePackageActivationContext,
-            string serviceTypeName,
-            Uri serviceName,
-            Guid partitionId,
-            long replicaId)
-        {
-            return new StatefulServiceContext(new NodeContext("Node0", new NodeId((BigInteger)0, (BigInteger)1), (BigInteger)0, "NodeType1", "MOCK.MACHINE"), codePackageActivationContext, serviceTypeName, serviceName, (byte[])null, partitionId, replicaId);
-        }
-    }
-
-    public class MockStatefulServiceContextFactory
-    {
-        public StatefulServiceContext Create()
-    }
-
-
     public class EventReaderTests
     {
         [Theory]
@@ -55,12 +29,10 @@ namespace CaptainHook.Tests.Services.Actors
         [InlineData("test.type", "test.type-1")]
         public async Task CanGetMessages(string eventName, string handlerName)
         {
-            var context = MockStatefulServiceContextFactory.Create(
-                MockCodePackageActivationContext.Default, 
-                Constants.CaptainHookApplication.Services.EventReaderServiceType,
-                new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceName}.{eventName}"), 
-                Guid.NewGuid(), 
-                long.MaxValue);
+            var context = CustomMockStatefulServiceContextFactory.Create(
+                Constants.CaptainHookApplication.Services.EventReaderServiceType, 
+                Constants.CaptainHookApplication.Services.EventReaderServiceFullName,
+                Encoding.UTF8.GetBytes(eventName));
 
             var mockedBigBrother = new Mock<IBigBrother>();
             var config = new ConfigurationSettings();

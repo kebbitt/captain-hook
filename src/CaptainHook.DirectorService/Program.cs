@@ -74,7 +74,7 @@ namespace CaptainHook.DirectorService
 
                 using (builder.Build())
                 {
-                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, Constants.CaptainHookApplication.Services.DirectorServiceName);
+                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, Constants.CaptainHookApplication.Services.DirectorServiceShortName);
 
                     await Task.Delay(Timeout.Infinite);
                 }

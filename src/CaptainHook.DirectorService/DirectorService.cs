@@ -77,9 +77,7 @@ namespace CaptainHook.DirectorService
                                   .Select(s => s.ServiceName.AbsoluteUri)
                                   .ToList();
 
-                var handlerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventHandlerServiceName}";
-
-                if (!serviceList.Contains(handlerServiceNameUri))
+                if (!serviceList.Contains(Constants.CaptainHookApplication.Services.EventHandlerServiceFullName))
                 {
                     await _fabricClient.ServiceManager.CreateServiceAsync(
                         new StatefulServiceDescription
@@ -90,7 +88,7 @@ namespace CaptainHook.DirectorService
                             TargetReplicaSetSize = _defaultServiceSettings.DefaultTargetReplicaSetSize,
                             PartitionSchemeDescription = new UniformInt64RangePartitionSchemeDescription(10),
                             ServiceTypeName = Constants.CaptainHookApplication.Services.EventHandlerActorServiceType,
-                            ServiceName = new Uri(handlerServiceNameUri)
+                            ServiceName = new Uri(Constants.CaptainHookApplication.Services.EventHandlerServiceFullName)
                         },
                         TimeSpan.FromSeconds(30),
                         cancellationToken);
@@ -100,7 +98,7 @@ namespace CaptainHook.DirectorService
                 {
                     if (cancellationToken.IsCancellationRequested) return;
 
-                    var readerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceName}.{type}";
+                    var readerServiceNameUri = $"{Constants.CaptainHookApplication.Services.EventHandlerServiceFullName}.{type}";
                     if (!serviceList.Contains(readerServiceNameUri))
                     {
                         await _fabricClient.ServiceManager.CreateServiceAsync(
