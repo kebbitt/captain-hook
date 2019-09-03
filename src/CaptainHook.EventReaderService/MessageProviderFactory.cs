@@ -6,17 +6,20 @@ namespace CaptainHook.EventReaderService
 {
     public class MessageProviderFactory : IMessageProviderFactory
     {
-        public IMessageReceiver Builder(string serviceBusConnectionString, string topicName, string subscription)
+        public IMessageReceiver Create(string serviceBusConnectionString, string topicName, string subscriptionName)
         {
-            Validate(subscription);
+            Validate(subscriptionName);
             Validate(serviceBusConnectionString);
             Validate(topicName);
 
             MessageReceiver = new MessageReceiver(
                 serviceBusConnectionString,
-                EntityNameHelper.FormatSubscriptionPath(topicName, subscription),
+                EntityNameHelper.FormatSubscriptionPath(topicName, subscriptionName),
                 ReceiveMode.PeekLock,
-                new RetryExponential(TimeSpan.FromMilliseconds(BackoffMin), TimeSpan.FromMilliseconds(BackoffMax), ReceiverBatchSize),
+                new RetryExponential(
+                    TimeSpan.FromMilliseconds(BackoffMin),
+                    TimeSpan.FromMilliseconds(BackoffMax),
+                    ReceiverBatchSize),
                 ReceiverBatchSize);
 
             return MessageReceiver;
@@ -49,7 +52,7 @@ namespace CaptainHook.EventReaderService
 
         private void Validate(int prop)
         {
-            if(prop == default(int))
+            if (prop == default(int))
             {
                 throw new ArgumentException("value cannot be zero", nameof(prop));
             }

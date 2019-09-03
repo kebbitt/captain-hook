@@ -15,6 +15,7 @@ using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.ServiceBus.Core;
 using Microsoft.ServiceFabric.Actors;
 using Microsoft.ServiceFabric.Actors.Runtime;
+using Microsoft.ServiceFabric.Data.Collections;
 using Moq;
 using Newtonsoft.Json;
 using ServiceFabric.Mocks;
@@ -24,52 +25,119 @@ namespace CaptainHook.Tests.Services.Actors
 {
     public class EventReaderTests
     {
+        /// <summary>
+        /// Tests the reader can get a message from ServiceBus and create a handler to process it.
+        /// Expectation is that state in the reader will contain handlers in the reliable dictionary
+        /// </summary>
+        /// <param name="eventName"></param>
+        /// <param name="handlerName"></param>
+        /// <param name="expectedHandleCount"></param>
+        /// <returns></returns>
         [Theory]
         [IsLayer0]
-        [InlineData("test.type", "test.type-1")]
-        public async Task CanGetMessages(string eventName, string handlerName)
+        [InlineData("test.type", "test.type-1", 1)]
+        public async Task CanGetMessage(string eventName, string handlerName, int expectedHandleCount)
         {
             var context = CustomMockStatefulServiceContextFactory.Create(
-                Constants.CaptainHookApplication.Services.EventReaderServiceType, 
+                Constants.CaptainHookApplication.Services.EventReaderServiceType,
                 Constants.CaptainHookApplication.Services.EventReaderServiceFullName,
                 Encoding.UTF8.GetBytes(eventName));
 
+            var stateManager = new MockReliableStateManager();
             var mockedBigBrother = new Mock<IBigBrother>();
             var config = new ConfigurationSettings();
-
-            var message = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new MessageData("Hello World", eventName)));
-
-            var mockMessageProvider = new Mock<IMessageReceiver>();
-            mockMessageProvider.Setup(s => s.ReceiveAsync(
-                It.IsAny<int>(),
-                It.IsAny<TimeSpan>())).ReturnsAsync(new List<Message> { new Message(message) });
 
             var mockActorProxyFactory = new MockActorProxyFactory();
             mockActorProxyFactory.RegisterActor(CreateMockEventHandlerActor(new ActorId(handlerName), mockedBigBrother.Object));
 
-            var mockMessageProviderFactory = new Mock<IMessageProviderFactory>();
-            mockMessageProviderFactory.Setup(s => s.Builder(
+            var message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new MessageData("Hello World", eventName))));
+
+            var mockMessageProvider = new Mock<IMessageReceiver>();
+            mockMessageProvider.Setup(s => s.ReceiveAsync(
+                It.IsAny<int>(),
+                It.IsAny<TimeSpan>())).ReturnsAsync(new List<Message> { message });
+
+            var mockServiceBusProvider = new Mock<IServiceBusProvider>();
+            mockServiceBusProvider.Setup(s => s.CreateAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()));
+
+            mockServiceBusProvider.Setup(s => s.CreateMessageReceiver(
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<string>())).Returns(mockMessageProvider.Object);
 
+            mockServiceBusProvider.Setup(s => s.GetLockToken(It.IsAny<Message>())).Returns(Guid.NewGuid().ToString);
+
             var service = new EventReaderService.EventReaderService(
                 context,
+                stateManager,
                 mockedBigBrother.Object,
-                mockMessageProviderFactory.Object,
+                mockServiceBusProvider.Object,
                 mockActorProxyFactory,
                 config);
 
-            await service.InvokeRunAsync(CancellationToken.None);
+            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            await service.InvokeRunAsync(cancellationTokenSource.Token);
 
-            //mock the service bus provider
+            //Assert that the dictionary contains 1 processing message and associated handle
+            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary2<Guid, MessageDataHandle>>(nameof(MessageDataHandle));
+            Assert.Equal(expectedHandleCount, dictionary.Count);
         }
 
-        [Fact]
+        [Theory]
         [IsLayer0]
-        public async Task CanCancel()
+        [InlineData("test.type", "test.type-1", 1)]
+        public async Task CanCancel(string eventName, string handlerName, int expectedHandleCount)
         {
+            var context = CustomMockStatefulServiceContextFactory.Create(
+                Constants.CaptainHookApplication.Services.EventReaderServiceType,
+                Constants.CaptainHookApplication.Services.EventReaderServiceFullName,
+                Encoding.UTF8.GetBytes(eventName));
 
+            var stateManager = new MockReliableStateManager();
+            var mockedBigBrother = new Mock<IBigBrother>();
+            var config = new ConfigurationSettings();
+
+            var mockActorProxyFactory = new MockActorProxyFactory();
+            mockActorProxyFactory.RegisterActor(CreateMockEventHandlerActor(new ActorId(handlerName), mockedBigBrother.Object));
+
+            var message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new MessageData("Hello World", eventName))));
+
+            var mockMessageProvider = new Mock<IMessageReceiver>();
+            mockMessageProvider.Setup(s => s.ReceiveAsync(
+                It.IsAny<int>(),
+                It.IsAny<TimeSpan>())).ReturnsAsync(new List<Message> { message });
+
+            var mockServiceBusProvider = new Mock<IServiceBusProvider>();
+            mockServiceBusProvider.Setup(s => s.CreateAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()));
+
+            mockServiceBusProvider.Setup(s => s.CreateMessageReceiver(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>())).Returns(mockMessageProvider.Object);
+
+            mockServiceBusProvider.Setup(s => s.GetLockToken(It.IsAny<Message>())).Returns(Guid.NewGuid().ToString);
+
+            var service = new EventReaderService.EventReaderService(
+                context,
+                stateManager,
+                mockedBigBrother.Object,
+                mockServiceBusProvider.Object,
+                mockActorProxyFactory,
+                config);
+
+            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            await service.InvokeRunAsync(cancellationTokenSource.Token);
+
+            //Assert can cancel the service from running
+            Assert.True(cancellationTokenSource.IsCancellationRequested);
         }
 
         public async Task ReaderDoesntGetMessagesWhenHandlersAreFull()
@@ -103,7 +171,7 @@ namespace CaptainHook.Tests.Services.Actors
 
             public Task Handle(MessageData messageData)
             {
-                throw new NotImplementedException();
+                return Task.CompletedTask;
             }
         }
     }
