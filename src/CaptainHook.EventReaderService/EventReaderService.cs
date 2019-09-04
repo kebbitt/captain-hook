@@ -32,7 +32,7 @@ namespace CaptainHook.EventReaderService
         private const int BatchSize = 1; // make this dynamic - based on the number of active handlers - more handlers, lower batch
 
         private readonly IBigBrother _bigBrother;
-        private readonly IServiceBusProvider _serviceBusProvider;
+        private readonly IServiceBusManager _serviceBusManager;
         private readonly IActorProxyFactory _proxyFactory;
         private readonly ConfigurationSettings _settings;
         private readonly string _eventType;
@@ -47,21 +47,21 @@ namespace CaptainHook.EventReaderService
 
         //todo move this to config driven in the code package
 #if DEBUG
-        private int _handlerCount = 1;
+        internal int _handlerCount = 1;
 #else
-        private int _handlerCount = 10;
+        internal int _handlerCount = 10;
 #endif
 
         public EventReaderService(StatefulServiceContext context,
             IReliableStateManagerReplica reliableStateManagerReplica,
             IBigBrother bigBrother,
-            IServiceBusProvider serviceBusProvider,
+            IServiceBusManager serviceBusManager,
             IActorProxyFactory proxyFactory,
             ConfigurationSettings settings)
             : base(context, reliableStateManagerReplica)
         {
             _bigBrother = bigBrother;
-            _serviceBusProvider = serviceBusProvider;
+            _serviceBusManager = serviceBusManager;
             _proxyFactory = proxyFactory;
             _settings = settings;
             _eventType = Encoding.UTF8.GetString(context.InitializationData);
@@ -78,7 +78,6 @@ namespace CaptainHook.EventReaderService
         {
             return this.CreateServiceRemotingReplicaListeners();
         }
-
 
         internal async Task BuildInMemoryState(CancellationToken cancellationToken)
         {
@@ -107,8 +106,8 @@ namespace CaptainHook.EventReaderService
 
         private async Task SetupServiceBus()
         {
-            await _serviceBusProvider.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, SubscriptionName, _eventType);
-            _messageReceiver = _serviceBusProvider.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, SubscriptionName);
+            await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, SubscriptionName, _eventType);
+            _messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, SubscriptionName);
         }
 
         /// <summary>
@@ -127,9 +126,6 @@ namespace CaptainHook.EventReaderService
             {
                 if (_messageReceiver.IsClosedOrClosing) continue;
 
-                //todo harden this up - don't take any more messages unless we have free handles
-                if (_freeHandlers.Count == 0) continue;
-
                 //todo if no messages for a longer period of time run a longer sleep
                 var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
                 if (messages == null) continue;
@@ -138,26 +134,18 @@ namespace CaptainHook.EventReaderService
                 {
                     var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _eventType);
 
-                    var handlerId = _freeHandlers.FirstOrDefault();
-                    if (handlerId == 0)
-                    {
-                        handlerId = ++_handlerCount;
-                    }
-                    else
-                    {
-                        _freeHandlers.Remove(handlerId);
-                    }
+                    var handlerId = GetFreeHandlerId();
 
                     messageData.HandlerId = handlerId;
                     messageData.CorrelationId = Guid.NewGuid().ToString();
                     _inFlightMessages.Add(messageData.Handle, handlerId);
-                    _lockTokens.Add(messageData.Handle, _serviceBusProvider.GetLockToken(message));
+                    _lockTokens.Add(messageData.Handle, _serviceBusManager.GetLockToken(message));
 
                     var handleData = new MessageDataHandle
                     {
                         Handle = messageData.Handle,
                         HandlerId = handlerId,
-                        LockToken = _serviceBusProvider.GetLockToken(message)
+                        LockToken = _serviceBusManager.GetLockToken(message)
                     };
 
                     using (var tx = StateManager.CreateTransaction())
@@ -173,6 +161,18 @@ namespace CaptainHook.EventReaderService
                     }
                 }
             }
+        }
+
+        internal int GetFreeHandlerId()
+        {
+            var handlerId = _freeHandlers.FirstOrDefault();
+            if (handlerId == 0)
+            {
+                return _handlerCount++;
+            }
+
+            _freeHandlers.Remove(handlerId);
+            return handlerId;
         }
 
         /// <summary>

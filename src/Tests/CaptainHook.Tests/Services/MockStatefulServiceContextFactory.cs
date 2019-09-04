@@ -2,7 +2,7 @@
 using System.Fabric;
 using ServiceFabric.Mocks;
 
-namespace CaptainHook.Tests.Services.Actors
+namespace CaptainHook.Tests.Services
 {
     /// todo move to a common package
     /// <summary>

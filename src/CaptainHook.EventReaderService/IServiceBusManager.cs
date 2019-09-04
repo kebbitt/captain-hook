@@ -7,7 +7,7 @@ namespace CaptainHook.EventReaderService
     /// <summary>
     /// A wrapper for ServiceBus Functions
     /// </summary>
-    public interface IServiceBusProvider
+    public interface IServiceBusManager
     {
         /// <summary>
         /// Creates a topic based on the specified type and subscription to that topic with the specify type

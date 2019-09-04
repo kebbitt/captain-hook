@@ -36,8 +36,4 @@
     <ProjectReference Include="..\..\CaptainHook.EventReaderService\CaptainHook.EventReaderService.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Services\Reliable\" />
-  </ItemGroup>
-
 </Project>

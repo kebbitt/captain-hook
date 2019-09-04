@@ -40,7 +40,7 @@ namespace CaptainHook.EventReaderService
                 var builder = new ContainerBuilder();
                 builder.RegisterInstance(bigBrother).As<IBigBrother>().SingleInstance();
                 builder.RegisterInstance(settings).SingleInstance();
-                builder.RegisterType<IServiceBusProvider>().As<ServiceBusProvider>().InstancePerLifetimeScope();
+                builder.RegisterType<IServiceBusManager>().As<ServiceBusManager>().InstancePerLifetimeScope();
                 builder.RegisterType<IMessageProviderFactory>().As<MessageProviderFactory>().InstancePerLifetimeScope();
                 builder.RegisterServiceFabricSupport();
                 builder.RegisterStatefulService<EventReaderService>(Constants.CaptainHookApplication.Services.EventReaderServiceType);

@@ -5,11 +5,11 @@ using Microsoft.Azure.ServiceBus.Core;
 namespace CaptainHook.EventReaderService
 {
     /// <inheritdoc/>
-    public class ServiceBusProvider : IServiceBusProvider
+    public class ServiceBusManager : IServiceBusManager
     {
         private readonly IMessageProviderFactory _factory;
 
-        public ServiceBusProvider(IMessageProviderFactory factory)
+        public ServiceBusManager(IMessageProviderFactory factory)
         {
             _factory = factory;
         }
