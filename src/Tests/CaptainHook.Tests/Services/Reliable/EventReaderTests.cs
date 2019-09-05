@@ -31,7 +31,7 @@ namespace CaptainHook.Tests.Services.Reliable
         /// <param name="handlerName"></param>
         /// <param name="expectedHandleCount"></param>
         /// <returns></returns>
-        [Theory]
+        [Theory(Skip = "WIP")]
         [IsLayer0]
         [InlineData("test.type", "test.type-1", 1)]
         public async Task CanGetMessage(string eventName, string handlerName, int expectedHandleCount)
@@ -85,7 +85,7 @@ namespace CaptainHook.Tests.Services.Reliable
             Assert.Equal(expectedHandleCount, dictionary.Count);
         }
 
-        [Theory]
+        [Theory(Skip = "WIP")]
         [IsLayer0]
         [InlineData("test.type", "test.type-1")]
         public async Task CanCancel(string eventName, string handlerName)
