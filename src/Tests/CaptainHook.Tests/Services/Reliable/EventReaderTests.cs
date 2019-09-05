@@ -138,7 +138,7 @@ namespace CaptainHook.Tests.Services.Reliable
             Assert.True(cancellationTokenSource.IsCancellationRequested);
         }
 
-        [Theory]
+        [Theory(Skip = "WIP")]
         [IsLayer0]
         [InlineData("test.type", 3, 3)]
         [InlineData("test.type", 10, 10)]
