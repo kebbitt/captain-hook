@@ -88,7 +88,8 @@ namespace CaptainHook.DirectorService
                             TargetReplicaSetSize = _defaultServiceSettings.DefaultTargetReplicaSetSize,
                             PartitionSchemeDescription = new UniformInt64RangePartitionSchemeDescription(10),
                             ServiceTypeName = Constants.CaptainHookApplication.Services.EventHandlerActorServiceType,
-                            ServiceName = new Uri(Constants.CaptainHookApplication.Services.EventHandlerServiceFullName)
+                            ServiceName = new Uri(Constants.CaptainHookApplication.Services.EventHandlerServiceFullName),
+                            PlacementConstraints = "(NodeTypeName == core)"
                         },
                         TimeSpan.FromSeconds(30),
                         cancellationToken);
@@ -111,7 +112,8 @@ namespace CaptainHook.DirectorService
                                 PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
                                 ServiceTypeName = Constants.CaptainHookApplication.Services.EventReaderServiceType,
                                 ServiceName = new Uri(readerServiceNameUri),
-                                InitializationData = Encoding.UTF8.GetBytes(type)
+                                InitializationData = Encoding.UTF8.GetBytes(type),
+                                PlacementConstraints = "(NodeTypeName == core)"
                             }, 
                             TimeSpan.FromSeconds(30), 
                             cancellationToken );
