@@ -26,7 +26,7 @@ namespace CaptainHook.EventReaderService
 
         public IMessageReceiver CreateMessageReceiver(string serviceBusConnectionString, string topicName, string subscriptionName)
         {
-            return _factory.Create(serviceBusConnectionString, topicName, subscriptionName);
+            return _factory.Create(serviceBusConnectionString, TypeExtensions.GetEntityName(topicName), subscriptionName);
         }
 
         public string GetLockToken(Message message)

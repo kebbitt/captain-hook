@@ -51,8 +51,40 @@ namespace CaptainHook.EventReaderService
 #else
         internal int _handlerCount = 10;
 #endif
+        /// <summary>
+        /// Default ctor used at runtime
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="bigBrother"></param>
+        /// <param name="serviceBusManager"></param>
+        /// <param name="proxyFactory"></param>
+        /// <param name="settings"></param>
+        public EventReaderService(
+            StatefulServiceContext context,
+            IBigBrother bigBrother,
+            IServiceBusManager serviceBusManager,
+            IActorProxyFactory proxyFactory,
+            ConfigurationSettings settings)
+            : base(context)
+        {
+            _bigBrother = bigBrother;
+            _serviceBusManager = serviceBusManager;
+            _proxyFactory = proxyFactory;
+            _settings = settings;
+            _eventType = Encoding.UTF8.GetString(context.InitializationData);
+        }
 
-        public EventReaderService(StatefulServiceContext context,
+        /// <summary>
+        /// Ctor used for mocking and tests
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="reliableStateManagerReplica"></param>
+        /// <param name="bigBrother"></param>
+        /// <param name="serviceBusManager"></param>
+        /// <param name="proxyFactory"></param>
+        /// <param name="settings"></param>
+        public EventReaderService(
+            StatefulServiceContext context,
             IReliableStateManagerReplica reliableStateManagerReplica,
             IBigBrother bigBrother,
             IServiceBusManager serviceBusManager,

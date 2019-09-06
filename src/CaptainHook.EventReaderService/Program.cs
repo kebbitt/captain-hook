@@ -12,6 +12,8 @@ using Microsoft.Azure.KeyVault;
 using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.AzureKeyVault;
+using Microsoft.ServiceFabric.Actors.Client;
+using Microsoft.ServiceFabric.Data;
 
 namespace CaptainHook.EventReaderService
 {
@@ -40,8 +42,11 @@ namespace CaptainHook.EventReaderService
                 var builder = new ContainerBuilder();
                 builder.RegisterInstance(bigBrother).As<IBigBrother>().SingleInstance();
                 builder.RegisterInstance(settings).SingleInstance();
-                builder.RegisterType<IServiceBusManager>().As<ServiceBusManager>().InstancePerLifetimeScope();
-                builder.RegisterType<IMessageProviderFactory>().As<MessageProviderFactory>().InstancePerLifetimeScope();
+                builder.RegisterType<MessageProviderFactory>().As<IMessageProviderFactory>().SingleInstance();
+                builder.RegisterType<ServiceBusManager>().As<IServiceBusManager>();
+
+                //SF Deps
+                builder.Register<IActorProxyFactory>(_ => new ActorProxyFactory());
                 builder.RegisterServiceFabricSupport();
                 builder.RegisterStatefulService<EventReaderService>(Constants.CaptainHookApplication.Services.EventReaderServiceType);
 

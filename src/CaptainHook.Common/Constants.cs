@@ -33,7 +33,7 @@
 
                 public const string EventHandlerServiceShortName = "EventHandler";
 
-                public static readonly string EventHandlerServiceFullName = $"fabric:/{ApplicationName}/{EventReaderServiceShortName}";
+                public static readonly string EventHandlerServiceFullName = $"fabric:/{ApplicationName}/{EventHandlerServiceShortName}";
 
                 public const string EventHandlerActorServiceType = "EventHandlerActorServiceType";
 

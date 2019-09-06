@@ -64,13 +64,13 @@ namespace CaptainHook.DirectorService
 
                 var events = new[]
                 {
-                    "Core.Events.Test.TrackingdDomainEvent",
-                    "Checkout.Domain.Infrastructure.DomainEvents.RetailerOrderConfirmationDomainEvent",
-                    "Checkout.Domain.Infrastructure.DomainEvents.PlatformOrderCreateDomainEvent",
-                    "Nike.Snkrs.Core.Events.ProductRefreshEvent",
-                    "Nike.Snkrs.Core.Events.ProductUpdatedEvent",
-                    "Nike.Snkrs.ControlTowerApi.Models.Events.NikeLaunchDataReceivedEvent",
-                    "Bullfrog.DomainEvents.ScaleChange"
+                    "Core.Events.Test.TrackingDomainEvent",
+                    //"Checkout.Domain.Infrastructure.DomainEvents.RetailerOrderConfirmationDomainEvent",
+                    //"Checkout.Domain.Infrastructure.DomainEvents.PlatformOrderCreateDomainEvent",
+                    //"Nike.Snkrs.Core.Events.ProductRefreshEvent",
+                    //"Nike.Snkrs.Core.Events.ProductUpdatedEvent",
+                    //"Nike.Snkrs.ControlTowerApi.Models.Events.NikeLaunchDataReceivedEvent",
+                    //"Bullfrog.DomainEvents.ScaleChange"
                 };
 
                 var serviceList = (await _fabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}")))
@@ -98,7 +98,7 @@ namespace CaptainHook.DirectorService
                 {
                     if (cancellationToken.IsCancellationRequested) return;
 
-                    var readerServiceNameUri = $"{Constants.CaptainHookApplication.Services.EventHandlerServiceFullName}.{type}";
+                    var readerServiceNameUri = $"{Constants.CaptainHookApplication.Services.EventReaderServiceFullName}.{type}";
                     if (!serviceList.Contains(readerServiceNameUri))
                     {
                         await _fabricClient.ServiceManager.CreateServiceAsync(
