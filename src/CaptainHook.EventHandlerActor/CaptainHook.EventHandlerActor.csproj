@@ -19,6 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Autofac" Version="4.9.4" />
     <PackageReference Include="Autofac.ServiceFabric" Version="2.2.0" />
     <PackageReference Include="Eshopworld.DevOps" Version="4.1.0" />
     <PackageReference Include="Eshopworld.Telemetry" Version="2.1.5" />
