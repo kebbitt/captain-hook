@@ -200,7 +200,7 @@ namespace CaptainHook.EventReaderService
             var handlerId = _freeHandlers.FirstOrDefault();
             if (handlerId == 0)
             {
-                return _handlerCount++;
+                return ++_handlerCount;
             }
 
             _freeHandlers.Remove(handlerId);
