@@ -207,13 +207,14 @@ namespace CaptainHook.Tests.Services.Reliable
 
         [Theory]
         [IsLayer0]
-        [InlineData("test.type", "test.type-1", 1, true, 0)]
-        [InlineData("test.type", "test.type-1", 1, false, 0)]
+        [InlineData("test.type", "test.type-1", 1, 1, true, 0)]
+        [InlineData("test.type", "test.type-1", 1, 1, false, 0)]
         public async Task CanDeleteMessageFromSubscription(
-            string eventName, 
-            string handlerName, 
-            int messageCount, 
-            bool messageDelivered, 
+            string eventName,
+            string handlerName,
+            int messageCount,
+            int expectedHandlerId,
+            bool messageDelivered,
             int expectedStatMessageCount)
         {
             var context = CustomMockStatefulServiceContextFactory.Create(
@@ -272,7 +273,7 @@ namespace CaptainHook.Tests.Services.Reliable
             MessageData messageData;
             using (var tx = stateManager.CreateTransaction())
             {
-                var messageDataHandle = await dictionary.TryGetValueAsync(tx, 1);
+                var messageDataHandle = await dictionary.TryGetValueAsync(tx, expectedHandlerId);
                 //reconstruct the message so we can call complete
                 messageData = new MessageData("Hello World 1", eventName)
                 {
@@ -286,7 +287,7 @@ namespace CaptainHook.Tests.Services.Reliable
             dictionary = await stateManager.GetOrAddAsync<IReliableDictionary2<int, MessageDataHandle>>(nameof(MessageDataHandle));
             Assert.Equal(expectedStatMessageCount, dictionary.Count);
         }
-
+        
         private static IList<Message> CreateMessages(int messageCount, string eventName)
         {
             var list = new List<Message>(messageCount);
