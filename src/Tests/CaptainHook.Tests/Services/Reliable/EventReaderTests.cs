@@ -96,7 +96,7 @@ namespace CaptainHook.Tests.Services.Reliable
         [Theory]
         [IsLayer0]
         [InlineData("test.type")]
-        public async Task CanCancel(string eventName)
+        public async Task CanCancelService(string eventName)
         {
             var context = CustomMockStatefulServiceContextFactory.Create(
                 Constants.CaptainHookApplication.Services.EventReaderServiceType,
@@ -288,17 +288,6 @@ namespace CaptainHook.Tests.Services.Reliable
             Assert.Equal(expectedStatMessageCount, dictionary.Count);
         }
         
-        private static IList<Message> CreateMessages(int messageCount, string eventName)
-        {
-            var list = new List<Message>(messageCount);
-            for (var i = 0; i < messageCount; i++)
-            {
-                list.Add(new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new MessageData("Hello World 1", eventName)))));
-            }
-
-            return list;
-        }
-
         private static IList<Message> CreateMessage(string eventName)
         {
             return new List<Message> { new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new MessageData("Hello World 1", eventName)))) };

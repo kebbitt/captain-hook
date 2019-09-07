@@ -11,5 +11,6 @@
     <Parameter Name="DefaultMinReplicaSetSize" Value="3"/>
     <Parameter Name="DefaultTargetReplicaSetSize" Value="3"/>
     <Parameter Name="DefaultPartitionCount" Value="1"/>
+    <Parameter Name="DefaultPlacementConstraints" Value=""/>
   </Section>
 </Settings>

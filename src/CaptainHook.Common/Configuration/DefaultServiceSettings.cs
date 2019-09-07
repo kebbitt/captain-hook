@@ -10,5 +10,7 @@
         public int DefaultMinReplicaSetSize { get; set; }
 
         public int DefaultPartitionCount { get; set; }
+
+        public string PlacementConstraints { get; set; }
     }
 }

@@ -65,12 +65,12 @@ namespace CaptainHook.DirectorService
                 var events = new[]
                 {
                     "Core.Events.Test.TrackingDomainEvent",
-                    "Checkout.Domain.Infrastructure.DomainEvents.RetailerOrderConfirmationDomainEvent",
-                    "Checkout.Domain.Infrastructure.DomainEvents.PlatformOrderCreateDomainEvent",
-                    "Nike.Snkrs.Core.Events.ProductRefreshEvent",
-                    "Nike.Snkrs.Core.Events.ProductUpdatedEvent",
-                    "Nike.Snkrs.ControlTowerApi.Models.Events.NikeLaunchDataReceivedEvent",
-                    "Bullfrog.DomainEvents.ScaleChange"
+                    //"Checkout.Domain.Infrastructure.DomainEvents.RetailerOrderConfirmationDomainEvent",
+                    //"Checkout.Domain.Infrastructure.DomainEvents.PlatformOrderCreateDomainEvent",
+                    //"Nike.Snkrs.Core.Events.ProductRefreshEvent",
+                    //"Nike.Snkrs.Core.Events.ProductUpdatedEvent",
+                    //"Nike.Snkrs.ControlTowerApi.Models.Events.NikeLaunchDataReceivedEvent",
+                    //"Bullfrog.DomainEvents.ScaleChange"
                 };
 
                 var serviceList = (await _fabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}")))
@@ -89,7 +89,7 @@ namespace CaptainHook.DirectorService
                             PartitionSchemeDescription = new UniformInt64RangePartitionSchemeDescription(10),
                             ServiceTypeName = Constants.CaptainHookApplication.Services.EventHandlerActorServiceType,
                             ServiceName = new Uri(Constants.CaptainHookApplication.Services.EventHandlerServiceFullName),
-                            PlacementConstraints = "(NodeTypeName == core)"
+                            PlacementConstraints = _defaultServiceSettings.PlacementConstraints
                         },
                         TimeSpan.FromSeconds(30),
                         cancellationToken);
@@ -113,7 +113,7 @@ namespace CaptainHook.DirectorService
                                 ServiceTypeName = Constants.CaptainHookApplication.Services.EventReaderServiceType,
                                 ServiceName = new Uri(readerServiceNameUri),
                                 InitializationData = Encoding.UTF8.GetBytes(type),
-                                PlacementConstraints = "(NodeTypeName == core)"
+                                PlacementConstraints = _defaultServiceSettings.PlacementConstraints
                             }, 
                             TimeSpan.FromSeconds(30), 
                             cancellationToken );

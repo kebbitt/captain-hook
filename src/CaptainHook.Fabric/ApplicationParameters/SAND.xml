@@ -9,5 +9,6 @@
     <Parameter Name="CaptainHook.DirectorService_DefaultMinReplicaSetSize" Value="5"/>
     <Parameter Name="CaptainHook.DirectorService_DefaultTargetReplicaSetSize" Value="5"/>
     <Parameter Name="CaptainHook.DirectorService_DefaultPartitionCount" Value="1"/>
+    <Parameter Name="CaptainHook.DirectorService_DefaultPlacementConstraints" Value="(NodeTypeName == core)"/>
   </Parameters>
 </Application>

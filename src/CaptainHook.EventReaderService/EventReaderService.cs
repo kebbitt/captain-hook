@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
+using CaptainHook.Common.Telemetry.Service;
 using CaptainHook.Interfaces;
 using Eshopworld.Core;
 using Microsoft.Azure.ServiceBus.Core;
@@ -47,7 +48,7 @@ namespace CaptainHook.EventReaderService
 
         //todo move this to config driven in the code package
 #if DEBUG
-        internal int HandlerCount = 1;
+        internal int HandlerCount = 10;
 #else
         internal int HandlerCount = 10;
 #endif
@@ -158,9 +159,12 @@ namespace CaptainHook.EventReaderService
             {
                 if (_messageReceiver.IsClosedOrClosing) continue;
 
-                //todo if no messages for a longer period of time run a longer sleep
                 var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
-                if (messages == null) continue;
+                if (messages == null)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(10), cancellationToken);
+                    continue;
+                }
 
                 foreach (var message in messages)
                 {
@@ -171,7 +175,7 @@ namespace CaptainHook.EventReaderService
                     messageData.HandlerId = handlerId;
                     messageData.CorrelationId = Guid.NewGuid().ToString();
                     InFlightMessages.Add(messageData.HandlerId, handlerId);
-                    LockTokens.Add(messageData.HandlerId, _serviceBusManager.GetLockToken(message));
+                    LockTokens.Add(handlerId, _serviceBusManager.GetLockToken(message));
 
                     var handleData = new MessageDataHandle
                     {
@@ -216,10 +220,22 @@ namespace CaptainHook.EventReaderService
         {
             try
             {
+                if (!LockTokens.TryGetValue(messageData.HandlerId, out var lockToken))
+                {
+                    throw new LockTokenNotFoundException("lock token was not found in the in memory dictionary")
+                    {
+                        EventType = messageData.Type,
+                        HandlerId = messageData.HandlerId,
+                        CorrelationId = messageData.CorrelationId,
+                        LockTokenKeys = string.Join(",", LockTokens.Select(s=> s.Key).ToArray()),
+                        LockTokenValues = string.Join(",", LockTokens.Select(s=> s.Value).ToArray())
+                    };
+                }
+
                 //let the message naturally expire for redelivery if it is an a successfully delivery.
                 if (messageDelivered)
                 {
-                    await _messageReceiver.CompleteAsync(LockTokens[messageData.HandlerId]);
+                    await _messageReceiver.CompleteAsync(lockToken);
                 }
 
                 LockTokens.Remove(messageData.HandlerId);

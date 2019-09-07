@@ -6,6 +6,7 @@
     <Parameter Name="CaptainHook.DirectorService_DefaultMinReplicaSetSize" DefaultValue="3"/>
     <Parameter Name="CaptainHook.DirectorService_DefaultTargetReplicaSetSize" DefaultValue="3"/>
     <Parameter Name="CaptainHook.DirectorService_DefaultPartitionCount" DefaultValue="1"/>
+    <Parameter Name="CaptainHook.DirectorService_DefaultPlacementConstraints" DefaultValue=""/>
     <Parameter Name="CaptainHook.DirectorService_MinReplicaSetSize" DefaultValue="3" />
     <Parameter Name="CaptainHook.DirectorService_PartitionCount" DefaultValue="1" />
     <Parameter Name="CaptainHook.DirectorService_TargetReplicaSetSize" DefaultValue="3" />
@@ -36,6 +37,7 @@
             <Parameter Name="DefaultMinReplicaSetSize" Value="[CaptainHook.DirectorService_DefaultMinReplicaSetSize]"/>
             <Parameter Name="DefaultTargetReplicaSetSize" Value="[CaptainHook.DirectorService_DefaultTargetReplicaSetSize]"/>
             <Parameter Name="DefaultPartitionCount" Value="[CaptainHook.DirectorService_DefaultPartitionCount]"/>
+            <Parameter Name="DefaultPlacementConstraints" Value="[CaptainHook.DirectorService_DefaultPlacementConstraints]"/>
           </Section>
         </Settings>
       </ConfigOverride>
