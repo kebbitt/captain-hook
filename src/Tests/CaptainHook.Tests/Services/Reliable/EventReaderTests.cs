@@ -141,8 +141,9 @@ namespace CaptainHook.Tests.Services.Reliable
 
         [Theory]
         [IsLayer0]
-        [InlineData("test.type", 3, 3)]
+        [InlineData("test.type", 3, 10)]
         [InlineData("test.type", 10, 10)]
+        [InlineData("test.type", 12, 12)]
         public async Task CanAddMoreHandlersDynamically(string eventName, int messageCount, int expectedHandlerId)
         {
             var context = CustomMockStatefulServiceContextFactory.Create(

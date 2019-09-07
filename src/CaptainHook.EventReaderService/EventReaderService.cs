@@ -47,11 +47,8 @@ namespace CaptainHook.EventReaderService
         private IMessageReceiver _messageReceiver;
 
         //todo move this to config driven in the code package
-#if DEBUG
         internal int HandlerCount = 10;
-#else
-        internal int HandlerCount = 10;
-#endif
+
         /// <summary>
         /// Default ctor used at runtime
         /// </summary>
