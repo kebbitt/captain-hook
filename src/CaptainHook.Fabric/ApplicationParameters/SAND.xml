@@ -3,7 +3,11 @@
   <Parameters>
     <Parameter Name="KeyVault_Base_Uri" Value="https://esw-tooling-sand-we.vault.azure.net/" />
     <Parameter Name="AspNetCore_Environment" Value="SAND" />
-    <Parameter Name="EndpointDispatcherActorService_PartitionCount" Value="1" />
-    <Parameter Name="EventHandlerActorService_PartitionCount" Value="1" />
+    <Parameter Name="CaptainHook.DirectorService_PartitionCount" Value="1" />
+    <Parameter Name="CaptainHook.DirectorService_MinReplicaSetSize" Value="5" />
+    <Parameter Name="CaptainHook.DirectorService_TargetReplicaSetSize" Value="5" />
+    <Parameter Name="CaptainHook.DirectorService_DefaultMinReplicaSetSize" Value="5"/>
+    <Parameter Name="CaptainHook.DirectorService_DefaultTargetReplicaSetSize" Value="5"/>
+    <Parameter Name="CaptainHook.DirectorService_DefaultPartitionCount" Value="1"/>
   </Parameters>
 </Application>
