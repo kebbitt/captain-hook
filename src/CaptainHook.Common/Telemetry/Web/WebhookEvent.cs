@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using CaptainHook.Common.Configuration;
 using Eshopworld.Core;
 
@@ -11,9 +10,9 @@ namespace CaptainHook.Common.Telemetry.Web
         {
         }
 
-        public WebhookEvent(Guid handle, string type, string message, string uri, HttpVerb httpVerb, HttpStatusCode statusCode, string correlationId)
+        public WebhookEvent(string eventHandlerActorId, string type, string message, string uri, HttpVerb httpVerb, HttpStatusCode statusCode, string correlationId)
         {
-            Handle = handle;
+            EventHandlerActorId = eventHandlerActorId;
             Type = type;
             Uri = uri;
             HttpVerb = httpVerb;
@@ -22,7 +21,7 @@ namespace CaptainHook.Common.Telemetry.Web
             CorrelationId = correlationId;
         }
 
-        public Guid Handle { get; set; }
+        public string EventHandlerActorId { get; set; }
 
         public string Type { get; set; }
 

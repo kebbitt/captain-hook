@@ -38,18 +38,18 @@ namespace CaptainHook.EventReaderService
         private readonly string _eventType;
 
         //todo this should be in the state of the reader, we should be able to deploy and continue from where we were before the deployment
-        private readonly Dictionary<Guid, string> _lockTokens = new Dictionary<Guid, string>();
-        private readonly Dictionary<Guid, int> _inFlightMessages = new Dictionary<Guid, int>();
+        internal readonly Dictionary<int, string> LockTokens = new Dictionary<int, string>();
+        internal readonly Dictionary<int, int> InFlightMessages = new Dictionary<int, int>();
 
-        private IReliableDictionary2<Guid, MessageDataHandle> _messageHandles;
+        private IReliableDictionary2<int, MessageDataHandle> _messageHandles;
         private HashSet<int> _freeHandlers = new HashSet<int>();
         private IMessageReceiver _messageReceiver;
 
         //todo move this to config driven in the code package
 #if DEBUG
-        internal int _handlerCount = 1;
+        internal int HandlerCount = 1;
 #else
-        internal int _handlerCount = 10;
+        internal int HandlerCount = 10;
 #endif
         /// <summary>
         /// Default ctor used at runtime
@@ -124,15 +124,15 @@ namespace CaptainHook.EventReaderService
                     var handleData = await _messageHandles.TryGetValueAsync(tx, enumerator.Current);
                     if (!handleData.HasValue) continue;
 
-                    _lockTokens.Add(handleData.Value.Handle, handleData.Value.LockToken);
-                    _inFlightMessages.Add(handleData.Value.Handle, handleData.Value.HandlerId);
+                    LockTokens.Add(handleData.Value.HandlerId, handleData.Value.LockToken);
+                    InFlightMessages.Add(handleData.Value.HandlerId, handleData.Value.HandlerId);
                 }
 
                 await tx.CommitAsync();
 
-                var maxUsedHandlers = _inFlightMessages.Values.OrderByDescending(i => i).FirstOrDefault();
-                if (maxUsedHandlers > _handlerCount) _handlerCount = maxUsedHandlers;
-                _freeHandlers = Enumerable.Range(1, _handlerCount).Except(_inFlightMessages.Values).ToHashSet();
+                var maxUsedHandlers = InFlightMessages.Values.OrderByDescending(i => i).FirstOrDefault();
+                if (maxUsedHandlers > HandlerCount) HandlerCount = maxUsedHandlers;
+                _freeHandlers = Enumerable.Range(1, HandlerCount).Except(InFlightMessages.Values).ToHashSet();
             }
         }
 
@@ -149,7 +149,7 @@ namespace CaptainHook.EventReaderService
         /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
-            _messageHandles = await StateManager.GetOrAddAsync<IReliableDictionary2<Guid, MessageDataHandle>>(nameof(MessageDataHandle));
+            _messageHandles = await StateManager.GetOrAddAsync<IReliableDictionary2<int, MessageDataHandle>>(nameof(MessageDataHandle));
 
             await BuildInMemoryState(cancellationToken);
             await SetupServiceBus();
@@ -170,19 +170,18 @@ namespace CaptainHook.EventReaderService
 
                     messageData.HandlerId = handlerId;
                     messageData.CorrelationId = Guid.NewGuid().ToString();
-                    _inFlightMessages.Add(messageData.Handle, handlerId);
-                    _lockTokens.Add(messageData.Handle, _serviceBusManager.GetLockToken(message));
+                    InFlightMessages.Add(messageData.HandlerId, handlerId);
+                    LockTokens.Add(messageData.HandlerId, _serviceBusManager.GetLockToken(message));
 
                     var handleData = new MessageDataHandle
                     {
-                        Handle = messageData.Handle,
                         HandlerId = handlerId,
                         LockToken = _serviceBusManager.GetLockToken(message)
                     };
 
                     using (var tx = StateManager.CreateTransaction())
                     {
-                        await _messageHandles.AddAsync(tx, handleData.Handle, handleData);
+                        await _messageHandles.AddAsync(tx, handleData.HandlerId, handleData);
 
                         await _proxyFactory.CreateActorProxy<IEventHandlerActor>(
                             new ActorId(messageData.EventHandlerActorId),
@@ -200,7 +199,7 @@ namespace CaptainHook.EventReaderService
             var handlerId = _freeHandlers.FirstOrDefault();
             if (handlerId == 0)
             {
-                return ++_handlerCount;
+                return ++HandlerCount;
             }
 
             _freeHandlers.Remove(handlerId);
@@ -220,16 +219,16 @@ namespace CaptainHook.EventReaderService
                 //let the message naturally expire for redelivery if it is an a successfully delivery.
                 if (messageDelivered)
                 {
-                    await _messageReceiver.CompleteAsync(_lockTokens[messageData.Handle]);
+                    await _messageReceiver.CompleteAsync(LockTokens[messageData.HandlerId]);
                 }
 
-                _lockTokens.Remove(messageData.Handle);
-                _inFlightMessages.Remove(messageData.Handle);
+                LockTokens.Remove(messageData.HandlerId);
+                InFlightMessages.Remove(messageData.HandlerId);
                 _freeHandlers.Add(messageData.HandlerId);
 
                 using (var tx = StateManager.CreateTransaction())
                 {
-                    await _messageHandles.TryRemoveAsync(tx, messageData.Handle);
+                    await _messageHandles.TryRemoveAsync(tx, messageData.HandlerId);
 
                     await tx.CommitAsync();
                 }
@@ -237,7 +236,6 @@ namespace CaptainHook.EventReaderService
             catch (Exception e)
             {
                 _bigBrother.Publish(e.ToExceptionEvent());
-                throw;
             }
         }
     }

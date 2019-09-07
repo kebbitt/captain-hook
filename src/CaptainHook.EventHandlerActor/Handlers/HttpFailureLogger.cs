@@ -28,7 +28,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
         public void Publish(string message, HttpStatusCode statusCode, string correlationId)
         {
-            _bigBrother.Publish(new HttpClientFailure(_message.Handle, _message.Type, message, _uri, _httpVerb, statusCode, correlationId));
+            _bigBrother.Publish(new HttpClientFailure(_message.EventHandlerActorId, _message.Type, message, _uri, _httpVerb, statusCode, correlationId));
         }
     }
 }

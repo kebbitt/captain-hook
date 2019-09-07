@@ -9,7 +9,6 @@ namespace CaptainHook.Common
 
         public MessageData(string payload, string type)
         {
-            Handle = Guid.NewGuid();
             Payload = payload;
             Type = type;
         }
@@ -18,9 +17,7 @@ namespace CaptainHook.Common
         /// Temp means to wire flows together until end to end actor telemetry tracking is complete
         /// </summary>
         public string CorrelationId { get; set; }
-
-        public Guid Handle { get; set; }
-
+        
         public int HandlerId { get; set; }
 
         public string Payload { get; set; }

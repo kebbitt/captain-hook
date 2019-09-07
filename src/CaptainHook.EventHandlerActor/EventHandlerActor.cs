@@ -83,7 +83,7 @@ namespace CaptainHook.EventHandlerActor
 
         public async Task Handle(MessageData messageData)
         {
-            await StateManager.AddOrUpdateStateAsync(messageData.Handle.ToString(), messageData, (s, pair) => pair);
+            await StateManager.AddOrUpdateStateAsync(messageData.HandlerId.ToString(), messageData, (s, pair) => pair);
 
             _handleTimer = RegisterTimer(
                 InternalHandle,
@@ -127,7 +127,7 @@ namespace CaptainHook.EventHandlerActor
             {
                 if (messageData != null)
                 {
-                    await StateManager.RemoveStateAsync(messageData.Handle.ToString());
+                    await StateManager.RemoveStateAsync(messageData.HandlerId.ToString());
 
                     var readerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceShortName}.{messageData.Type}";
                     await ServiceProxy.Create<IEventReaderService>(new Uri(readerServiceNameUri)).CompleteMessage(messageData, messageDelivered);
