@@ -119,7 +119,6 @@ namespace CaptainHook.EventHandlerActor
             }
             catch (Exception e)
             {
-                messageDelivered = false;
                 BigBrother.Write(e.ToExceptionEvent());
                 messageDelivered = false;
             }
@@ -127,10 +126,20 @@ namespace CaptainHook.EventHandlerActor
             {
                 if (messageData != null)
                 {
-                    await StateManager.RemoveStateAsync(messageData.HandlerId.ToString());
+                    try
+                    {
 
-                    var readerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceShortName}.{messageData.Type}";
-                    await ServiceProxy.Create<IEventReaderService>(new Uri(readerServiceNameUri)).CompleteMessage(messageData, messageDelivered);
+                        await StateManager.RemoveStateAsync(messageData.HandlerId.ToString());
+
+                        var readerServiceNameUri =
+                            $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceShortName}.{messageData.Type}";
+                        await ServiceProxy.Create<IEventReaderService>(new Uri(readerServiceNameUri))
+                            .CompleteMessage(messageData, messageDelivered);
+                    }
+                    catch (Exception e)
+                    {
+                        BigBrother.Write(e.ToExceptionEvent());
+                    }
                 }
             }
         }

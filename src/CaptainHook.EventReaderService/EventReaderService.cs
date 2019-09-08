@@ -10,6 +10,7 @@ using CaptainHook.Common.Configuration;
 using CaptainHook.Common.Telemetry.Service;
 using CaptainHook.Interfaces;
 using Eshopworld.Core;
+using Eshopworld.Telemetry;
 using Microsoft.Azure.ServiceBus.Core;
 using Microsoft.ServiceFabric.Actors;
 using Microsoft.ServiceFabric.Actors.Client;
@@ -109,6 +110,30 @@ namespace CaptainHook.EventReaderService
             return this.CreateServiceRemotingReplicaListeners();
         }
 
+        protected override Task OnOpenAsync(ReplicaOpenMode openMode, CancellationToken cancellationToken)
+        {
+            _bigBrother.Publish(new ServiceActivatedEvent(Context));
+            return base.OnOpenAsync(openMode, cancellationToken);
+        }
+
+        protected override Task OnCloseAsync(CancellationToken cancellationToken)
+        {
+            _bigBrother.Publish(new ServiceDeactivatedEvent(Context));
+            return base.OnCloseAsync(cancellationToken);
+        }
+
+        protected override void OnAbort()
+        {
+            _bigBrother.Publish(new ServiceAbortedEvent(Context));
+            base.OnAbort();
+        }
+
+        protected override Task OnChangeRoleAsync(ReplicaRole newRole, CancellationToken cancellationToken)
+        {
+            _bigBrother.Publish(new ServiceRoleChangeEvent(Context, newRole));
+            return base.OnChangeRoleAsync(newRole, cancellationToken);
+        }
+
         internal async Task BuildInMemoryState(CancellationToken cancellationToken)
         {
             using (var tx = StateManager.CreateTransaction())
@@ -147,10 +172,18 @@ namespace CaptainHook.EventReaderService
         /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
-            _messageHandles = await StateManager.GetOrAddAsync<IReliableDictionary2<int, MessageDataHandle>>(nameof(MessageDataHandle));
+            try
+            {
+                _messageHandles = await StateManager.GetOrAddAsync<IReliableDictionary2<int, MessageDataHandle>>(nameof(MessageDataHandle));
 
-            await BuildInMemoryState(cancellationToken);
-            await SetupServiceBus();
+                await BuildInMemoryState(cancellationToken);
+                await SetupServiceBus();
+            }
+            catch (Exception e)
+            {
+                BigBrother.Write(e.ToExceptionEvent());
+                throw;
+            }
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -163,34 +196,42 @@ namespace CaptainHook.EventReaderService
                     continue;
                 }
 
-                foreach (var message in messages)
+                try
                 {
-                    var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _eventType);
 
-                    var handlerId = GetFreeHandlerId();
-
-                    messageData.HandlerId = handlerId;
-                    messageData.CorrelationId = Guid.NewGuid().ToString();
-                    InFlightMessages.Add(messageData.HandlerId, handlerId);
-                    LockTokens.Add(handlerId, _serviceBusManager.GetLockToken(message));
-
-                    var handleData = new MessageDataHandle
+                    foreach (var message in messages)
                     {
-                        HandlerId = handlerId,
-                        LockToken = _serviceBusManager.GetLockToken(message)
-                    };
+                        var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _eventType);
 
-                    using (var tx = StateManager.CreateTransaction())
-                    {
-                        await _messageHandles.AddAsync(tx, handleData.HandlerId, handleData);
+                        var handlerId = GetFreeHandlerId();
 
-                        await _proxyFactory.CreateActorProxy<IEventHandlerActor>(
-                            new ActorId(messageData.EventHandlerActorId),
-                            serviceName: $"{Constants.CaptainHookApplication.Services.EventHandlerServiceShortName}")
-                            .Handle(messageData);
+                        messageData.HandlerId = handlerId;
+                        messageData.CorrelationId = Guid.NewGuid().ToString();
+                        InFlightMessages.Add(messageData.HandlerId, handlerId);
+                        LockTokens.Add(handlerId, _serviceBusManager.GetLockToken(message));
 
-                        await tx.CommitAsync();
+                        var handleData = new MessageDataHandle
+                        {
+                            HandlerId = handlerId,
+                            LockToken = _serviceBusManager.GetLockToken(message)
+                        };
+
+                        using (var tx = StateManager.CreateTransaction())
+                        {
+                            await _messageHandles.AddAsync(tx, handleData.HandlerId, handleData);
+
+                            await _proxyFactory.CreateActorProxy<IEventHandlerActor>(
+                                new ActorId(messageData.EventHandlerActorId),
+                                serviceName: $"{Constants.CaptainHookApplication.Services.EventHandlerServiceShortName}")
+                                .Handle(messageData);
+
+                            await tx.CommitAsync();
+                        }
                     }
+                }
+                catch (Exception e)
+                {
+                    BigBrother.Write(e.ToExceptionEvent());
                 }
             }
         }
@@ -224,8 +265,8 @@ namespace CaptainHook.EventReaderService
                         EventType = messageData.Type,
                         HandlerId = messageData.HandlerId,
                         CorrelationId = messageData.CorrelationId,
-                        LockTokenKeys = string.Join(",", LockTokens.Select(s=> s.Key).ToArray()),
-                        LockTokenValues = string.Join(",", LockTokens.Select(s=> s.Value).ToArray())
+                        LockTokenKeys = string.Join(",", LockTokens.Select(s => s.Key).ToArray()),
+                        LockTokenValues = string.Join(",", LockTokens.Select(s => s.Value).ToArray())
                     };
                 }
 
@@ -248,7 +289,7 @@ namespace CaptainHook.EventReaderService
             }
             catch (Exception e)
             {
-                _bigBrother.Publish(e.ToExceptionEvent());
+                BigBrother.Write(e.ToExceptionEvent());
             }
         }
     }

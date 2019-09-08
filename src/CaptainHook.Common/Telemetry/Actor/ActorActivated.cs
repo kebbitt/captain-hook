@@ -7,14 +7,4 @@ namespace CaptainHook.Common.Telemetry.Actor
         public ActorActivated(ActorBase actor) : base(actor)
         {}
     }
-
-    public class ActorError : ActorTelemetryEvent
-    {
-        public ActorError(string message, ActorBase actor) : base(actor)
-        {
-            Message = message;
-        }
-
-        public string Message { get; set; }
-    }
 }
