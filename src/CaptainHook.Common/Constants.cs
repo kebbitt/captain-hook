@@ -13,6 +13,8 @@
                 public const string TargetReplicaSetSize = "DefaultTargetReplicaSetSize";
 
                 public const string DefaultPartitionCount = "DefaultPartitionCount";
+
+                public const string DefaultPlacementConstraints = "DefaultPlacementConstraints";
             }
 
             public struct Services

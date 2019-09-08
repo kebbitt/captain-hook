@@ -99,19 +99,20 @@ namespace CaptainHook.DirectorService
 
             return new DefaultServiceSettings
             {
-                DefaultMinReplicaSetSize = GetValue(Constants.CaptainHookApplication.DefaultServiceConfig.DefaultMinReplicaSetSize, section),
-                DefaultPartitionCount = GetValue(Constants.CaptainHookApplication.DefaultServiceConfig.DefaultPartitionCount, section),
-                DefaultTargetReplicaSetSize = GetValue(Constants.CaptainHookApplication.DefaultServiceConfig.TargetReplicaSetSize, section)
+                DefaultMinReplicaSetSize = GetValueAsInt(Constants.CaptainHookApplication.DefaultServiceConfig.DefaultMinReplicaSetSize, section),
+                DefaultPartitionCount = GetValueAsInt(Constants.CaptainHookApplication.DefaultServiceConfig.DefaultPartitionCount, section),
+                DefaultTargetReplicaSetSize = GetValueAsInt(Constants.CaptainHookApplication.DefaultServiceConfig.TargetReplicaSetSize, section),
+                DefaultPlacementConstraints = section.Parameters[Constants.CaptainHookApplication.DefaultServiceConfig.DefaultPlacementConstraints].Value
             };
         }
 
         /// <summary>
-        /// Simple helper to parse the ConfigurationSection from ServiceFabric for particular values.
+        /// Simple helper to parse the ConfigurationSection from ServiceFabric Manifests for particular values.
         /// </summary>
         /// <param name="key"></param>
         /// <param name="section"></param>
         /// <returns></returns>
-        private static int GetValue(string key, System.Fabric.Description.ConfigurationSection section)
+        private static int GetValueAsInt(string key, System.Fabric.Description.ConfigurationSection section)
         {
             var result = int.TryParse(section.Parameters[key].Value, out var value);
 

@@ -11,6 +11,6 @@
 
         public int DefaultPartitionCount { get; set; }
 
-        public string PlacementConstraints { get; set; }
+        public string DefaultPlacementConstraints { get; set; }
     }
 }

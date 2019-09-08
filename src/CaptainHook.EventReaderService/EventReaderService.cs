@@ -134,6 +134,11 @@ namespace CaptainHook.EventReaderService
             return base.OnChangeRoleAsync(newRole, cancellationToken);
         }
 
+        /// <summary>
+        /// Builds in memory state for the service rather than having to hit the store each time for data. State is persisted regardless
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         internal async Task BuildInMemoryState(CancellationToken cancellationToken)
         {
             using (var tx = StateManager.CreateTransaction())

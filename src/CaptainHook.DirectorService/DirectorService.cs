@@ -89,7 +89,7 @@ namespace CaptainHook.DirectorService
                             PartitionSchemeDescription = new UniformInt64RangePartitionSchemeDescription(10),
                             ServiceTypeName = Constants.CaptainHookApplication.Services.EventHandlerActorServiceType,
                             ServiceName = new Uri(Constants.CaptainHookApplication.Services.EventHandlerServiceFullName),
-                            PlacementConstraints = _defaultServiceSettings.PlacementConstraints
+                            PlacementConstraints = _defaultServiceSettings.DefaultPlacementConstraints
                         },
                         TimeSpan.FromSeconds(30),
                         cancellationToken);
@@ -113,7 +113,7 @@ namespace CaptainHook.DirectorService
                                 ServiceTypeName = Constants.CaptainHookApplication.Services.EventReaderServiceType,
                                 ServiceName = new Uri(readerServiceNameUri),
                                 InitializationData = Encoding.UTF8.GetBytes(type),
-                                PlacementConstraints = _defaultServiceSettings.PlacementConstraints
+                                PlacementConstraints = _defaultServiceSettings.DefaultPlacementConstraints
                             }, 
                             TimeSpan.FromSeconds(30), 
                             cancellationToken );
