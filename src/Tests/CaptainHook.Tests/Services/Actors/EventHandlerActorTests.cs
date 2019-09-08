@@ -28,16 +28,6 @@ namespace CaptainHook.Tests.Services.Actors
             Assert.True(timers.Any());
         }
 
-        //todo
-        [Theory]
-        [IsLayer0]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task CallReaderToCompleteMessage(bool expectedMessageDelivered)
-        {
-
-        }
-
         private static EventHandlerActor.EventHandlerActor CreateEventHandlerActor(ActorId id, IBigBrother bigBrother)
         {
             ActorBase ActorFactory(ActorService service, ActorId actorId) => new EventHandlerActor.EventHandlerActor(service, id, new Mock<IEventHandlerFactory>().Object, bigBrother);
