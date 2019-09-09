@@ -288,7 +288,18 @@ namespace CaptainHook.Tests.Services.Reliable
             dictionary = await stateManager.GetOrAddAsync<IReliableDictionary2<int, MessageDataHandle>>(nameof(MessageDataHandle));
             Assert.Equal(expectedStatMessageCount, dictionary.Count);
         }
-        
+
+        /// <summary>
+        /// Tests the service to determine that it can change role gracefully - while keeping messages and state inflight while migrating to the active secondaries.
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        [IsLayer0]
+        public async Task ChangeRoleTests()
+        {
+
+        }
+
         private static IList<Message> CreateMessage(string eventName)
         {
             return new List<Message> { new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new MessageData("Hello World 1", eventName)))) };

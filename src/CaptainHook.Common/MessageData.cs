@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace CaptainHook.Common
+﻿namespace CaptainHook.Common
 {
     public class MessageData
     {
