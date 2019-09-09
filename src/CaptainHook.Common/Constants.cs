@@ -2,6 +2,11 @@
 {
     public struct Constants
     {
+        public struct Headers
+        {
+            public const string CorrelationId = "X-Correlation-ID";
+        }
+
         public struct CaptainHookApplication
         {
             public const string ApplicationName = "CaptainHook";

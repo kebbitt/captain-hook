@@ -1,6 +1,6 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using CaptainHook.Common.Configuration;
+using CaptainHook.Common.Telemetry.Web;
 
 namespace CaptainHook.Common.Telemetry
 {
@@ -15,23 +15,18 @@ namespace CaptainHook.Common.Telemetry
             string responseHeaders,
             string requestBody, 
             string responseBody, 
-            Guid handle, 
+            string eventHandlerActorId,
             string type, 
             string message, 
             string uri, 
             HttpVerb httpVerb, 
             HttpStatusCode statusCode, 
-            string correlationId)
+            string correlationId) : base(eventHandlerActorId, type, message, uri, httpVerb, statusCode, correlationId)
         {
+            RequestHeaders = requestHeaders;
+            ResponseHeaders = responseHeaders;
             RequestBody = requestBody;
             ResponseBody = responseBody;
-            Handle = handle;
-            Type = type;
-            Uri = uri;
-            HttpVerb = httpVerb;
-            Message = message;
-            StatusCode = statusCode;
-            CorrelationId = correlationId;
         }
 
         public string RequestHeaders { get; set; }

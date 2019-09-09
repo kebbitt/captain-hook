@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
 using CaptainHook.Common.Telemetry;
+using CaptainHook.Common.Telemetry.Web;
 using Eshopworld.Core;
 
 namespace CaptainHook.EventHandlerActor.Handlers
@@ -30,7 +31,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
         )
         {
             _bigBrother.Publish(new WebhookEvent(
-                messageData.Handle,
+                messageData.EventHandlerActorId,
                 messageData.Type,
                 $"Response status code {response.StatusCode}",
                 uri.AbsoluteUri,
@@ -49,7 +50,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
                 response.Headers.ToString(),
                 messageData.Payload ?? string.Empty,
                 await GetPayloadAsync(response),
-                messageData.Handle,
+                messageData.EventHandlerActorId,
                 messageData.Type,
                 $"Response status code {response.StatusCode}",
                 uri.AbsoluteUri,
