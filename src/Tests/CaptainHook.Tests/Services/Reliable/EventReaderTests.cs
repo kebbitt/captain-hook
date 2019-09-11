@@ -47,7 +47,7 @@ namespace CaptainHook.Tests.Services.Reliable
             _context = CustomMockStatefulServiceContextFactory.Create(
                 Constants.CaptainHookApplication.Services.EventReaderServiceType,
                 Constants.CaptainHookApplication.Services.EventReaderServiceFullName,
-                Encoding.UTF8.GetBytes("test.type"));
+                Encoding.UTF8.GetBytes("test.type"), replicaId:(new Random(int.MaxValue)).Next());
             _mockActorProxyFactory = new MockActorProxyFactory();
             _stateManager = new MockReliableStateManager();
             _config = new ConfigurationSettings();
@@ -282,11 +282,13 @@ namespace CaptainHook.Tests.Services.Reliable
         /// <returns></returns>
         [Theory]
         [IsLayer0]
-        [InlineData("test.type", "test.type-1", 1)]
-        [InlineData("test.type", "test.type-1", 10)]
+        [InlineData("test.type", "test.type-{0}", 1)]
+        [InlineData("test.type", "test.type-{0}", 10)]
         public async Task PromoteActivateSecondaryToPrimary(string eventName, string handlerName, int messageCount)
         {
-            _mockActorProxyFactory.RegisterActor(CreateMockEventHandlerActor(new ActorId(handlerName), _mockedBigBrother));
+            for (int x=0; x<messageCount; x++)
+                _mockActorProxyFactory.RegisterActor(CreateMockEventHandlerActor(new ActorId(String.Format(handlerName, x+1)), _mockedBigBrother));
+            
 
             var count = 0;
             _mockMessageProvider.Setup(s => s.ReceiveAsync(
@@ -316,10 +318,14 @@ namespace CaptainHook.Tests.Services.Reliable
 
             mockServiceBusManager.Setup(s => s.GetLockToken(It.IsAny<Message>())).Returns(Guid.NewGuid().ToString);
 
+            var random = new Random(int.MaxValue);
             
             EventReaderService.EventReaderService Factory(StatefulServiceContext context, IReliableStateManagerReplica2 stateManager) => 
                 new EventReaderService.EventReaderService(
-                    _context, 
+                    CustomMockStatefulServiceContextFactory.Create(
+                Constants.CaptainHookApplication.Services.EventReaderServiceType,
+                Constants.CaptainHookApplication.Services.EventReaderServiceFullName,
+                Encoding.UTF8.GetBytes("test.type"), replicaId:random.Next()), 
                     stateManager,
                     _mockedBigBrother, 
                     mockServiceBusManager.Object, 
@@ -337,15 +343,6 @@ namespace CaptainHook.Tests.Services.Reliable
             //add a second ActiveSecondary replica with id 3
             await replicaSet.AddReplicaAsync(ReplicaRole.ActiveSecondary, 3);
 
-            ////Run the primary and then stop it with the cancellation token
-            //using (var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1)))
-            //{
-            //    var token = cancellationTokenSource.Token;
-            //    cancellationTokenSource.Cancel();
-
-            //    replicaSet.Primary.ServiceInstance.InvokeRunAsync(token);
-            //}
-
             var task = Task.Run(async () =>
             {
                 while (replicaSet.Primary.ServiceInstance.InFlightMessages.Count != messageCount)
@@ -355,6 +352,31 @@ namespace CaptainHook.Tests.Services.Reliable
             });
 
             task.Wait(TimeSpan.FromSeconds(2));
+            task.IsCompletedSuccessfully.Should().BeTrue();
+
+            
+
+            try
+            {
+                await replicaSet.PromoteActiveSecondaryToPrimaryAsync(replicaSet.FirstActiveSecondary.ReplicaId);
+            }
+            catch (Exception e)
+            {
+                //soak
+            }
+
+
+            task = Task.Run(async () =>
+            {
+                while (replicaSet.Primary.ServiceInstance.InFlightMessages.Count != messageCount)
+                {
+                    await Task.Delay(100);
+                }
+            });
+
+            task.Wait(TimeSpan.FromSeconds(2));
+            task.IsCompletedSuccessfully.Should().BeTrue();
+
 
         }
 
