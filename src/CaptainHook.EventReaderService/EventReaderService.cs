@@ -195,7 +195,7 @@ namespace CaptainHook.EventReaderService
                 if (_messageReceiver.IsClosedOrClosing) continue;
 
                 var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
-                if (messages == null)
+                if (messages == null || messages.Count==0)
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(10), cancellationToken);
                     continue;

@@ -11,6 +11,7 @@ using CaptainHook.EventReaderService;
 using CaptainHook.Interfaces;
 using Eshopworld.Core;
 using Eshopworld.Tests.Core;
+using FluentAssertions;
 using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.ServiceBus.Core;
 using Microsoft.ServiceFabric.Actors;
@@ -315,15 +316,17 @@ namespace CaptainHook.Tests.Services.Reliable
 
             mockServiceBusManager.Setup(s => s.GetLockToken(It.IsAny<Message>())).Returns(Guid.NewGuid().ToString);
 
+            
             EventReaderService.EventReaderService Factory(StatefulServiceContext context, IReliableStateManagerReplica2 stateManager) => 
                 new EventReaderService.EventReaderService(
                     _context, 
+                    stateManager,
                     _mockedBigBrother, 
                     mockServiceBusManager.Object, 
                     _mockActorProxyFactory, 
                     _config);
 
-            var replicaSet = new MockStatefulServiceReplicaSet<EventReaderService.EventReaderService>(Factory);
+            var replicaSet = new MockStatefulServiceReplicaSet<EventReaderService.EventReaderService>(Factory, serviceName:"fabric:/MockApp/blah", serviceTypeName:"b", stateManagerFactory: (context, dictionary) => new MockReliableStateManager(dictionary));
 
             //add a new Primary replica with id 1
             await replicaSet.AddReplicaAsync(ReplicaRole.Primary, 1);
@@ -334,9 +337,25 @@ namespace CaptainHook.Tests.Services.Reliable
             //add a second ActiveSecondary replica with id 3
             await replicaSet.AddReplicaAsync(ReplicaRole.ActiveSecondary, 3);
 
-            //Run the primary and then stop it with the cancellation token
-            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            await replicaSet.Primary.ServiceInstance.InvokeRunAsync(cancellationTokenSource.Token);
+            ////Run the primary and then stop it with the cancellation token
+            //using (var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1)))
+            //{
+            //    var token = cancellationTokenSource.Token;
+            //    cancellationTokenSource.Cancel();
+
+            //    replicaSet.Primary.ServiceInstance.InvokeRunAsync(token);
+            //}
+
+            var task = Task.Run(async () =>
+            {
+                while (replicaSet.Primary.ServiceInstance.InFlightMessages.Count != messageCount)
+                {
+                    await Task.Delay(100);
+                }
+            });
+
+            task.Wait(TimeSpan.FromSeconds(2));
+
         }
 
         [Fact]
