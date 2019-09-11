@@ -47,6 +47,7 @@ namespace CaptainHook.Tests.Services.Reliable
                 Constants.CaptainHookApplication.Services.EventReaderServiceType,
                 Constants.CaptainHookApplication.Services.EventReaderServiceFullName,
                 Encoding.UTF8.GetBytes("test.type"));
+
             _mockActorProxyFactory = new MockActorProxyFactory();
             _stateManager = new MockReliableStateManager();
             _config = new ConfigurationSettings();
@@ -323,7 +324,11 @@ namespace CaptainHook.Tests.Services.Reliable
                     _mockActorProxyFactory, 
                     _config);
 
-            var replicaSet = new MockStatefulServiceReplicaSet<EventReaderService.EventReaderService>(Factory);
+            var replicaSet = new MockStatefulServiceReplicaSet<EventReaderService.EventReaderService>(
+                Factory, 
+                StateManagerFactory, 
+                Constants.CaptainHookApplication.Services.EventReaderServiceType,
+                Constants.CaptainHookApplication.Services.EventReaderServiceFullName);
 
             //add a new Primary replica with id 1
             await replicaSet.AddReplicaAsync(ReplicaRole.Primary, 1);
@@ -385,8 +390,6 @@ namespace CaptainHook.Tests.Services.Reliable
         {
 
         }
-
-
 
         private static IList<Message> CreateMessage(string eventName)
         {
