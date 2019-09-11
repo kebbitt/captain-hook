@@ -354,17 +354,18 @@ namespace CaptainHook.Tests.Services.Reliable
             task.Wait(TimeSpan.FromSeconds(2));
             task.IsCompletedSuccessfully.Should().BeTrue();
 
-            
+            var oldPrimaryReplicaId = replicaSet.Primary.ReplicaId;
 
             try
             {
                 await replicaSet.PromoteActiveSecondaryToPrimaryAsync(replicaSet.FirstActiveSecondary.ReplicaId);
             }
-            catch (Exception e)
+            catch (TaskCanceledException)
             {
                 //soak
             }
 
+            replicaSet.Primary.ReplicaId.Should().NotBe(oldPrimaryReplicaId);
 
             task = Task.Run(async () =>
             {
