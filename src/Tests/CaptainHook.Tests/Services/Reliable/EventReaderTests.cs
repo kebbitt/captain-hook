@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Fabric;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +17,7 @@ using Microsoft.ServiceFabric.Actors;
 using Microsoft.ServiceFabric.Actors.Runtime;
 using Microsoft.ServiceFabric.Data;
 using Microsoft.ServiceFabric.Data.Collections;
+using Microsoft.ServiceFabric.Services.Runtime;
 using Moq;
 using Newtonsoft.Json;
 using ServiceFabric.Mocks;
@@ -313,20 +315,15 @@ namespace CaptainHook.Tests.Services.Reliable
 
             mockServiceBusManager.Setup(s => s.GetLockToken(It.IsAny<Message>())).Returns(Guid.NewGuid().ToString);
 
-            EventReaderService.EventReaderService ServiceFactory(StatefulServiceContext uselessContext, IReliableStateManagerReplica2 uselessStateManager) => new EventReaderService.EventReaderService(
-                uselessContext,
-                _stateManager,
-                _mockedBigBrother,
-                mockServiceBusManager.Object,
-                _mockActorProxyFactory,
-                _config);
+            EventReaderService.EventReaderService Factory(StatefulServiceContext context, IReliableStateManagerReplica2 stateManager) => 
+                new EventReaderService.EventReaderService(
+                    _context, 
+                    _mockedBigBrother, 
+                    mockServiceBusManager.Object, 
+                    _mockActorProxyFactory, 
+                    _config);
 
-            var replicaSet = new MockStatefulServiceReplicaSet<EventReaderService.EventReaderService>(
-                ServiceFactory,
-                StateManagerFactory,
-                Constants.CaptainHookApplication.Services.EventReaderServiceType,
-                Constants.CaptainHookApplication.Services.EventReaderServiceFullName
-                );
+            var replicaSet = new MockStatefulServiceReplicaSet<EventReaderService.EventReaderService>(Factory);
 
             //add a new Primary replica with id 1
             await replicaSet.AddReplicaAsync(ReplicaRole.Primary, 1);
@@ -340,6 +337,39 @@ namespace CaptainHook.Tests.Services.Reliable
             //Run the primary and then stop it with the cancellation token
             var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             await replicaSet.Primary.ServiceInstance.InvokeRunAsync(cancellationTokenSource.Token);
+        }
+
+        [Fact]
+        [IsLayer0]
+        public async Task TestPrimaryReplicaShouldHaveOpenListenersAsync()
+        {
+            MyService Factory(StatefulServiceContext context, IReliableStateManagerReplica2 stateManager) => new MyService(_context, _stateManager);
+            var replicaSet = new MockStatefulServiceReplicaSet<MyService>(Factory);
+            await replicaSet.AddReplicaAsync(ReplicaRole.Primary, 1);
+            var openListeners = replicaSet.Primary.OpenListeners;
+            Assert.Equal(1, openListeners.Count());
+        }
+
+        private class MyService : StatefulService
+        {
+            public MyService(StatefulServiceContext serviceContext) : base(serviceContext)
+            {
+            }
+
+            public MyService(StatefulServiceContext serviceContext, IReliableStateManagerReplica reliableStateManagerReplica) : base(serviceContext, reliableStateManagerReplica)
+            {
+            }
+        }
+
+        private EventReaderService.EventReaderService ServiceFactory(StatefulServiceContext arg1, IReliableStateManagerReplica2 arg2)
+        {
+            return new EventReaderService.EventReaderService(
+                _context,
+                _stateManager,
+                _mockedBigBrother,
+                new Mock<IServiceBusManager>().Object,
+                _mockActorProxyFactory,
+                _config);
         }
 
         private IReliableStateManagerReplica2 StateManagerFactory(StatefulServiceContext arg1, TransactedConcurrentDictionary<Uri, IReliableState> arg2)
