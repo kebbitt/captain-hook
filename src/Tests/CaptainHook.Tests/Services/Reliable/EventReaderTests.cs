@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Fabric;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,7 +21,6 @@ using Microsoft.ServiceFabric.Services.Runtime;
 using Moq;
 using Newtonsoft.Json;
 using ServiceFabric.Mocks;
-using ServiceFabric.Mocks.ReliableCollections;
 using ServiceFabric.Mocks.ReplicaSet;
 using Xunit;
 
@@ -282,13 +280,13 @@ namespace CaptainHook.Tests.Services.Reliable
         /// <returns></returns>
         [Theory]
         [IsLayer0]
-        [InlineData("test.type", "test.type-{0}", 1)]
-        [InlineData("test.type", "test.type-{0}", 10)]
-        public async Task PromoteActivateSecondaryToPrimary(string eventName, string handlerName, int messageCount)
+        [InlineData("test.type", 1)]
+        [InlineData("test.type", 10)]
+        public async Task PromoteActivateSecondaryToPrimary(string eventName, int messageCount)
         {
-            for (int x=0; x<messageCount; x++)
-                _mockActorProxyFactory.RegisterActor(CreateMockEventHandlerActor(new ActorId(String.Format(handlerName, x+1)), _mockedBigBrother));
-            
+            for (int x = 1; x <= messageCount; x++)
+                _mockActorProxyFactory.RegisterActor(
+                    CreateMockEventHandlerActor(new ActorId(String.Format(eventName+"-{0}", x)), _mockedBigBrother));
 
             var count = 0;
             _mockMessageProvider.Setup(s => s.ReceiveAsync(
@@ -318,65 +316,52 @@ namespace CaptainHook.Tests.Services.Reliable
 
             mockServiceBusManager.Setup(s => s.GetLockToken(It.IsAny<Message>())).Returns(Guid.NewGuid().ToString);
 
-            var random = new Random(int.MaxValue);
-            
             EventReaderService.EventReaderService Factory(StatefulServiceContext context, IReliableStateManagerReplica2 stateManager) => 
                 new EventReaderService.EventReaderService(
                     CustomMockStatefulServiceContextFactory.Create(
                 Constants.CaptainHookApplication.Services.EventReaderServiceType,
                 Constants.CaptainHookApplication.Services.EventReaderServiceFullName,
-                Encoding.UTF8.GetBytes("test.type"), replicaId:random.Next()), 
+                Encoding.UTF8.GetBytes(eventName)), 
                     stateManager,
                     _mockedBigBrother, 
                     mockServiceBusManager.Object, 
                     _mockActorProxyFactory, 
                     _config);
 
-            var replicaSet = new MockStatefulServiceReplicaSet<EventReaderService.EventReaderService>(Factory, serviceName:"fabric:/MockApp/blah", serviceTypeName:"b", stateManagerFactory: (context, dictionary) => new MockReliableStateManager(dictionary));
+            var replicaSet = new MockStatefulServiceReplicaSet<EventReaderService.EventReaderService>(Factory, (context, dictionary) => new MockReliableStateManager(dictionary));
 
-            //add a new Primary replica with id 1
-            await replicaSet.AddReplicaAsync(ReplicaRole.Primary, 1);
+            //add a new Primary replica 
+            await replicaSet.AddReplicaAsync(ReplicaRole.Primary);
 
-            //add a new ActiveSecondary replica with id 2
-            await replicaSet.AddReplicaAsync(ReplicaRole.ActiveSecondary, 2);
+            //add a new ActiveSecondary replica
+            await replicaSet.AddReplicaAsync(ReplicaRole.ActiveSecondary);
 
-            //add a second ActiveSecondary replica with id 3
-            await replicaSet.AddReplicaAsync(ReplicaRole.ActiveSecondary, 3);
+            //add a second ActiveSecondary replica
+            await replicaSet.AddReplicaAsync(ReplicaRole.ActiveSecondary);
 
-            var task = Task.Run(async () =>
+            void CheckInFlightMessagesOnPrimary()
             {
-                while (replicaSet.Primary.ServiceInstance.InFlightMessages.Count != messageCount)
+                var innerTask = Task.Run(async () =>
                 {
-                    await Task.Delay(100);
-                }
-            });
+                    while (
+                        replicaSet.Primary.ServiceInstance.InFlightMessages.Count != messageCount)
+                    {
+                        await Task.Delay(100);
+                    }
+                });
 
-            task.Wait(TimeSpan.FromSeconds(2));
-            task.IsCompletedSuccessfully.Should().BeTrue();
+                innerTask.Wait(TimeSpan.FromSeconds(2)).Should().BeTrue();
+            }
+
+            CheckInFlightMessagesOnPrimary();
 
             var oldPrimaryReplicaId = replicaSet.Primary.ReplicaId;
 
-            try
-            {
-                await replicaSet.PromoteActiveSecondaryToPrimaryAsync(replicaSet.FirstActiveSecondary.ReplicaId);
-            }
-            catch (TaskCanceledException)
-            {
-                //soak
-            }
-
+            await replicaSet.PromoteActiveSecondaryToPrimaryAsync(replicaSet.FirstActiveSecondary.ReplicaId);
+            
             replicaSet.Primary.ReplicaId.Should().NotBe(oldPrimaryReplicaId);
 
-            task = Task.Run(async () =>
-            {
-                while (replicaSet.Primary.ServiceInstance.InFlightMessages.Count != messageCount)
-                {
-                    await Task.Delay(100);
-                }
-            });
-
-            task.Wait(TimeSpan.FromSeconds(2));
-            task.IsCompletedSuccessfully.Should().BeTrue();
+            CheckInFlightMessagesOnPrimary();
         }
 
         private class MyService : StatefulService
