@@ -377,19 +377,6 @@ namespace CaptainHook.Tests.Services.Reliable
 
             task.Wait(TimeSpan.FromSeconds(2));
             task.IsCompletedSuccessfully.Should().BeTrue();
-
-
-        }
-
-        [Fact]
-        [IsLayer0]
-        public async Task TestPrimaryReplicaShouldHaveOpenListenersAsync()
-        {
-            MyService Factory(StatefulServiceContext context, IReliableStateManagerReplica2 stateManager) => new MyService(_context, _stateManager);
-            var replicaSet = new MockStatefulServiceReplicaSet<MyService>(Factory);
-            await replicaSet.AddReplicaAsync(ReplicaRole.Primary, 1);
-            var openListeners = replicaSet.Primary.OpenListeners;
-            Assert.Equal(1, openListeners.Count());
         }
 
         private class MyService : StatefulService
@@ -401,22 +388,6 @@ namespace CaptainHook.Tests.Services.Reliable
             public MyService(StatefulServiceContext serviceContext, IReliableStateManagerReplica reliableStateManagerReplica) : base(serviceContext, reliableStateManagerReplica)
             {
             }
-        }
-
-        private EventReaderService.EventReaderService ServiceFactory(StatefulServiceContext arg1, IReliableStateManagerReplica2 arg2)
-        {
-            return new EventReaderService.EventReaderService(
-                _context,
-                _stateManager,
-                _mockedBigBrother,
-                new Mock<IServiceBusManager>().Object,
-                _mockActorProxyFactory,
-                _config);
-        }
-
-        private IReliableStateManagerReplica2 StateManagerFactory(StatefulServiceContext arg1, TransactedConcurrentDictionary<Uri, IReliableState> arg2)
-        {
-            return _stateManager;
         }
 
         [Theory]
