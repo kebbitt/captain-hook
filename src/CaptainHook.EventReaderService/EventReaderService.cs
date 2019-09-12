@@ -11,6 +11,7 @@ using CaptainHook.Common.Telemetry.Service;
 using CaptainHook.Interfaces;
 using Eshopworld.Core;
 using Eshopworld.Telemetry;
+using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.ServiceBus.Core;
 using Microsoft.ServiceFabric.Actors;
 using Microsoft.ServiceFabric.Actors.Client;
@@ -183,61 +184,61 @@ namespace CaptainHook.EventReaderService
 
                 await BuildInMemoryState(cancellationToken);
                 await SetupServiceBus();
+
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    try
+                    {
+                        if (_messageReceiver.IsClosedOrClosing) continue;
+
+                        var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
+                        if (messages == null || messages.Count == 0)
+                        {
+                            // ReSharper disable once MethodSupportsCancellation - needed to disable for testing as it currently stands
+                            await Task.Delay(TimeSpan.FromMilliseconds(10));
+                            continue;
+                        }
+
+                        foreach (var message in messages)
+                        {
+                            var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _eventType);
+
+                            var handlerId = GetFreeHandlerId();
+
+                            messageData.HandlerId = handlerId;
+                            messageData.CorrelationId = Guid.NewGuid().ToString();
+                            InFlightMessages.Add(messageData.HandlerId, handlerId);
+                            LockTokens.Add(handlerId, _serviceBusManager.GetLockToken(message));
+
+                            var handleData = new MessageDataHandle
+                            {
+                                HandlerId = handlerId,
+                                LockToken = _serviceBusManager.GetLockToken(message)
+                            };
+
+                            using (var tx = StateManager.CreateTransaction())
+                            {
+                                await _messageHandles.AddAsync(tx, handleData.HandlerId, handleData);
+
+                                await _proxyFactory.CreateActorProxy<IEventHandlerActor>(
+                                        new ActorId(messageData.EventHandlerActorId),
+                                        serviceName: $"{Constants.CaptainHookApplication.Services.EventHandlerServiceShortName}")
+                                    .Handle(messageData);
+
+                                await tx.CommitAsync();
+                            }
+                        }
+                    }
+                    catch (ServiceBusCommunicationException sbCommunicationException)
+                    {
+                        BigBrother.Write(sbCommunicationException.ToExceptionEvent());
+                        await SetupServiceBus();
+                    }
+                }
             }
             catch (Exception e)
             {
                 BigBrother.Write(e.ToExceptionEvent());
-                throw;
-            }
-
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                if (_messageReceiver.IsClosedOrClosing) continue;
-
-                var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
-                if (messages == null || messages.Count==0)
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(10));
-                    continue;
-                }
-
-                try
-                {
-
-                    foreach (var message in messages)
-                    {
-                        var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _eventType);
-
-                        var handlerId = GetFreeHandlerId();
-
-                        messageData.HandlerId = handlerId;
-                        messageData.CorrelationId = Guid.NewGuid().ToString();
-                        InFlightMessages.Add(messageData.HandlerId, handlerId);
-                        LockTokens.Add(handlerId, _serviceBusManager.GetLockToken(message));
-
-                        var handleData = new MessageDataHandle
-                        {
-                            HandlerId = handlerId,
-                            LockToken = _serviceBusManager.GetLockToken(message)
-                        };
-
-                        using (var tx = StateManager.CreateTransaction())
-                        {
-                            await _messageHandles.AddAsync(tx, handleData.HandlerId, handleData);
-
-                            await _proxyFactory.CreateActorProxy<IEventHandlerActor>(
-                                new ActorId(messageData.EventHandlerActorId),
-                                serviceName: $"{Constants.CaptainHookApplication.Services.EventHandlerServiceShortName}")
-                                .Handle(messageData);
-
-                            await tx.CommitAsync();
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    BigBrother.Write(e.ToExceptionEvent());
-                }
             }
         }
 
