@@ -194,7 +194,7 @@ namespace CaptainHook.EventReaderService
                         var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
                         if (messages == null || messages.Count == 0)
                         {
-                            // ReSharper disable once MethodSupportsCancellation - needed to disable for testing as it currently stands
+                            // ReSharper disable once MethodSupportsCancellation - no need to cancellation token here
                             await Task.Delay(TimeSpan.FromMilliseconds(10));
                             continue;
                         }
