@@ -316,28 +316,25 @@ namespace CaptainHook.Tests.Services.Reliable
 
             mockServiceBusManager.Setup(s => s.GetLockToken(It.IsAny<Message>())).Returns(Guid.NewGuid().ToString);
 
-            EventReaderService.EventReaderService Factory(StatefulServiceContext context, IReliableStateManagerReplica2 stateManager) => 
+            EventReaderService.EventReaderService Factory(StatefulServiceContext context, IReliableStateManagerReplica2 stateManager) =>
                 new EventReaderService.EventReaderService(
-                    CustomMockStatefulServiceContextFactory.Create(
-                Constants.CaptainHookApplication.Services.EventReaderServiceType,
-                Constants.CaptainHookApplication.Services.EventReaderServiceFullName,
-                Encoding.UTF8.GetBytes(eventName)), 
+                    context,
                     stateManager,
-                    _mockedBigBrother, 
-                    mockServiceBusManager.Object, 
-                    _mockActorProxyFactory, 
+                    _mockedBigBrother,
+                    mockServiceBusManager.Object,
+                    _mockActorProxyFactory,
                     _config);
 
             var replicaSet = new MockStatefulServiceReplicaSet<EventReaderService.EventReaderService>(Factory, (context, dictionary) => new MockReliableStateManager(dictionary));
 
             //add a new Primary replica 
-            await replicaSet.AddReplicaAsync(ReplicaRole.Primary);
+            await replicaSet.AddReplicaAsync(ReplicaRole.Primary, 1, initializationData: Encoding.UTF8.GetBytes("test.type"));
 
             //add a new ActiveSecondary replica
-            await replicaSet.AddReplicaAsync(ReplicaRole.ActiveSecondary);
+            await replicaSet.AddReplicaAsync(ReplicaRole.ActiveSecondary,2, initializationData: Encoding.UTF8.GetBytes("test.type"));
 
             //add a second ActiveSecondary replica
-            await replicaSet.AddReplicaAsync(ReplicaRole.ActiveSecondary);
+            await replicaSet.AddReplicaAsync(ReplicaRole.ActiveSecondary, 3, initializationData: Encoding.UTF8.GetBytes("test.type"));
 
             void CheckInFlightMessagesOnPrimary()
             {
