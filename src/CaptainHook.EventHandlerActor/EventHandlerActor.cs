@@ -29,7 +29,6 @@ namespace CaptainHook.EventHandlerActor
         private readonly IEventHandlerFactory _eventHandlerFactory;
         private readonly IBigBrother _bigBrother;
         private IActorTimer _handleTimer;
-        private readonly CancellationTokenSource _cancellationTokenSource;
 
         /// <summary>
         /// Initializes a new instance of EventHandlerActor
@@ -47,7 +46,6 @@ namespace CaptainHook.EventHandlerActor
         {
             _eventHandlerFactory = eventHandlerFactory;
             _bigBrother = bigBrother;
-            _cancellationTokenSource = new CancellationTokenSource();
         }
 
         /// <summary>
@@ -71,12 +69,6 @@ namespace CaptainHook.EventHandlerActor
 
         protected override Task OnDeactivateAsync()
         {
-            if (_handleTimer != null)
-            {
-                UnregisterTimer(_handleTimer);
-            }
-            _cancellationTokenSource.Cancel();
-
             _bigBrother.Publish(new ActorDeactivated(this));
             return base.OnDeactivateAsync();
         }
@@ -96,7 +88,6 @@ namespace CaptainHook.EventHandlerActor
         {
             var messageDelivered = true;
             MessageData messageData = null;
-            //todo if actor is moved or updated we need to handle existing message which is being processed and in state management
             try
             {
                 UnregisterTimer(_handleTimer);
@@ -115,7 +106,7 @@ namespace CaptainHook.EventHandlerActor
                 }
 
                 var handler = _eventHandlerFactory.CreateEventHandler(messageData.Type);
-                await handler.CallAsync(messageData, new Dictionary<string, object>(), _cancellationTokenSource.Token);
+                await handler.CallAsync(messageData, new Dictionary<string, object>(), CancellationToken.None);
             }
             catch (Exception e)
             {
