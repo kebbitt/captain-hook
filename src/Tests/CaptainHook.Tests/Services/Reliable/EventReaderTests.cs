@@ -361,28 +361,6 @@ namespace CaptainHook.Tests.Services.Reliable
             CheckInFlightMessagesOnPrimary();
         }
 
-        private class MyService : StatefulService
-        {
-            public MyService(StatefulServiceContext serviceContext) : base(serviceContext)
-            {
-            }
-
-            public MyService(StatefulServiceContext serviceContext, IReliableStateManagerReplica reliableStateManagerReplica) : base(serviceContext, reliableStateManagerReplica)
-            {
-            }
-        }
-
-        [Theory]
-        [IsLayer0]
-        [InlineData("test.type", "test.type-1", 1)]
-        [InlineData("test.type", "test.type-1", 10)]
-        public async Task DemotePrimaryToActivateSecondary(string eventName, string handlerName, int messageCount)
-        {
-
-        }
-
-
-
         private static IList<Message> CreateMessage(string eventName)
         {
             return new List<Message> { new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new MessageData("Hello World 1", eventName)))) };
