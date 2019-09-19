@@ -28,17 +28,6 @@ namespace CaptainHook.Tests.Services.Actors
             Assert.True(timers.Any());
         }
 
-        /// <summary>
-        /// Tests the actor to determine that it can change role gracefully - while keeping messages and state inflight while migrating to the active secondaries.
-        /// </summary>
-        /// <returns></returns>
-        [Fact]
-        [IsLayer0]
-        public async Task ChangeRoleTests()
-        {
-
-        }
-
         private static EventHandlerActor.EventHandlerActor CreateEventHandlerActor(ActorId id, IBigBrother bigBrother)
         {
             ActorBase ActorFactory(ActorService service, ActorId actorId) => new EventHandlerActor.EventHandlerActor(service, id, new Mock<IEventHandlerFactory>().Object, bigBrother);

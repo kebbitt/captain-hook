@@ -11,7 +11,7 @@ namespace CaptainHook.Interfaces
     public interface IEventHandlerActor : IActor
     {
         /// <summary>
-        /// 
+        /// Adds a message to the actors internal state. Timer then picks it up for processing.
         /// </summary>
         /// <param name="messageData"></param>
         /// <returns></returns>
