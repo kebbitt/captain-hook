@@ -26,16 +26,16 @@ namespace CaptainHook.EventReaderService
         {
             await sbNamespace.RefreshAsync();
 
-            var topic = (await sbNamespace.Topics.ListAsync()).SingleOrDefault(t => t.Name == name.ToLower());
+            var topic = (await sbNamespace.Topics.ListAsync()).SingleOrDefault(t => t.Name == name.ToLowerInvariant());
             if (topic != null) return topic;
 
             await sbNamespace.Topics
-                             .Define(name.ToLower())
+                             .Define(name.ToLowerInvariant())
                              .WithDuplicateMessageDetection(TimeSpan.FromMinutes(10))
                              .CreateAsync();
 
             await sbNamespace.RefreshAsync();
-            return (await sbNamespace.Topics.ListAsync()).Single(t => t.Name == name.ToLower());
+            return (await sbNamespace.Topics.ListAsync()).Single(t => t.Name == name.ToLowerInvariant());
         }
 
         /// <summary>
@@ -48,18 +48,18 @@ namespace CaptainHook.EventReaderService
         {
             await topic.RefreshAsync();
 
-            var subscription = (await topic.Subscriptions.ListAsync()).SingleOrDefault(s => s.Name == name.ToLower());
+            var subscription = (await topic.Subscriptions.ListAsync()).SingleOrDefault(s => s.Name == name.ToLowerInvariant());
             if (subscription != null) return subscription;
 
             await topic.Subscriptions
-                       .Define(name.ToLower())
+                       .Define(name.ToLowerInvariant())
                        .WithMessageLockDurationInSeconds(60)
                        .WithExpiredMessageMovedToDeadLetterSubscription()
                        .WithMessageMovedToDeadLetterSubscriptionOnMaxDeliveryCount(10)
                        .CreateAsync();
 
             await topic.RefreshAsync();
-            return (await topic.Subscriptions.ListAsync()).Single(t => t.Name == name.ToLower());
+            return (await topic.Subscriptions.ListAsync()).Single(t => t.Name == name.ToLowerInvariant());
         }
 
         /// <summary>
