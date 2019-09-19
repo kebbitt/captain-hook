@@ -17,8 +17,8 @@ namespace CaptainHook.EventReaderService
                 EntityNameHelper.FormatSubscriptionPath(topicName, subscriptionName),
                 ReceiveMode.PeekLock,
                 new RetryExponential(
-                    TimeSpan.FromMilliseconds(BackoffMin),
-                    TimeSpan.FromMilliseconds(BackoffMax),
+                    BackoffMin,
+                    BackoffMax,
                     ReceiverBatchSize),
                 ReceiverBatchSize);
 
@@ -33,12 +33,12 @@ namespace CaptainHook.EventReaderService
         /// <summary>
         /// Minimum backoff time for the ServiceBus retry calls in milliseconds. Defaults to 100ms
         /// </summary>
-        public int BackoffMin { get; set; } = 100;
+        public TimeSpan BackoffMin { get; set; } = TimeSpan.FromMilliseconds(100);
 
         /// <summary>
         /// Maximum backoff time for the ServiceBus retry calls in milliseconds. Defaults to 500ms
         /// </summary>
-        public int BackoffMax { get; set; } = 500;
+        public TimeSpan BackoffMax { get; set; } = TimeSpan.FromMilliseconds(500);
 
         public IMessageReceiver MessageReceiver { get; private set; }
 
