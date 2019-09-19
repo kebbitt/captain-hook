@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Azure.ServiceBus.Core;
 
 namespace CaptainHook.EventReaderService
@@ -23,11 +24,11 @@ namespace CaptainHook.EventReaderService
         /// <summary>
         /// Minimum backoff time for the ServiceBus retry calls in milliseconds.
         /// </summary>
-        int BackoffMin { get; set; }
+        TimeSpan BackoffMin { get; set; }
 
         /// <summary>
         /// Maximum backoff time for the ServiceBus retry calls in milliseconds.
         /// </summary>
-        int BackoffMax { get; set; }
+        TimeSpan BackoffMax { get; set; }
     }
 }
