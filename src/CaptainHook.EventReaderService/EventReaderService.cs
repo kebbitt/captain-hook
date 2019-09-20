@@ -1,10 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Fabric;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
 using CaptainHook.Common.Telemetry.Service;
@@ -20,6 +13,13 @@ using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
+using System;
+using System.Collections.Generic;
+using System.Fabric;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CaptainHook.EventReaderService
 {
@@ -39,10 +39,6 @@ namespace CaptainHook.EventReaderService
         private readonly IActorProxyFactory _proxyFactory;
         private readonly ConfigurationSettings _settings;
         private readonly string _eventType;
-
-        //todo this should be in the state of the reader, we should be able to deploy and continue from where we were before the deployment
-        internal readonly Dictionary<int, string> LockTokens = new Dictionary<int, string>();
-        internal readonly Dictionary<int, int> InFlightMessages = new Dictionary<int, int>();
 
         private IReliableDictionary2<int, MessageDataHandle> _messageHandles;
         private HashSet<int> _freeHandlers = new HashSet<int>();
@@ -100,6 +96,11 @@ namespace CaptainHook.EventReaderService
         }
 
         /// <summary>
+        /// Gets the count of the numbers of messages which are in flight at the moment
+        /// </summary>
+        protected internal int InFlightMessageCount => HandlerCount - _freeHandlers.Count;
+
+        /// <summary>
         /// Optional override to create listeners (e.g., HTTP, Service Remoting, WCF, etc.) for this service replica to handle client or user requests.
         /// </summary>
         /// <remarks>
@@ -113,25 +114,25 @@ namespace CaptainHook.EventReaderService
 
         protected override Task OnOpenAsync(ReplicaOpenMode openMode, CancellationToken cancellationToken)
         {
-            _bigBrother.Publish(new ServiceActivatedEvent(Context));
+            _bigBrother.Publish(new ServiceActivatedEvent(Context, InFlightMessageCount));
             return base.OnOpenAsync(openMode, cancellationToken);
         }
 
         protected override Task OnCloseAsync(CancellationToken cancellationToken)
         {
-            _bigBrother.Publish(new ServiceDeactivatedEvent(Context));
+            _bigBrother.Publish(new ServiceDeactivatedEvent(Context, InFlightMessageCount));
             return base.OnCloseAsync(cancellationToken);
         }
 
         protected override void OnAbort()
         {
-            _bigBrother.Publish(new ServiceAbortedEvent(Context));
+            _bigBrother.Publish(new ServiceAbortedEvent(Context, InFlightMessageCount));
             base.OnAbort();
         }
 
         protected override Task OnChangeRoleAsync(ReplicaRole newRole, CancellationToken cancellationToken)
         {
-            _bigBrother.Publish(new ServiceRoleChangeEvent(Context, newRole));
+            _bigBrother.Publish(new ServiceRoleChangeEvent(Context, newRole, InFlightMessageCount));
             return base.OnChangeRoleAsync(newRole, cancellationToken);
         }
 
@@ -146,6 +147,7 @@ namespace CaptainHook.EventReaderService
             {
                 var enumerator = (await _messageHandles.CreateKeyEnumerableAsync(tx)).GetAsyncEnumerator();
 
+                var list = new HashSet<int>();
                 while (await enumerator.MoveNextAsync(cancellationToken))
                 {
                     if (cancellationToken.IsCancellationRequested) return;
@@ -153,15 +155,14 @@ namespace CaptainHook.EventReaderService
                     var handleData = await _messageHandles.TryGetValueAsync(tx, enumerator.Current);
                     if (!handleData.HasValue) continue;
 
-                    LockTokens.Add(handleData.Value.HandlerId, handleData.Value.LockToken);
-                    InFlightMessages.Add(handleData.Value.HandlerId, handleData.Value.HandlerId);
+                    list.Add(handleData.Value.HandlerId);
                 }
 
                 await tx.CommitAsync();
 
-                var maxUsedHandlers = InFlightMessages.Values.OrderByDescending(i => i).FirstOrDefault();
+                var maxUsedHandlers = list.OrderByDescending(i => i).FirstOrDefault();
                 if (maxUsedHandlers > HandlerCount) HandlerCount = maxUsedHandlers;
-                _freeHandlers = Enumerable.Range(1, HandlerCount).Except(InFlightMessages.Values).ToHashSet();
+                _freeHandlers = Enumerable.Range(1, HandlerCount).Except(list).ToHashSet();
             }
         }
 
@@ -207,8 +208,6 @@ namespace CaptainHook.EventReaderService
 
                             messageData.HandlerId = handlerId;
                             messageData.CorrelationId = Guid.NewGuid().ToString();
-                            InFlightMessages.Add(messageData.HandlerId, handlerId);
-                            LockTokens.Add(handlerId, _serviceBusManager.GetLockToken(message));
 
                             var handleData = new MessageDataHandle
                             {
@@ -264,31 +263,24 @@ namespace CaptainHook.EventReaderService
         {
             try
             {
-                if (!LockTokens.TryGetValue(messageData.HandlerId, out var lockToken))
-                {
-                    throw new LockTokenNotFoundException("lock token was not found in the in memory dictionary")
-                    {
-                        EventType = messageData.Type,
-                        HandlerId = messageData.HandlerId,
-                        CorrelationId = messageData.CorrelationId,
-                        LockTokenKeys = string.Join(",", LockTokens.Select(s => s.Key).ToArray()),
-                        LockTokenValues = string.Join(",", LockTokens.Select(s => s.Value).ToArray())
-                    };
-                }
-
-                //let the message naturally expire for redelivery if it is an a successfully delivery.
-                if (messageDelivered)
-                {
-                    await _messageReceiver.CompleteAsync(lockToken);
-                }
-
-                LockTokens.Remove(messageData.HandlerId);
-                InFlightMessages.Remove(messageData.HandlerId);
-                _freeHandlers.Add(messageData.HandlerId);
-
                 using (var tx = StateManager.CreateTransaction())
                 {
-                    await _messageHandles.TryRemoveAsync(tx, messageData.HandlerId);
+                    var handle = await _messageHandles.TryRemoveAsync(tx, messageData.HandlerId);
+                    if (!handle.HasValue)
+                    {
+                        throw new LockTokenNotFoundException("lock token was not found in the in memory dictionary")
+                        {
+                            EventType = messageData.Type,
+                            HandlerId = messageData.HandlerId,
+                            CorrelationId = messageData.CorrelationId
+                        };
+                    }
+
+                    //let the message naturally expire if it's an unsuccessful delivery
+                    if (messageDelivered)
+                    {
+                        await _messageReceiver.CompleteAsync(handle.Value.LockToken);
+                    }
 
                     await tx.CommitAsync();
                 }
@@ -296,6 +288,10 @@ namespace CaptainHook.EventReaderService
             catch (Exception e)
             {
                 BigBrother.Write(e.ToExceptionEvent());
+            }
+            finally
+            {
+                _freeHandlers.Add(messageData.HandlerId);
             }
         }
     }

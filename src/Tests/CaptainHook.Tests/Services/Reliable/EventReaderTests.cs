@@ -17,7 +17,6 @@ using Microsoft.ServiceFabric.Actors;
 using Microsoft.ServiceFabric.Actors.Runtime;
 using Microsoft.ServiceFabric.Data;
 using Microsoft.ServiceFabric.Data.Collections;
-using Microsoft.ServiceFabric.Services.Runtime;
 using Moq;
 using Newtonsoft.Json;
 using ServiceFabric.Mocks;
@@ -68,7 +67,7 @@ namespace CaptainHook.Tests.Services.Reliable
         [InlineData("test.type", "test.type-1", 1, 1)]
         public async Task CanGetMessage(string eventName, string handlerName, int expectedHandleCount, int messageCount)
         {
-            _mockActorProxyFactory.RegisterActor(CreateMockEventHandlerActor(new ActorId(handlerName), _mockedBigBrother));
+            _mockActorProxyFactory.RegisterActor(CreateMockEventHandlerActor(new ActorId(handlerName)));
 
             var count = 0;
             _mockMessageProvider.Setup(s => s.ReceiveAsync(
@@ -158,7 +157,7 @@ namespace CaptainHook.Tests.Services.Reliable
             var mockActorProxyFactory = new MockActorProxyFactory();
             for (var i = 0; i <= messageCount; i++)
             {
-                mockActorProxyFactory.RegisterActor(CreateMockEventHandlerActor(new ActorId($"{eventName}-{i + 1}"), _mockedBigBrother));
+                mockActorProxyFactory.RegisterActor(CreateMockEventHandlerActor(new ActorId($"{eventName}-{i + 1}")));
             }
 
             //return messages up to the limit of the test requirements
@@ -215,7 +214,7 @@ namespace CaptainHook.Tests.Services.Reliable
             bool messageDelivered,
             int expectedStatMessageCount)
         {
-            _mockActorProxyFactory.RegisterActor(CreateMockEventHandlerActor(new ActorId(handlerName), _mockedBigBrother));
+            _mockActorProxyFactory.RegisterActor(CreateMockEventHandlerActor(new ActorId(handlerName)));
 
             var count = 0;
             _mockMessageProvider.Setup(s => s.ReceiveAsync(
@@ -284,9 +283,9 @@ namespace CaptainHook.Tests.Services.Reliable
         [InlineData("test.type", 10)]
         public async Task PromoteActivateSecondaryToPrimary(string eventName, int messageCount)
         {
-            for (int x = 1; x <= messageCount; x++)
+            for (var x = 1; x <= messageCount; x++)
                 _mockActorProxyFactory.RegisterActor(
-                    CreateMockEventHandlerActor(new ActorId(String.Format(eventName+"-{0}", x)), _mockedBigBrother));
+                    CreateMockEventHandlerActor(new ActorId(string.Format(eventName+"-{0}", x))));
 
             var count = 0;
             _mockMessageProvider.Setup(s => s.ReceiveAsync(
@@ -340,8 +339,7 @@ namespace CaptainHook.Tests.Services.Reliable
             {
                 var innerTask = Task.Run(async () =>
                 {
-                    while (
-                        replicaSet.Primary.ServiceInstance.InFlightMessages.Count != messageCount)
+                    while (replicaSet.Primary.ServiceInstance.InFlightMessageCount != messageCount)
                     {
                         await Task.Delay(100);
                     }
@@ -367,7 +365,7 @@ namespace CaptainHook.Tests.Services.Reliable
         }
 
 
-        private static IEventHandlerActor CreateMockEventHandlerActor(ActorId id, IBigBrother bb)
+        private static IEventHandlerActor CreateMockEventHandlerActor(ActorId id)
         {
             ActorBase ActorFactory(ActorService service, ActorId actorId) => new MockEventHandlerActor(service, id);
             var svc = MockActorServiceFactory.CreateActorServiceForActor<MockEventHandlerActor>(ActorFactory);

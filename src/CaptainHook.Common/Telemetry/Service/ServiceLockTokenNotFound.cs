@@ -12,9 +12,5 @@ namespace CaptainHook.Common.Telemetry.Service
         public int HandlerId { get; set; }
 
         public string CorrelationId { get; set; }
-
-        public string LockTokenKeys { get; set; }
-
-        public string LockTokenValues { get; set; }
     }
 }
