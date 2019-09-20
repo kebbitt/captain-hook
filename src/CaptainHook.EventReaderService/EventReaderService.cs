@@ -137,11 +137,11 @@ namespace CaptainHook.EventReaderService
         }
 
         /// <summary>
-        /// Builds in memory state for the service rather than having to hit the store each time for data. State is persisted regardless
+        /// Determines the number of handlers to have based on the number of messages which are inflight
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        internal async Task BuildInMemoryState(CancellationToken cancellationToken)
+        internal async Task GetHandlerCountsOnStartup(CancellationToken cancellationToken)
         {
             using (var tx = StateManager.CreateTransaction())
             {
@@ -183,7 +183,7 @@ namespace CaptainHook.EventReaderService
             {
                 _messageHandles = await StateManager.GetOrAddAsync<IReliableDictionary2<int, MessageDataHandle>>(nameof(MessageDataHandle));
 
-                await BuildInMemoryState(cancellationToken);
+                await GetHandlerCountsOnStartup(cancellationToken);
                 await SetupServiceBus();
 
                 while (!cancellationToken.IsCancellationRequested)
@@ -254,7 +254,7 @@ namespace CaptainHook.EventReaderService
         }
 
         /// <summary>
-        /// 
+        /// Completes the messages if the delivery was successful, else message is not removed from service bus and allowed to be redelivered
         /// </summary>
         /// <param name="messageData"></param>
         /// <param name="messageDelivered"></param>
@@ -268,7 +268,7 @@ namespace CaptainHook.EventReaderService
                     var handle = await _messageHandles.TryRemoveAsync(tx, messageData.HandlerId);
                     if (!handle.HasValue)
                     {
-                        throw new LockTokenNotFoundException("lock token was not found in the in memory dictionary")
+                        throw new LockTokenNotFoundException("lock token was not found in reliable state")
                         {
                             EventType = messageData.Type,
                             HandlerId = messageData.HandlerId,
