@@ -1,6 +1,6 @@
 ﻿namespace CaptainHook.Common.Configuration
 {
-    public class ConfigurationSettings
+    public class PlatformConfigurationSettings
     {
         public const string KeyVaultUriEnvVariable = "KEYVAULT_BASE_URI";
 

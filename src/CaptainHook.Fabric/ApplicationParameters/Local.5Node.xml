@@ -9,5 +9,6 @@
     <Parameter Name="CaptainHook.DirectorService_DefaultMinReplicaSetSize" Value="3"/>
     <Parameter Name="CaptainHook.DirectorService_DefaultTargetReplicaSetSize" Value="3"/>
     <Parameter Name="CaptainHook.DirectorService_DefaultPartitionCount" Value="1"/>
+    <Parameter Name="CaptainHook.EventDispatcherPoolConfig_PoolSize" Value="3" />
   </Parameters>
 </Application>

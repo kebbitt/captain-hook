@@ -37,7 +37,7 @@ namespace CaptainHook.EventReaderService
         private readonly IBigBrother _bigBrother;
         private readonly IServiceBusManager _serviceBusManager;
         private readonly IActorProxyFactory _proxyFactory;
-        private readonly ConfigurationSettings _settings;
+        private readonly PlatformConfigurationSettings _settings;
         private readonly string _eventType;
 
         private IReliableDictionary2<int, MessageDataHandle> _messageHandles;
@@ -60,7 +60,7 @@ namespace CaptainHook.EventReaderService
             IBigBrother bigBrother,
             IServiceBusManager serviceBusManager,
             IActorProxyFactory proxyFactory,
-            ConfigurationSettings settings)
+            PlatformConfigurationSettings settings)
             : base(context)
         {
             _bigBrother = bigBrother;
@@ -85,7 +85,7 @@ namespace CaptainHook.EventReaderService
             IBigBrother bigBrother,
             IServiceBusManager serviceBusManager,
             IActorProxyFactory proxyFactory,
-            ConfigurationSettings settings)
+            PlatformConfigurationSettings settings)
             : base(context, reliableStateManagerReplica)
         {
             _bigBrother = bigBrother;

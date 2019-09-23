@@ -25,7 +25,7 @@ namespace CaptainHook.DirectorService
         {
             try
             {
-                var kvUri = Environment.GetEnvironmentVariable(ConfigurationSettings.KeyVaultUriEnvVariable);
+                var kvUri = Environment.GetEnvironmentVariable(PlatformConfigurationSettings.KeyVaultUriEnvVariable);
 
                 var config = new ConfigurationBuilder().AddAzureKeyVault(
                                                            kvUri,
@@ -33,28 +33,25 @@ namespace CaptainHook.DirectorService
                                                            new DefaultKeyVaultSecretManager())
                                                        .Build();
 
-                var settings = new ConfigurationSettings();
+                var settings = new PlatformConfigurationSettings();
                 config.Bind(settings);
 
                 //Get configs from the Config Package
                 var activationContext = FabricRuntime.GetActivationContext();
-                var defaultServicesSettings = ConfigFabricCodePackage(activationContext);
+                var serviceConfig = ParseConfig(activationContext.GetConfigurationPackageObject("Config"));
 
                 var bb = new BigBrother(settings.InstrumentationKey, settings.InstrumentationKey);
                 bb.UseEventSourceSink().ForExceptions();
 
                 var builder = new ContainerBuilder();
                 builder.RegisterInstance(bb)
-                       .As<IBigBrother>()
-                       .SingleInstance();
+                    .As<IBigBrother>();
 
-                builder.RegisterInstance(settings)
-                       .SingleInstance();
+                builder.RegisterInstance(settings);
 
-                builder.RegisterInstance(defaultServicesSettings)
-                    .SingleInstance();
+                builder.RegisterInstance(serviceConfig);
 
-                builder.RegisterType<FabricClient>().SingleInstance();
+                builder.RegisterType<FabricClient>();
 
                 //todo cosmos config and rules stuff - come back to this later
                 // - we need to ensure rules which are in the db are created
@@ -87,22 +84,43 @@ namespace CaptainHook.DirectorService
             }
         }
 
-        /// <summary>
-        /// Parsing the config package configs for this services
-        /// </summary>
-        /// <param name="activationContext"></param>
-        /// <returns></returns>
-        private static DefaultServiceSettings ConfigFabricCodePackage(ICodePackageActivationContext activationContext)
-        {
-            var configurationPackage = activationContext.GetConfigurationPackageObject("Config");
-            var section = configurationPackage.Settings.Sections[nameof(Constants.CaptainHookApplication.DefaultServiceConfig)];
 
-            return new DefaultServiceSettings
+        /// <summary>
+        /// Parsing the config package configs for this services into specifig POCO classes
+        /// </summary>
+        /// <param name="configurationPackage">config package</param>
+        /// <returns></returns>
+        private static Configuration ParseConfig(ConfigurationPackage configurationPackage)
+        {
+            var defaultServiceSettingsSection = configurationPackage.Settings.Sections[nameof(Constants.CaptainHookApplication.DefaultServiceConfig)];
+            var dispatcherPoolConfigSection = configurationPackage.Settings.Sections["EventDispatcherPoolConfig"];
+
+            return new Configuration
             {
-                DefaultMinReplicaSetSize = GetValueAsInt(Constants.CaptainHookApplication.DefaultServiceConfig.DefaultMinReplicaSetSize, section),
-                DefaultPartitionCount = GetValueAsInt(Constants.CaptainHookApplication.DefaultServiceConfig.DefaultPartitionCount, section),
-                DefaultTargetReplicaSetSize = GetValueAsInt(Constants.CaptainHookApplication.DefaultServiceConfig.TargetReplicaSetSize, section),
-                DefaultPlacementConstraints = section.Parameters[Constants.CaptainHookApplication.DefaultServiceConfig.DefaultPlacementConstraints].Value
+                DefaultServiceSettings = new DefaultServiceSettings
+                {
+                    DefaultMinReplicaSetSize =
+                        GetValueAsInt(
+                            Constants.CaptainHookApplication.DefaultServiceConfig.DefaultMinReplicaSetSize,
+                            defaultServiceSettingsSection),
+                    DefaultPartitionCount =
+                        GetValueAsInt(
+                            Constants.CaptainHookApplication.DefaultServiceConfig.DefaultPartitionCount,
+                            defaultServiceSettingsSection),
+                    DefaultTargetReplicaSetSize =
+                        GetValueAsInt(
+                            Constants.CaptainHookApplication.DefaultServiceConfig.TargetReplicaSetSize,
+                            defaultServiceSettingsSection),
+                    DefaultPlacementConstraints = defaultServiceSettingsSection
+                        .Parameters[
+                            Constants.CaptainHookApplication.DefaultServiceConfig.DefaultPlacementConstraints]
+                        .Value
+                },
+                DispatcherConfig = new Configuration.DispatcherConfigType
+                {
+                    PoolSize = GetValueAsInt(nameof(Configuration.DispatcherConfigType.PoolSize),
+                        dispatcherPoolConfigSection)
+                }
             };
         }
 

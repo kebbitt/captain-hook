@@ -27,7 +27,7 @@ namespace CaptainHook.EventHandlerActor
         {
             try
             {
-                var kvUri = Environment.GetEnvironmentVariable(ConfigurationSettings.KeyVaultUriEnvVariable);
+                var kvUri = Environment.GetEnvironmentVariable(PlatformConfigurationSettings.KeyVaultUriEnvVariable);
 
                 var config = new ConfigurationBuilder().AddAzureKeyVault(
                     kvUri,
@@ -68,7 +68,7 @@ namespace CaptainHook.EventHandlerActor
                     ConfigParser.AddEndpoints(eventHandlerConfig.CallbackConfig, endpointList, configurationSection, path);
                 }
 
-                var settings = new ConfigurationSettings();
+                var settings = new PlatformConfigurationSettings();
                 config.Bind(settings);
 
                 var bb = new BigBrother(settings.InstrumentationKey, settings.InstrumentationKey);

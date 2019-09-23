@@ -11,6 +11,8 @@
         {
             public const string ApplicationName = "CaptainHook";
 
+            public static readonly string ApplicationFabricUri = $"fabric:/{ApplicationName}";
+
             public struct DefaultServiceConfig
             {
                 public const string DefaultMinReplicaSetSize = "DefaultMinReplicaSetSize";
@@ -34,9 +36,11 @@
 
                 public const string DirectorServiceType = "CaptainHook.DirectorServiceType";
 
-                public const string EventDispatcherServiceName = "Dispatcher";
+                public const string EventDispatcherServiceName = "EventDispatcher";
 
                 public const string EventDispatcherServiceType = "CaptainHook.EventDispatcherServiceType";
+
+                public static readonly string EventDispatcherServiceFullName = $"fabric:/{ApplicationName}/{EventDispatcherServiceName}";
 
                 public const string EventHandlerServiceShortName = "EventHandler";
 

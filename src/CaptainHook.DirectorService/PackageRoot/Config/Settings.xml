@@ -13,4 +13,9 @@
     <Parameter Name="DefaultPartitionCount" Value="1"/>
     <Parameter Name="DefaultPlacementConstraints" Value=""/>
   </Section>
+
+  <Section Name="EventDispatcherPoolConfig">
+    <Parameter Name="PoolSize" Value="100"/> <!-- this is default for PROD level and customized for local dev experience-->
+  </Section>
+
 </Settings>

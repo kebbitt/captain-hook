@@ -14,7 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.AzureKeyVault;
 using Microsoft.ServiceFabric.Actors.Client;
 
-namespace CaptainHook.EventReaderService
+namespace CaptainHook.EventDispatcherService
 {
     internal static class Program
     {
@@ -41,17 +41,15 @@ namespace CaptainHook.EventReaderService
                 var builder = new ContainerBuilder();
                 builder.RegisterInstance(bigBrother).As<IBigBrother>().SingleInstance();
                 builder.RegisterInstance(settings).SingleInstance();
-                builder.RegisterType<MessageProviderFactory>().As<IMessageProviderFactory>().SingleInstance();
-                builder.RegisterType<ServiceBusManager>().As<IServiceBusManager>();
 
                 //SF Deps
                 builder.Register<IActorProxyFactory>(_ => new ActorProxyFactory());
                 builder.RegisterServiceFabricSupport();
-                builder.RegisterStatefulService<EventReaderService>(Constants.CaptainHookApplication.Services.EventReaderServiceType);
+                builder.RegisterStatelessService<EventDispatcherService>(Constants.CaptainHookApplication.Services.EventDispatcherServiceType);
 
                 using (builder.Build())
                 {
-                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, Constants.CaptainHookApplication.Services.EventReaderServiceType);
+                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, Constants.CaptainHookApplication.Services.EventDispatcherServiceType);
                     await Task.Delay(Timeout.Infinite);
                 }
             }
