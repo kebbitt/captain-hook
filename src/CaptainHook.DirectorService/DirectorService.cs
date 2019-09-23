@@ -76,48 +76,48 @@ namespace CaptainHook.DirectorService
                                   .Select(s => s.ServiceName.AbsoluteUri)
                                   .ToList();
 
-                if (!serviceList.Contains(Constants.CaptainHookApplication.Services.EventHandlerServiceFullName))
-                {
-                    await _fabricClient.ServiceManager.CreateServiceAsync(
-                        new StatefulServiceDescription
-                        {
-                            ApplicationName = new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}"),
-                            HasPersistedState = true,
-                            MinReplicaSetSize = _serviceConfiguration.DefaultServiceSettings.DefaultMinReplicaSetSize,
-                            TargetReplicaSetSize = _serviceConfiguration.DefaultServiceSettings.DefaultTargetReplicaSetSize,
-                            PartitionSchemeDescription = new UniformInt64RangePartitionSchemeDescription(10),
-                            ServiceTypeName = Constants.CaptainHookApplication.Services.EventHandlerActorServiceType,
-                            ServiceName = new Uri(Constants.CaptainHookApplication.Services.EventHandlerServiceFullName),
-                            PlacementConstraints = _serviceConfiguration.DefaultServiceSettings.DefaultPlacementConstraints
-                        },
-                        TimeSpan.FromSeconds(30),
-                        cancellationToken);
-                }
+                //if (!serviceList.Contains(Constants.CaptainHookApplication.Services.EventHandlerServiceFullName))
+                //{
+                //    await _fabricClient.ServiceManager.CreateServiceAsync(
+                //        new StatefulServiceDescription
+                //        {
+                //            ApplicationName = new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}"),
+                //            HasPersistedState = true,
+                //            MinReplicaSetSize = _serviceConfiguration.DefaultServiceSettings.DefaultMinReplicaSetSize,
+                //            TargetReplicaSetSize = _serviceConfiguration.DefaultServiceSettings.DefaultTargetReplicaSetSize,
+                //            PartitionSchemeDescription = new UniformInt64RangePartitionSchemeDescription(10),
+                //            ServiceTypeName = Constants.CaptainHookApplication.Services.EventHandlerActorServiceType,
+                //            ServiceName = new Uri(Constants.CaptainHookApplication.Services.EventHandlerServiceFullName),
+                //            PlacementConstraints = _serviceConfiguration.DefaultServiceSettings.DefaultPlacementConstraints
+                //        },
+                //        TimeSpan.FromSeconds(30),
+                //        cancellationToken);
+                //}
 
-                foreach (var type in events)
-                {
-                    if (cancellationToken.IsCancellationRequested) return;
+                //foreach (var type in events)
+                //{
+                //    if (cancellationToken.IsCancellationRequested) return;
 
-                    var readerServiceNameUri = $"{Constants.CaptainHookApplication.Services.EventReaderServiceFullName}.{type}";
-                    if (!serviceList.Contains(readerServiceNameUri))
-                    {
-                        await _fabricClient.ServiceManager.CreateServiceAsync(
-                            new StatefulServiceDescription
-                            {
-                                ApplicationName = new Uri(Constants.CaptainHookApplication.ApplicationFabricUri),
-                                HasPersistedState = true,
-                                MinReplicaSetSize = _serviceConfiguration.DefaultServiceSettings.DefaultMinReplicaSetSize,
-                                TargetReplicaSetSize = _serviceConfiguration.DefaultServiceSettings.DefaultTargetReplicaSetSize,
-                                PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
-                                ServiceTypeName = Constants.CaptainHookApplication.Services.EventReaderServiceType,
-                                ServiceName = new Uri(readerServiceNameUri),
-                                InitializationData = Encoding.UTF8.GetBytes(type),
-                                PlacementConstraints = _serviceConfiguration.DefaultServiceSettings.DefaultPlacementConstraints
-                            },
-                            TimeSpan.FromSeconds(30),
-                            cancellationToken);
-                    }
-                }
+                //    var readerServiceNameUri = $"{Constants.CaptainHookApplication.Services.EventReaderServiceFullName}.{type}";
+                //    if (!serviceList.Contains(readerServiceNameUri))
+                //    {
+                //        await _fabricClient.ServiceManager.CreateServiceAsync(
+                //            new StatefulServiceDescription
+                //            {
+                //                ApplicationName = new Uri(Constants.CaptainHookApplication.ApplicationFabricUri),
+                //                HasPersistedState = true,
+                //                MinReplicaSetSize = _serviceConfiguration.DefaultServiceSettings.DefaultMinReplicaSetSize,
+                //                TargetReplicaSetSize = _serviceConfiguration.DefaultServiceSettings.DefaultTargetReplicaSetSize,
+                //                PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
+                //                ServiceTypeName = Constants.CaptainHookApplication.Services.EventReaderServiceType,
+                //                ServiceName = new Uri(readerServiceNameUri),
+                //                InitializationData = Encoding.UTF8.GetBytes(type),
+                //                PlacementConstraints = _serviceConfiguration.DefaultServiceSettings.DefaultPlacementConstraints
+                //            },
+                //            TimeSpan.FromSeconds(30),
+                //            cancellationToken);
+                //    }
+                //}
 
                 //create pool of dispatchers
                 for (int x = 0; x < _serviceConfiguration.DispatcherConfig.PoolSize; x++)

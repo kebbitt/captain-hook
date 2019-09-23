@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Fabric;
 using System.Threading;
 using System.Threading.Tasks;
+using CaptainHook.Interfaces;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 
 namespace CaptainHook.EventDispatcherService
@@ -11,7 +13,7 @@ namespace CaptainHook.EventDispatcherService
     /// <summary>
     /// An instance of this class is created for each service instance by the Service Fabric runtime.
     /// </summary>
-    public class EventDispatcherService : StatelessService
+    public class EventDispatcherService : StatelessService, IEventDispatcherService
     {
         public EventDispatcherService(StatelessServiceContext context)
             : base(context)
@@ -23,7 +25,7 @@ namespace CaptainHook.EventDispatcherService
         /// <returns>A collection of listeners.</returns>
         protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()
         {
-            return new ServiceInstanceListener[0];
+            return this.CreateServiceRemotingInstanceListeners();
         }
 
         /// <summary>
