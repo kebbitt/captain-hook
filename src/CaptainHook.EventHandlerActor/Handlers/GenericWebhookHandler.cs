@@ -52,17 +52,19 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
                 //todo refactor into a single call and a dto
                 var uri = RequestBuilder.BuildUri(WebhookConfig, messageData.Payload);
-                var httpVerb = RequestBuilder.SelectHttpVerb(WebhookConfig, messageData.Payload);
+                var httpMethod = RequestBuilder.SelectHttpMethod(WebhookConfig, messageData.Payload);
                 var payload = RequestBuilder.BuildPayload(this.WebhookConfig, messageData.Payload, metadata);
                 var authenticationScheme = RequestBuilder.SelectAuthenticationScheme(WebhookConfig, messageData.Payload);
                 var config = RequestBuilder.SelectWebhookConfig(WebhookConfig, messageData.Payload);
 
-                var httpClient = await HttpClientBuilder.BuildAsync(config, authenticationScheme, messageData.CorrelationId, cancellationToken);
+                //AuthenticationType authenticationScheme, string correlationId, 
+                var httpClient = HttpClientBuilder.Build(config);
 
-                var handler = new HttpFailureLogger(BigBrother, messageData, uri.AbsoluteUri, httpVerb);
-                var response = await httpClient.ExecuteAsJsonReliably(httpVerb, uri, payload, handler, token: cancellationToken);
 
-                await RequestLogger.LogAsync(httpClient, response, messageData, uri, httpVerb);
+                var handler = new HttpFailureLogger(BigBrother, messageData, uri.AbsoluteUri, httpMethod);
+                var response = await httpClient.ExecuteAsJsonReliably(httpMethod, uri, payload, handler, token: cancellationToken);
+
+                await RequestLogger.LogAsync(httpClient, response, messageData, uri, httpMethod);
             }
             catch (Exception e)
             {

@@ -35,7 +35,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             var config = new WebhookConfig
             {
                 Uri = "http://localhost/webhook",
-                HttpVerb = HttpVerb.Put,
+                HttpMethod = HttpVerb.Put,
                 AuthenticationConfig = new AuthenticationConfig(),
                 WebhookRequestRules = new List<WebhookRequestRule>
                 {

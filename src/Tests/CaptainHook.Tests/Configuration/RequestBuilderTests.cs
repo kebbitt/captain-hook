@@ -42,7 +42,7 @@ namespace CaptainHook.Tests.Configuration
             string sourcePayload,
             HttpVerb expectedVerb)
         {
-            var selectedVerb = new RequestBuilder().SelectHttpVerb(config, sourcePayload);
+            var selectedVerb = new RequestBuilder().SelectHttpMethod(config, sourcePayload);
 
             Assert.Equal(expectedVerb, selectedVerb);
         }
@@ -68,7 +68,7 @@ namespace CaptainHook.Tests.Configuration
                     new WebhookConfig
                         {
                             Name = "Webhook1",
-                            HttpVerb = HttpVerb.Post,
+                            HttpMethod = HttpVerb.Post,
                             Uri = "https://blah.blah.eshopworld.com/webhook/",
                             WebhookRequestRules = new List<WebhookRequestRule>
                             {
@@ -93,7 +93,7 @@ namespace CaptainHook.Tests.Configuration
                     new WebhookConfig
                         {
                             Name = "Webhook2",
-                            HttpVerb = HttpVerb.Post,
+                            HttpMethod = HttpVerb.Post,
                             Uri = "https://blah.blah.eshopworld.com/webhook/",
                             WebhookRequestRules = new List<WebhookRequestRule>
                             {
@@ -123,7 +123,7 @@ namespace CaptainHook.Tests.Configuration
                                         new WebhookConfigRoute
                                         {
                                             Uri = "https://blah.blah.brand1.eshopworld.com/webhook",
-                                            HttpVerb = HttpVerb.Post,
+                                            HttpMethod = HttpVerb.Post,
                                             Selector = "Brand1",
                                             AuthenticationConfig = new AuthenticationConfig
                                             {
@@ -133,7 +133,7 @@ namespace CaptainHook.Tests.Configuration
                                         new WebhookConfigRoute
                                         {
                                             Uri = "https://blah.blah.brand2.eshopworld.com/webhook",
-                                            HttpVerb = HttpVerb.Put,
+                                            HttpMethod = HttpVerb.Put,
                                             Selector = "Brand2",
                                             AuthenticationConfig = new AuthenticationConfig
                                             {
@@ -159,7 +159,7 @@ namespace CaptainHook.Tests.Configuration
                     new WebhookConfig
                         {
                             Name = "Webhook3",
-                            HttpVerb = HttpVerb.Post,
+                            HttpMethod = HttpVerb.Post,
                             Uri = "https://blah.blah.eshopworld.com/webhook/",
                             WebhookRequestRules = new List<WebhookRequestRule>
                             {
@@ -190,7 +190,7 @@ namespace CaptainHook.Tests.Configuration
                                         new WebhookConfigRoute
                                         {
                                             Uri = "https://blah.blah.brand1.eshopworld.com/webhook",
-                                            HttpVerb = HttpVerb.Post,
+                                            HttpMethod = HttpVerb.Post,
                                             Selector = "Brand1",
                                             AuthenticationConfig = new AuthenticationConfig
                                             {
@@ -200,7 +200,7 @@ namespace CaptainHook.Tests.Configuration
                                         new WebhookConfigRoute
                                         {
                                             Uri = "https://blah.blah.brand2.eshopworld.com/webhook",
-                                            HttpVerb = HttpVerb.Put,
+                                            HttpMethod = HttpVerb.Put,
                                             Selector = "Brand2",
                                             AuthenticationConfig = new AuthenticationConfig
                                             {
@@ -236,7 +236,7 @@ namespace CaptainHook.Tests.Configuration
                                         new WebhookConfigRoute
                                         {
                                             Uri = "https://blah.blah.brand1.eshopworld.com/webhook",
-                                            HttpVerb = HttpVerb.Post,
+                                            HttpMethod = HttpVerb.Post,
                                             Selector = "Brand1",
                                             AuthenticationConfig = new AuthenticationConfig
                                             {
@@ -246,7 +246,7 @@ namespace CaptainHook.Tests.Configuration
                                         new WebhookConfigRoute
                                         {
                                             Uri = "https://blah.blah.brand3.eshopworld.com/webhook",
-                                            HttpVerb = HttpVerb.Put,
+                                            HttpMethod = HttpVerb.Put,
                                             Selector = "Brand2",
                                             AuthenticationConfig = new AuthenticationConfig
                                             {
@@ -270,7 +270,7 @@ namespace CaptainHook.Tests.Configuration
                     new WebhookConfig
                     {
                         Name = "Webhook1",
-                        HttpVerb = HttpVerb.Post,
+                        HttpMethod = HttpVerb.Post,
                         Uri = "https://blah.blah.eshopworld.com/webhook/",
                         WebhookRequestRules = new List<WebhookRequestRule>
                         {
@@ -297,7 +297,7 @@ namespace CaptainHook.Tests.Configuration
                     new WebhookConfig
                     {
                         Name = "Webhook1",
-                        HttpVerb = HttpVerb.Post,
+                        HttpMethod = HttpVerb.Post,
                         Uri = "https://blah.blah.eshopworld.com/webhook/",
                         WebhookRequestRules = new List<WebhookRequestRule>
                         {
@@ -336,7 +336,7 @@ namespace CaptainHook.Tests.Configuration
                     new WebhookConfig
                     {
                         Name = "Webhook1",
-                        HttpVerb = HttpVerb.Post,
+                        HttpMethod = HttpVerb.Post,
                         Uri = "https://blah.blah.eshopworld.com/webhook/",
                         WebhookRequestRules = new List<WebhookRequestRule>
                         {
@@ -387,7 +387,7 @@ namespace CaptainHook.Tests.Configuration
                     new WebhookConfig
                     {
                         Name = "Webhook1",
-                        HttpVerb = HttpVerb.Post,
+                        HttpMethod = HttpVerb.Post,
                         Uri = "https://blah.blah.eshopworld.com/webhook/",
                         WebhookRequestRules = new List<WebhookRequestRule>
                         {
@@ -418,7 +418,7 @@ namespace CaptainHook.Tests.Configuration
                     new WebhookConfig
                     {
                         Name = "Webhook1",
-                        HttpVerb = HttpVerb.Post,
+                        HttpMethod = HttpVerb.Post,
                         Uri = "https://blah.blah.eshopworld.com/webhook/",
                         WebhookRequestRules = new List<WebhookRequestRule>
                         {
@@ -443,7 +443,7 @@ namespace CaptainHook.Tests.Configuration
                     new WebhookConfig
                         {
                             Name = "Webhook3",
-                            HttpVerb = HttpVerb.Post,
+                            HttpMethod = HttpVerb.Post,
                             Uri = "https://blah.blah.eshopworld.com/webhook/",
                             WebhookRequestRules = new List<WebhookRequestRule>
                             {
@@ -473,7 +473,7 @@ namespace CaptainHook.Tests.Configuration
                                         new WebhookConfigRoute
                                         {
                                             Uri = "https://blah.blah.brand1.eshopworld.com/webhook",
-                                            HttpVerb = HttpVerb.Post,
+                                            HttpMethod = HttpVerb.Post,
                                             Selector = "Brand1",
                                             AuthenticationConfig = new AuthenticationConfig
                                             {
@@ -483,7 +483,7 @@ namespace CaptainHook.Tests.Configuration
                                         new WebhookConfigRoute
                                         {
                                             Uri = "https://blah.blah.brand2.eshopworld.com/webhook",
-                                            HttpVerb = HttpVerb.Put,
+                                            HttpMethod = HttpVerb.Put,
                                             Selector = "Brand2",
                                             AuthenticationConfig = new AuthenticationConfig
                                             {
@@ -507,7 +507,7 @@ namespace CaptainHook.Tests.Configuration
                     new WebhookConfig
                     {
                         Name = "Webhook1",
-                        HttpVerb = HttpVerb.Post,
+                        HttpMethod = HttpVerb.Post,
                         Uri = "https://blah.blah.eshopworld.com/webhook/",
                         WebhookRequestRules = new List<WebhookRequestRule>
                         {
@@ -532,7 +532,7 @@ namespace CaptainHook.Tests.Configuration
                     new WebhookConfig
                     {
                         Name = "Webhook2",
-                        HttpVerb = HttpVerb.Post,
+                        HttpMethod = HttpVerb.Post,
                         Uri = "https://blah.blah.eshopworld.com/webhook/",
                         AuthenticationConfig = new OidcAuthenticationConfig(),
                         WebhookRequestRules = new List<WebhookRequestRule>
@@ -559,7 +559,7 @@ namespace CaptainHook.Tests.Configuration
                     new WebhookConfig
                         {
                             Name = "Webhook3",
-                            HttpVerb = HttpVerb.Post,
+                            HttpMethod = HttpVerb.Post,
                             Uri = "https://blah.blah.eshopworld.com/webhook/",
                             WebhookRequestRules = new List<WebhookRequestRule>
                             {
@@ -589,7 +589,7 @@ namespace CaptainHook.Tests.Configuration
                                         new WebhookConfigRoute
                                         {
                                             Uri = "https://blah.blah.brand1.eshopworld.com/webhook",
-                                            HttpVerb = HttpVerb.Post,
+                                            HttpMethod = HttpVerb.Post,
                                             Selector = "Brand1",
                                             AuthenticationConfig = new AuthenticationConfig
                                             {
@@ -599,7 +599,7 @@ namespace CaptainHook.Tests.Configuration
                                         new WebhookConfigRoute
                                         {
                                             Uri = "https://blah.blah.brand2.eshopworld.com/webhook",
-                                            HttpVerb = HttpVerb.Put,
+                                            HttpMethod = HttpVerb.Put,
                                             Selector = "Brand2",
                                             AuthenticationConfig = new AuthenticationConfig
                                             {
@@ -618,7 +618,7 @@ namespace CaptainHook.Tests.Configuration
                     new WebhookConfig
                         {
                             Name = "Webhook4",
-                            HttpVerb = HttpVerb.Post,
+                            HttpMethod = HttpVerb.Post,
                             Uri = "https://blah.blah.eshopworld.com/webhook/",
                             WebhookRequestRules = new List<WebhookRequestRule>
                             {
@@ -648,7 +648,7 @@ namespace CaptainHook.Tests.Configuration
                                         new WebhookConfigRoute
                                         {
                                             Uri = "https://blah.blah.brand1.eshopworld.com/webhook",
-                                            HttpVerb = HttpVerb.Post,
+                                            HttpMethod = HttpVerb.Post,
                                             Selector = "Brand1",
                                             AuthenticationConfig = new AuthenticationConfig
                                             {
@@ -658,7 +658,7 @@ namespace CaptainHook.Tests.Configuration
                                         new WebhookConfigRoute
                                         {
                                             Uri = "https://blah.blah.brand2.eshopworld.com/webhook",
-                                            HttpVerb = HttpVerb.Put,
+                                            HttpMethod = HttpVerb.Put,
                                             Selector = "Brand2",
                                             AuthenticationConfig = new AuthenticationConfig
                                             {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using CaptainHook.Common.Authentication;
 
 namespace CaptainHook.Common.Configuration
@@ -33,7 +34,7 @@ namespace CaptainHook.Common.Configuration
         /// <summary>
         /// 
         /// </summary>
-        public HttpVerb HttpVerb { get; set; }
+        public HttpMethod HttpMethod { get; set; }
 
         /// <summary>
         /// 

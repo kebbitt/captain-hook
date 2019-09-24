@@ -18,7 +18,7 @@ using Xunit;
 namespace CaptainHook.Tests.Web.WebHooks
 {
     /// <summary>
-    /// Tests the HTTP HttpVerb selection maps to the actual requests made to the webhooks and callbacks
+    /// Tests the HTTP HttpMethod selection maps to the actual requests made to the webhooks and callbacks
     /// </summary>
     public class GenericWebHookHandlerVerbTests
     {
@@ -92,9 +92,9 @@ namespace CaptainHook.Tests.Web.WebHooks
         public static IEnumerable<object[]> CreationData =>
             new List<object[]>
             {
-                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/post", HttpVerb = HttpVerb.Post, }, HttpMethod.Post, "{\"Message\":\"Hello World Post\"}", HttpStatusCode.Created, string.Empty  },
-                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/put", HttpVerb = HttpVerb.Put }, HttpMethod.Put, "{\"Message\":\"Hello World Put\"}", HttpStatusCode.NoContent, string.Empty  },
-                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/patch", HttpVerb = HttpVerb.Patch }, HttpMethod.Patch, "{\"Message\":\"Hello World Patch\"}", HttpStatusCode.NoContent, string.Empty  },
+                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/post", HttpMethod = HttpVerb.Post, }, HttpMethod.Post, "{\"Message\":\"Hello World Post\"}", HttpStatusCode.Created, string.Empty  },
+                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/put", HttpMethod = HttpVerb.Put }, HttpMethod.Put, "{\"Message\":\"Hello World Put\"}", HttpStatusCode.NoContent, string.Empty  },
+                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/patch", HttpMethod = HttpVerb.Patch }, HttpMethod.Patch, "{\"Message\":\"Hello World Patch\"}", HttpStatusCode.NoContent, string.Empty  },
             };
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace CaptainHook.Tests.Web.WebHooks
         public static IEnumerable<object[]> GetData =>
             new List<object[]>
             {
-                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/get", HttpVerb = HttpVerb.Get }, HttpMethod.Get, null, HttpStatusCode.OK, string.Empty}
+                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/get", HttpMethod = HttpVerb.Get }, HttpMethod.Get, null, HttpStatusCode.OK, string.Empty}
             };
     }
 }

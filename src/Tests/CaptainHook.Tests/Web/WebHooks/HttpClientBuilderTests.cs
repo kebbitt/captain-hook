@@ -30,7 +30,7 @@ namespace CaptainHook.Tests.Web.WebHooks
 
             var httpClientBuilder = new HttpClientBuilder(new Mock<IAuthenticationHandlerFactory>().Object, httpClients);
 
-            var httpClient = await httpClientBuilder.BuildAsync(config, AuthenticationType.None, expectedCorrelationId, CancellationToken.None);
+            var httpClient = await httpClientBuilder.Build(config, AuthenticationType.None, expectedCorrelationId, CancellationToken.None);
 
             Assert.True(httpClient.DefaultRequestHeaders.Contains(Constants.Headers.CorrelationId));
         }
@@ -46,7 +46,7 @@ namespace CaptainHook.Tests.Web.WebHooks
 
             var httpClientBuilder = new HttpClientBuilder(new Mock<IAuthenticationHandlerFactory>().Object, httpClients);
 
-            var httpClient = await httpClientBuilder.BuildAsync(config, AuthenticationType.None, expectedCorrelationId, CancellationToken.None);
+            var httpClient = await httpClientBuilder.Build(config, AuthenticationType.None, expectedCorrelationId, CancellationToken.None);
 
             httpClient.DefaultRequestHeaders.TryGetValues(Constants.Headers.CorrelationId, out var value);
             Assert.Equal(expectedCorrelationId, value.First());
@@ -64,7 +64,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             var httpClients = new IndexDictionary<string, HttpClient> { { new Uri(config.Uri).Host, httpClient } };
 
             var httpClientBuilder = new HttpClientBuilder(new Mock<IAuthenticationHandlerFactory>().Object, httpClients);
-            var builtHttpClient = await httpClientBuilder.BuildAsync(config, AuthenticationType.None, expectedCorrelationId, CancellationToken.None);
+            var builtHttpClient = await httpClientBuilder.Build(config, AuthenticationType.None, expectedCorrelationId, CancellationToken.None);
 
             builtHttpClient.DefaultRequestHeaders.TryGetValues(Constants.Headers.CorrelationId, out var value);
             Assert.Single(value);
@@ -74,7 +74,7 @@ namespace CaptainHook.Tests.Web.WebHooks
         public static IEnumerable<object[]> Data =>
             new List<object[]>
             {
-                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/post", HttpVerb = HttpVerb.Post }, Guid.NewGuid().ToString()}
+                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/post", HttpMethod = HttpVerb.Post }, Guid.NewGuid().ToString()}
             };
     }
 }

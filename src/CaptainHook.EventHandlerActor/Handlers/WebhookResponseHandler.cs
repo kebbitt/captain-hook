@@ -36,12 +36,12 @@ namespace CaptainHook.EventHandlerActor.Handlers
             }
 
             var uri = RequestBuilder.BuildUri(WebhookConfig, messageData.Payload);
-            var httpVerb = RequestBuilder.SelectHttpVerb(WebhookConfig, messageData.Payload);
+            var httpVerb = RequestBuilder.SelectHttpMethod(WebhookConfig, messageData.Payload);
             var payload = RequestBuilder.BuildPayload(WebhookConfig, messageData.Payload, metadata);
             var authenticationScheme = RequestBuilder.SelectAuthenticationScheme(WebhookConfig, messageData.Payload);
             var config = RequestBuilder.SelectWebhookConfig(WebhookConfig, messageData.Payload);
 
-            var httpClient = await HttpClientBuilder.BuildAsync(config, authenticationScheme, messageData.CorrelationId, cancellationToken);
+            var httpClient = await HttpClientBuilder.Build(config, authenticationScheme, messageData.CorrelationId, cancellationToken);
 
             var handler = new HttpFailureLogger(BigBrother, messageData, uri.AbsoluteUri, httpVerb);
             var response = await httpClient.ExecuteAsJsonReliably(httpVerb, uri, payload, handler, "application/json", cancellationToken);
