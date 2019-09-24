@@ -13,6 +13,8 @@
             public const string EventDeliveryId = "Esw-Delivery";
 
             public const string Authorization = "Authorization";
+
+            public const string DefaultContentType = "application/json";
         }
 
         public struct CaptainHookApplication
