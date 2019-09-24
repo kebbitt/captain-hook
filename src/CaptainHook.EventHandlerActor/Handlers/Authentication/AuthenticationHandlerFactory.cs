@@ -15,15 +15,20 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
     /// </summary>
     public class AuthenticationHandlerFactory : IAuthenticationHandlerFactory
     {
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ConcurrentDictionary<string, IAcquireTokenHandler> _handlers;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private readonly IIndex<string, WebhookConfig> _webHookConfigs;
         private readonly IBigBrother _bigBrother;
 
-        public AuthenticationHandlerFactory(IIndex<string, WebhookConfig> webHookConfigs, IBigBrother bigBrother)
+        public AuthenticationHandlerFactory(
+            IIndex<string, WebhookConfig> webHookConfigs, 
+            IBigBrother bigBrother, 
+            IHttpClientFactory httpClientFactory)
         {
             _webHookConfigs = webHookConfigs;
             _bigBrother = bigBrother;
+            _httpClientFactory = httpClientFactory;
 
             _handlers = new ConcurrentDictionary<string, IAcquireTokenHandler>();
         }
@@ -78,7 +83,7 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
                 case AuthenticationType.OIDC:
                     await EnterSemaphore(() =>
                     {
-                        _handlers.TryAdd(key, new OidcAuthenticationHandler(config.AuthenticationConfig, _bigBrother));
+                        _handlers.TryAdd(key, new OidcAuthenticationHandler(_httpClientFactory, config.AuthenticationConfig, _bigBrother));
                     }, key, cancellationToken);
                     break;
 
@@ -88,7 +93,7 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
                     //todo if this is custom it should be another webhook which calls out to another place, this place gets a token on CH's behalf and then adds this into subsequent webhook requests.
                     await EnterSemaphore(() =>
                     {
-                        _handlers.TryAdd(key, new MmAuthenticationHandler(config.AuthenticationConfig, _bigBrother));
+                        _handlers.TryAdd(key, new MmAuthenticationHandler(_httpClientFactory, config.AuthenticationConfig, _bigBrother));
                     }, key, cancellationToken);
                     break;
 

@@ -54,7 +54,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             mockAuthHandlerFactory.Setup(s => s.GetAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => new Mock<IAcquireTokenHandler>().Object);
 
-            var httpClientBuilder = new HttpClientBuilder(mockAuthHandlerFactory.Object, httpClients );
+            var httpClientBuilder = new HttpClientFactory(httpClients);
             var requestBuilder = new RequestBuilder();
             var requestLogger = new RequestLogger(mockBigBrother.Object);
 
@@ -62,6 +62,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
                 new GenericWebhookHandler(
                     httpClientBuilder,
+                    new Mock<IAuthenticationHandlerFactory>().Object,
                     requestBuilder,
                     requestLogger,
                     mockBigBrother.Object,
@@ -71,6 +72,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                 mockHandlerFactory.Object,
                 httpClientBuilder,
                 requestBuilder,
+                new Mock<IAuthenticationHandlerFactory>().Object,
                 requestLogger,
                 mockBigBrother.Object,
                 config);
@@ -109,13 +111,14 @@ namespace CaptainHook.Tests.Web.WebHooks
             mockAuthHandlerFactory.Setup(s => s.GetAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => new Mock<IAcquireTokenHandler>().Object);
 
-            var httpClientBuilder = new HttpClientBuilder(mockAuthHandlerFactory.Object, httpClients);
+            var httpClientBuilder = new HttpClientFactory(httpClients);
             var mockBigBrother = new Mock<IBigBrother>();
 
             var mockHandlerFactory = new Mock<IEventHandlerFactory>();
             mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
                 new GenericWebhookHandler(
                     httpClientBuilder,
+                    new Mock<IAuthenticationHandlerFactory>().Object,
                     new RequestBuilder(),
                     new RequestLogger(mockBigBrother.Object),
                     mockBigBrother.Object,
@@ -125,6 +128,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                 mockHandlerFactory.Object,
                 httpClientBuilder,
                 new RequestBuilder(),
+                new Mock<IAuthenticationHandlerFactory>().Object,
                 new RequestLogger(mockBigBrother.Object),
                 mockBigBrother.Object,
                 config);
@@ -167,13 +171,14 @@ namespace CaptainHook.Tests.Web.WebHooks
             }
 
             var mockAuthHandlerFactory = new Mock<IAuthenticationHandlerFactory>();
-            var httpClientBuilder = new HttpClientBuilder(mockAuthHandlerFactory.Object, httpClients);
+            var httpClientBuilder = new HttpClientFactory(httpClients);
             var mockBigBrother = new Mock<IBigBrother>();
 
             var mockHandlerFactory = new Mock<IEventHandlerFactory>();
             mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
                 new GenericWebhookHandler(
                     httpClientBuilder,
+                    new Mock<IAuthenticationHandlerFactory>().Object,
                     new RequestBuilder(),
                     new RequestLogger(mockBigBrother.Object),
                     mockBigBrother.Object,
@@ -183,6 +188,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                 mockHandlerFactory.Object,
                 httpClientBuilder,
                 new RequestBuilder(),
+                new Mock<IAuthenticationHandlerFactory>().Object,
                 new RequestLogger(mockBigBrother.Object),
                 mockBigBrother.Object,
                 config);
@@ -215,14 +221,14 @@ namespace CaptainHook.Tests.Web.WebHooks
                 {new Uri(config.CallbackConfig.Uri).Host, mockHttpHandler.ToHttpClient()}
             };
 
-            var mockAuthHandlerFactory = new Mock<IAuthenticationHandlerFactory>();
-            var httpClientBuilder = new HttpClientBuilder(mockAuthHandlerFactory.Object, httpClients);
+            var httpClientBuilder = new HttpClientFactory(httpClients);
             var mockBigBrother = new Mock<IBigBrother>();
 
             var mockHandlerFactory = new Mock<IEventHandlerFactory>();
             mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
                 new GenericWebhookHandler(
                     httpClientBuilder,
+                    new Mock<IAuthenticationHandlerFactory>().Object,
                     new RequestBuilder(),
                     new RequestLogger(mockBigBrother.Object),
                     mockBigBrother.Object,
@@ -232,6 +238,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                 mockHandlerFactory.Object,
                 httpClientBuilder,
                 new RequestBuilder(),
+                new Mock<IAuthenticationHandlerFactory>().Object,
                 new RequestLogger(mockBigBrother.Object),
                 mockBigBrother.Object,
                 config);
@@ -295,7 +302,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             WebhookConfig = new WebhookConfig
             {
                 Name = "Webhook1",
-                HttpVerb = HttpVerb.Post,
+                HttpMethod = HttpMethod.Post,
                 Uri = "https://blah.blah.eshopworld.com",
                 AuthenticationConfig = new OidcAuthenticationConfig
                 {
@@ -336,7 +343,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             CallbackConfig = new WebhookConfig
             {
                 Name = "PutOrderConfirmationEvent",
-                HttpVerb = HttpVerb.Put,
+                HttpMethod = HttpMethod.Put,
                 Uri = "https://callback.eshopworld.com",
                 AuthenticationConfig = new AuthenticationConfig
                 {
@@ -418,7 +425,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                             new WebhookConfigRoute
                             {
                                 Uri = "https://blah.blah.multiroute.eshopworld.com",
-                                HttpVerb = HttpVerb.Post,
+                                HttpMethod = HttpMethod.Post,
                                 Selector = "Good",
                                 AuthenticationConfig = new AuthenticationConfig
                                 {
@@ -445,7 +452,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             CallbackConfig = new WebhookConfig
             {
                 Name = "PutOrderConfirmationEvent",
-                HttpVerb = HttpVerb.Post,
+                HttpMethod = HttpMethod.Post,
                 Uri = "https://callback.eshopworld.com",
                 AuthenticationConfig = new AuthenticationConfig
                 {
@@ -498,7 +505,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             WebhookConfig = new WebhookConfig
             {
                 Name = "Webhook1",
-                HttpVerb = HttpVerb.Post,
+                HttpMethod = HttpMethod.Post,
                 Uri = "https://blah.blah.eshopworld.com",
                 AuthenticationConfig = new OidcAuthenticationConfig
                 {
@@ -536,7 +543,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                             new WebhookConfigRoute
                             {
                                 Uri = "https://blah.blah.multiroute.eshopworld.com",
-                                HttpVerb = HttpVerb.Post,
+                                HttpMethod = HttpMethod.Post,
                                 Selector = "Bad",
                                 AuthenticationConfig = new AuthenticationConfig
                                 {
@@ -563,7 +570,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             CallbackConfig = new WebhookConfig
             {
                 Name = "PutOrderConfirmationEvent",
-                HttpVerb = HttpVerb.Post,
+                HttpMethod = HttpMethod.Post,
                 Uri = "https://callback.eshopworld.com",
                 AuthenticationConfig = new AuthenticationConfig
                 {

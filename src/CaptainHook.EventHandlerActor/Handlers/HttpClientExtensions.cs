@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using CaptainHook.Common;
 using Polly;
 
 namespace CaptainHook.EventHandlerActor.Handlers
@@ -22,23 +23,19 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <param name="uri"></param>
         /// <param name="headers"></param>
         /// <param name="payload"></param>
-        /// <param name="logger"></param>
-        /// <param name="contentType"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        public static async Task<HttpResponseMessage> ExecuteAsJsonReliably(
+        public static async Task<HttpResponseMessage> SendRequestReliablyAsync(
             this HttpClient client,
             HttpMethod httpMethod,
             Uri uri,
-            Dictionary<string, IEnumerable<string>> headers,
+            Dictionary<string, string> headers,
             string payload,
-            HttpFailureLogger logger,
-            string contentType = "application/json",
             CancellationToken token = default)
         {
             var request = new HttpRequestMessage(httpMethod, uri)
             {
-                Content = new StringContent(payload, Encoding.UTF8, contentType)
+                Content = new StringContent(payload, Encoding.UTF8, headers[Constants.Headers.ContentType])
             };
 
             foreach (var key in headers.Keys)
@@ -51,21 +48,18 @@ namespace CaptainHook.EventHandlerActor.Handlers
                 request.Headers.Add(key, headers[key]);
             }
 
-            var result = await RetryRequest(() => client.SendAsync(request, token), logger);
+            var result = await RetryRequest(() => client.SendAsync(request, token));
 
             return result;
-
         }
 
         /// <summary>
         /// Executes the supplied func with reties and reports on it if something goes wrong ideally to BigBrother
         /// </summary>
         /// <param name="makeTheCall"></param>
-        /// <param name="logger"></param>
         /// <returns></returns>
         private static async Task<HttpResponseMessage> RetryRequest(
-            Func<Task<HttpResponseMessage>> makeTheCall,
-            HttpFailureLogger logger)
+            Func<Task<HttpResponseMessage>> makeTheCall)
         {
             //todo the retry status codes need to be customisable from the webhook config api
             var response = await Policy.HandleResult<HttpResponseMessage>(
@@ -78,10 +72,6 @@ namespace CaptainHook.EventHandlerActor.Handlers
                     //todo config this + jitter
                     TimeSpan.FromSeconds(20),
                     TimeSpan.FromSeconds(30)
-
-                }, (result, timeSpan, retryCount, context) =>
-                {
-                    logger.Publish($"retry count {retryCount} of {context.Count}", result.Result.StatusCode, context.CorrelationId.ToString());
 
                 }).ExecuteAsync(makeTheCall.Invoke);
 

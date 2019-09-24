@@ -36,6 +36,8 @@ namespace CaptainHook.Common.Configuration
         /// </summary>
         public HttpMethod HttpMethod { get; set; }
 
+        public string ContentType { get; set; } = Constants.Headers.ContentType;
+
         /// <summary>
         /// 
         /// </summary>

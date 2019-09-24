@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common.Authentication;
@@ -24,19 +25,14 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
         /// <summary>
         /// Gets a token and updates the http client with the authentication header
         /// </summary>
-        /// <param name="client"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public virtual async Task GetTokenAsync(HttpClient client, CancellationToken cancellationToken)
+        public virtual async Task<string> GetTokenAsync(CancellationToken cancellationToken)
         {
-            if (client == null)
-            {
-                throw new ArgumentNullException(nameof(client), "Http Client is null");
-            }
+            var encodedValue = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{BasicAuthenticationConfig.Username}:{BasicAuthenticationConfig.Password}"));
+            var token = $"Basic {encodedValue}";
 
-            client.SetBasicAuthentication(BasicAuthenticationConfig.Username, BasicAuthenticationConfig.Password);
-
-            await Task.CompletedTask;
+            return await Task.FromResult(token);
         }
     }
 }
