@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -42,17 +41,15 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
 
             var httpClient = HttpClientFactory.Get(OidcAuthenticationConfig.Uri);
 
-            var dictionary = new Dictionary<string, string>
-            {
-                {Constants.Headers.ContentType, "application/json-patch+json"}, 
-                {"client_id", OidcAuthenticationConfig.ClientId}, 
-                {"client_secret", OidcAuthenticationConfig.ClientSecret}
-            };
+            var headers = new HttpHeaders();
+            headers.AddContentHeader(Constants.Headers.ContentType, "application/json-patch+json");
+            headers.AddRequestHeader("client_id", OidcAuthenticationConfig.ClientId);
+            headers.AddContentHeader("client_secret", OidcAuthenticationConfig.ClientSecret);
 
             var authProviderResponse = await httpClient.SendRequestReliablyAsync(
                 HttpMethod.Post,
                 new Uri(OidcAuthenticationConfig.Uri),
-                dictionary,
+                headers,
                 "",
                 cancellationToken);
 

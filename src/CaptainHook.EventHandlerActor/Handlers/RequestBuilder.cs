@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
@@ -231,17 +229,16 @@ namespace CaptainHook.EventHandlerActor.Handlers
         }
 
         /// <inheritdoc />
-        public Dictionary<string, string> GetHeaders(WebhookConfig webhookConfig, MessageData messageData)
+        public HttpHeaders GetHeaders(WebhookConfig webhookConfig, MessageData messageData)
         {
-            var dictionary = new Dictionary<string, string>
-            {
-                {Constants.Headers.CorrelationId, messageData.CorrelationId},
-                {Constants.Headers.ContentType, webhookConfig.ContentType},
-                {Constants.Headers.EventDeliveryId, messageData.CorrelationId},
-                {Constants.Headers.EventType, webhookConfig.Name }
-            };
+            var headers = new HttpHeaders();
 
-            return dictionary;
+            headers.AddContentHeader(Constants.Headers.ContentType, webhookConfig.ContentType);
+            headers.AddRequestHeader(Constants.Headers.CorrelationId, messageData.CorrelationId);
+            headers.AddRequestHeader(Constants.Headers.EventDeliveryId, messageData.CorrelationId);
+            headers.AddRequestHeader(Constants.Headers.EventType, webhookConfig.Name);
+
+            return headers;
         }
     }
 }

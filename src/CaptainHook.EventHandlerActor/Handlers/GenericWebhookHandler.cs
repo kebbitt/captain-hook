@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
@@ -79,13 +78,13 @@ namespace CaptainHook.EventHandlerActor.Handlers
             }
         }
 
-        protected async Task AddAuthenticationHeaderAsync(CancellationToken cancellationToken, AuthenticationType authenticationScheme, Uri uri, IDictionary<string, string> headers)
+        protected async Task AddAuthenticationHeaderAsync(CancellationToken cancellationToken, AuthenticationType authenticationScheme, Uri uri, HttpHeaders httpHeaders)
         {
             if (authenticationScheme == AuthenticationType.None)
             {
                 var acquireTokenHandler = await _authenticationHandlerFactory.GetAsync(uri, cancellationToken);
                 var result = await acquireTokenHandler.GetTokenAsync(cancellationToken);
-                headers.Add(Constants.Headers.Authorization, result);
+                httpHeaders.AddRequestHeader(Constants.Headers.Authorization, result);
             }
         }
     }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -21,7 +20,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <param name="client"></param>
         /// <param name="httpMethod"></param>
         /// <param name="uri"></param>
-        /// <param name="headers"></param>
+        /// <param name="httpHeaders"></param>
         /// <param name="payload"></param>
         /// <param name="token"></param>
         /// <returns></returns>
@@ -29,23 +28,23 @@ namespace CaptainHook.EventHandlerActor.Handlers
             this HttpClient client,
             HttpMethod httpMethod,
             Uri uri,
-            Dictionary<string, string> headers,
+            HttpHeaders httpHeaders,
             string payload,
             CancellationToken token = default)
         {
             var request = new HttpRequestMessage(httpMethod, uri)
             {
-                Content = new StringContent(payload, Encoding.UTF8, headers[Constants.Headers.ContentType])
+                Content = new StringContent(payload, Encoding.UTF8, httpHeaders.ContentHeaders[Constants.Headers.ContentType])
             };
 
-            foreach (var key in headers.Keys)
+            foreach (var key in httpHeaders.RequestHeaders.Keys)
             {
                 if (request.Headers.Contains(key))
                 {
                     request.Headers.Remove(key);
                 }
 
-                request.Headers.Add(key, headers[key]);
+                request.Headers.Add(key, httpHeaders.RequestHeaders[key]);
             }
 
             var result = await RetryRequest(() => client.SendAsync(request, token));
