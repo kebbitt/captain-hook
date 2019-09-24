@@ -1,11 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using CaptainHook.Common;
 using CaptainHook.Common.Authentication;
-using CaptainHook.Common.Telemetry;
 using CaptainHook.Common.Telemetry.Web;
 using Eshopworld.Core;
 using Newtonsoft.Json;
@@ -17,17 +17,18 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
     /// </summary>
     public class MmAuthenticationHandler : OidcAuthenticationHandler
     {
-        public MmAuthenticationHandler(AuthenticationConfig authenticationConfig, IBigBrother bigBrother) 
-            : base(authenticationConfig, bigBrother)
-        {
-
-        }
+        public MmAuthenticationHandler(
+            IHttpClientFactory httpClientFactory, 
+            AuthenticationConfig authenticationConfig, 
+            IBigBrother bigBrother) 
+            : base(httpClientFactory, authenticationConfig, bigBrother)
+        {}
 
         /// <inheritdoc />
         /// <summary>
         /// </summary>
         /// <returns></returns>
-        public override async Task GetTokenAsync(HttpClient client, CancellationToken token)
+        public override async Task<string> GetTokenAsync(CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(OidcAuthenticationConfig.ClientId))
             {
@@ -39,11 +40,21 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
                 throw new ArgumentNullException(nameof(OidcAuthenticationConfig.ClientSecret));
             }
 
-            //todo inject mediaType as config
-            client.DefaultRequestHeaders.TryAddWithoutValidation("client_id", OidcAuthenticationConfig.ClientId);
-            client.DefaultRequestHeaders.TryAddWithoutValidation("client_secret", OidcAuthenticationConfig.ClientSecret);
+            var httpClient = HttpClientFactory.Get(OidcAuthenticationConfig.Uri);
 
-            var authProviderResponse = await client.PostAsync(OidcAuthenticationConfig.Uri, new StringContent("", Encoding.UTF32, "application/json-patch+json"), token);
+            var dictionary = new Dictionary<string, string>
+            {
+                {Constants.Headers.ContentType, "application/json-patch+json"}, 
+                {"client_id", OidcAuthenticationConfig.ClientId}, 
+                {"client_secret", OidcAuthenticationConfig.ClientSecret}
+            };
+
+            var authProviderResponse = await httpClient.SendRequestReliablyAsync(
+                HttpMethod.Post,
+                new Uri(OidcAuthenticationConfig.Uri),
+                dictionary,
+                "",
+                cancellationToken);
 
             if (authProviderResponse.StatusCode != HttpStatusCode.Created || authProviderResponse.Content == null)
             {
@@ -52,10 +63,7 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
 
             var responseContent = await authProviderResponse.Content.ReadAsStringAsync();
             var stsResult = JsonConvert.DeserializeObject<OidcAuthenticationToken>(responseContent);
-
-            client.DefaultRequestHeaders.Clear();
-            client.SetBearerToken(stsResult.AccessToken);
-
+            
             OidcAuthenticationToken = stsResult;
 
             BigBrother.Publish(new ClientTokenRequest
@@ -63,6 +71,8 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
                 ClientId = OidcAuthenticationConfig.ClientId,
                 Authority = OidcAuthenticationConfig.Uri
             });
+
+            return $"Bearer {stsResult.AccessToken}";
         }
     }
 }

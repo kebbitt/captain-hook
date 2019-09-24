@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using CaptainHook.Common;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
 
@@ -53,6 +54,6 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// Creates a dictionary of requests which are needed per request
         /// </summary>
         /// <returns></returns>
-        Dictionary<string, IEnumerable<string>> GetHeaders();
+        Dictionary<string, string> GetHeaders(WebhookConfig webhookConfig, MessageData messageData);
     }
 }

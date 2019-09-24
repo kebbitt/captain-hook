@@ -35,7 +35,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             var config = new WebhookConfig
             {
                 Uri = "http://localhost/webhook",
-                HttpMethod = HttpVerb.Put,
+                HttpMethod = HttpMethod.Put,
                 AuthenticationConfig = new AuthenticationConfig(),
                 WebhookRequestRules = new List<WebhookRequestRule>
                 {
@@ -61,13 +61,13 @@ namespace CaptainHook.Tests.Web.WebHooks
             var mockBigBrother = new Mock<IBigBrother>();
             var httpClients = new IndexDictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } };
 
-            var mockAuthHandlerFactory = new Mock<IAuthenticationHandlerFactory>();
-            var httpClientBuilder = new HttpClientBuilder(mockAuthHandlerFactory.Object, httpClients);
+            var httpClientBuilder = new HttpClientFactory(httpClients);
             var requestBuilder = new RequestBuilder();
             var requestLogger = new RequestLogger(mockBigBrother.Object);
 
             var genericWebhookHandler = new GenericWebhookHandler(
                 httpClientBuilder,
+                new Mock<IAuthenticationHandlerFactory>().Object,
                 requestBuilder,
                 requestLogger,
                 mockBigBrother.Object,

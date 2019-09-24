@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
+using CaptainHook.EventHandlerActor.Handlers;
 using CaptainHook.EventHandlerActor.Handlers.Authentication;
 using Eshopworld.Core;
 using Eshopworld.Tests.Core;
@@ -17,8 +18,8 @@ namespace CaptainHook.Tests.Web.Authentication
             new List<object[]>
             {
                 new object[] { "basic", new BasicAuthenticationConfig(), new BasicAuthenticationHandler(new BasicAuthenticationConfig()),  },
-                new object[] { "oidc", new OidcAuthenticationConfig(), new OidcAuthenticationHandler(new OidcAuthenticationConfig(), new Mock<IBigBrother>().Object) },
-                new object[] { "custom", new OidcAuthenticationConfig{ Type = AuthenticationType.Custom}, new MmAuthenticationHandler(new OidcAuthenticationConfig(), new Mock<IBigBrother>().Object)  }
+                new object[] { "oidc", new OidcAuthenticationConfig(), new OidcAuthenticationHandler(new Mock<IHttpClientFactory>().Object, new OidcAuthenticationConfig(), new Mock<IBigBrother>().Object) },
+                new object[] { "custom", new OidcAuthenticationConfig{ Type = AuthenticationType.Custom}, new MmAuthenticationHandler(new Mock<IHttpClientFactory>().Object, new OidcAuthenticationConfig(), new Mock<IBigBrother>().Object)  }
             };
 
         public static IEnumerable<object[]> NoneAuthenticationTestData =>
@@ -49,7 +50,7 @@ namespace CaptainHook.Tests.Web.Authentication
                 }
             };
 
-            var factory = new AuthenticationHandlerFactory(indexedDictionary, new Mock<IBigBrother>().Object);
+            var factory = new AuthenticationHandlerFactory(indexedDictionary, new Mock<IBigBrother>().Object, new Mock<IHttpClientFactory>().Object);
 
             var handler = await factory.GetAsync(configurationName, CancellationToken.None);
 
@@ -78,7 +79,7 @@ namespace CaptainHook.Tests.Web.Authentication
                 }
             };
 
-            var factory = new AuthenticationHandlerFactory(indexedDictionary, new Mock<IBigBrother>().Object);
+            var factory = new AuthenticationHandlerFactory(indexedDictionary, new Mock<IBigBrother>().Object, new Mock<IHttpClientFactory>().Object);
 
             var handler = await factory.GetAsync(configurationName, CancellationToken.None);
 

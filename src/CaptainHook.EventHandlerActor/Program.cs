@@ -84,7 +84,7 @@ namespace CaptainHook.EventHandlerActor
 
                 builder.RegisterType<EventHandlerFactory>().As<IEventHandlerFactory>().SingleInstance();
                 builder.RegisterType<AuthenticationHandlerFactory>().As<IAuthenticationHandlerFactory>().SingleInstance();
-                builder.RegisterType<HttpClientBuilder>().As<IHttpClientBuilder>();
+                builder.RegisterType<HttpClientFactory>().As<Handlers.IHttpClientFactory>();
                 builder.RegisterType<RequestLogger>().As<IRequestLogger>();
                 builder.RegisterType<RequestBuilder>().As<IRequestBuilder>();
 

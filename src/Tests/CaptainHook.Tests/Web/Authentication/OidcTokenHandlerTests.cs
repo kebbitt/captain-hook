@@ -38,7 +38,7 @@ namespace CaptainHook.Tests.Web.Authentication
                 Scopes = new[] { "bob.scope.all" },
                 Uri = "http://localhost/authendpoint"
             };
-            var handler = new OidcAuthenticationHandler(config, _bigBrother);
+            var handler = new OidcAuthenticationHandler(new Mock<EventHandlerActor.Handlers.IHttpClientFactory>().Object, config, _bigBrother);
 
             var mockHttp = new MockHttpMessageHandler(BackendDefinitionBehavior.Always);
             var mockRequest = mockHttp.When(HttpMethod.Post, config.Uri)
@@ -52,7 +52,7 @@ namespace CaptainHook.Tests.Web.Authentication
 
             var httpClient = mockHttp.ToHttpClient();
 
-            await handler.GetTokenAsync(httpClient, _cancellationToken);
+            await handler.GetTokenAsync(_cancellationToken);
 
             Assert.Equal(1, mockHttp.GetMatchCount(mockRequest));
             Assert.NotNull(httpClient.DefaultRequestHeaders.Authorization);
@@ -87,7 +87,7 @@ namespace CaptainHook.Tests.Web.Authentication
                 RefreshBeforeInSeconds = refreshBeforeInSeconds
             };
 
-            var handler = new OidcAuthenticationHandler(config, _bigBrother);
+            var handler = new OidcAuthenticationHandler(new Mock<EventHandlerActor.Handlers.IHttpClientFactory>().Object, config, _bigBrother);
 
             var mockHttp = new MockHttpMessageHandler();
             var mockRequest = mockHttp.When(HttpMethod.Post, config.Uri)
@@ -102,11 +102,11 @@ namespace CaptainHook.Tests.Web.Authentication
 
             var httpClient = mockHttp.ToHttpClient();
 
-            await handler.GetTokenAsync(httpClient, _cancellationToken);
+            await handler.GetTokenAsync(_cancellationToken);
 
             await Task.Delay(TimeSpan.FromSeconds(1), _cancellationToken);
 
-            await handler.GetTokenAsync(httpClient, _cancellationToken);
+            await handler.GetTokenAsync(_cancellationToken);
 
             Assert.Equal(expectedStsCallCount, mockHttp.GetMatchCount(mockRequest));
             Assert.Equal(token, httpClient.DefaultRequestHeaders.Authorization.Parameter);

@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
+using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
+using CaptainHook.EventHandlerActor.Handlers.Authentication;
 using Eshopworld.Core;
 
 namespace CaptainHook.EventHandlerActor.Handlers
@@ -14,13 +17,15 @@ namespace CaptainHook.EventHandlerActor.Handlers
     public class GenericWebhookHandler : IHandler
     {
         protected readonly IBigBrother BigBrother;
-        protected readonly IHttpClientBuilder HttpClientBuilder;
+        protected readonly IHttpClientFactory HttpClientFactory;
         protected readonly IRequestBuilder RequestBuilder;
-        protected readonly IRequestLogger RequestLogger;
         protected readonly WebhookConfig WebhookConfig;
+        private readonly IRequestLogger _requestLogger;
+        private readonly IAuthenticationHandlerFactory _authenticationHandlerFactory;
 
         public GenericWebhookHandler(
-            IHttpClientBuilder httpClientBuilder,
+            IHttpClientFactory httpClientFactory,
+            IAuthenticationHandlerFactory authenticationHandlerFactory,
             IRequestBuilder requestBuilder,
             IRequestLogger requestLogger,
             IBigBrother bigBrother,
@@ -28,9 +33,10 @@ namespace CaptainHook.EventHandlerActor.Handlers
         {
             BigBrother = bigBrother;
             RequestBuilder = requestBuilder;
-            RequestLogger = requestLogger;
+            _requestLogger = requestLogger;
             WebhookConfig = webhookConfig;
-            HttpClientBuilder = httpClientBuilder;
+            _authenticationHandlerFactory = authenticationHandlerFactory;
+            HttpClientFactory = httpClientFactory;
         }
 
         /// <summary>
@@ -54,22 +60,32 @@ namespace CaptainHook.EventHandlerActor.Handlers
                 var uri = RequestBuilder.BuildUri(WebhookConfig, messageData.Payload);
                 var httpMethod = RequestBuilder.SelectHttpMethod(WebhookConfig, messageData.Payload);
                 var payload = RequestBuilder.BuildPayload(this.WebhookConfig, messageData.Payload, metadata);
-                var authenticationScheme = RequestBuilder.SelectAuthenticationScheme(WebhookConfig, messageData.Payload);
                 var config = RequestBuilder.SelectWebhookConfig(WebhookConfig, messageData.Payload);
+                var headers = RequestBuilder.GetHeaders(WebhookConfig, messageData);
+                var authenticationScheme = RequestBuilder.SelectAuthenticationScheme(WebhookConfig, messageData.Payload);
 
-                //AuthenticationType authenticationScheme, string correlationId, 
-                var httpClient = HttpClientBuilder.Build(config);
+                var httpClient = HttpClientFactory.Get(config);
+                
+                await AddAuthenticationHeaderAsync(cancellationToken, authenticationScheme, uri, headers);
+                
+                var response = await httpClient.SendRequestReliablyAsync(httpMethod, uri, headers, payload, cancellationToken);
 
-
-                var handler = new HttpFailureLogger(BigBrother, messageData, uri.AbsoluteUri, httpMethod);
-                var response = await httpClient.ExecuteAsJsonReliably(httpMethod, uri, payload, handler, token: cancellationToken);
-
-                await RequestLogger.LogAsync(httpClient, response, messageData, uri, httpMethod);
+                await _requestLogger.LogAsync(httpClient, response, messageData, uri, httpMethod);
             }
             catch (Exception e)
             {
                 BigBrother.Publish(e.ToExceptionEvent());
                 throw;
+            }
+        }
+
+        protected async Task AddAuthenticationHeaderAsync(CancellationToken cancellationToken, AuthenticationType authenticationScheme, Uri uri, IDictionary<string, string> headers)
+        {
+            if (authenticationScheme == AuthenticationType.None)
+            {
+                var acquireTokenHandler = await _authenticationHandlerFactory.GetAsync(uri, cancellationToken);
+                var result = await acquireTokenHandler.GetTokenAsync(cancellationToken);
+                headers.Add(Constants.Headers.Authorization, result);
             }
         }
     }
