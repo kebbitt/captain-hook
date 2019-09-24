@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using CaptainHook.Common.Configuration;
 using Polly;
 
 namespace CaptainHook.EventHandlerActor.Handlers
@@ -18,8 +18,9 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// Entry point for a generic http request which reports on the request and tries with exponential back-off for transient failure.
         /// </summary>
         /// <param name="client"></param>
-        /// <param name="httpVerb"></param>
+        /// <param name="httpMethod"></param>
         /// <param name="uri"></param>
+        /// <param name="headers"></param>
         /// <param name="payload"></param>
         /// <param name="logger"></param>
         /// <param name="contentType"></param>
@@ -27,120 +28,33 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <returns></returns>
         public static async Task<HttpResponseMessage> ExecuteAsJsonReliably(
             this HttpClient client,
-            HttpVerb httpVerb,
+            HttpMethod httpMethod,
             Uri uri,
+            Dictionary<string, IEnumerable<string>> headers,
             string payload,
             HttpFailureLogger logger,
             string contentType = "application/json",
             CancellationToken token = default)
         {
-            switch (httpVerb)
+            var request = new HttpRequestMessage(httpMethod, uri)
             {
-                case HttpVerb.Get:
-                    return await client.GetAsJsonReliably(uri, logger, contentType, token);
+                Content = new StringContent(payload, Encoding.UTF8, contentType)
+            };
 
-                case HttpVerb.Put:
-                    return await client.PutAsJsonReliably(uri, payload, logger, contentType, token);
+            foreach (var key in headers.Keys)
+            {
+                if (request.Headers.Contains(key))
+                {
+                    request.Headers.Remove(key);
+                }
 
-                case HttpVerb.Post:
-                    return await client.PostAsJsonReliably(uri, payload, logger, contentType, token);
-
-                case HttpVerb.Patch:
-                    return await client.PatchAsJsonReliably(uri, payload, logger, contentType, token);
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(httpVerb), httpVerb, "no valid http verb found");
+                request.Headers.Add(key, headers[key]);
             }
-        }
 
-        /// <summary>
-        /// Post content to the endpoint
-        /// </summary>
-        /// <param name="client"></param>
-        /// <param name="uri"></param>
-        /// <param name="payload"></param>
-        /// <param name="logger"></param>
-        /// <param name="contentType"></param>
-        /// <param name="token"></param>
-        /// <returns></returns>
-        public static async Task<HttpResponseMessage> PostAsJsonReliably(
-        this HttpClient client,
-        Uri uri,
-        string payload,
-        HttpFailureLogger logger,
-        string contentType = "application/json",
-        CancellationToken token = default)
-        {
-            var result = await RetryRequest(() => client.PostAsync(uri, new StringContent(payload, Encoding.UTF8, contentType), token), logger);
+            var result = await RetryRequest(() => client.SendAsync(request, token), logger);
 
             return result;
-        }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="client"></param>
-        /// <param name="uri"></param>
-        /// <param name="payload"></param>
-        /// <param name="logger"></param>
-        /// <param name="contentType"></param>
-        /// <param name="token"></param>
-        /// <returns></returns>
-        public static async Task<HttpResponseMessage> PutAsJsonReliably(
-            this HttpClient client,
-            Uri uri,
-            string payload,
-            HttpFailureLogger logger,
-            string contentType = "application/json",
-            CancellationToken token = default)
-        {
-            var result = await RetryRequest(() => client.PutAsync(uri, new StringContent(payload, Encoding.UTF8, contentType), token), logger);
-
-            return result;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="client"></param>
-        /// <param name="uri"></param>
-        /// <param name="payload"></param>
-        /// <param name="logger"></param>
-        /// <param name="contentType"></param>
-        /// <param name="token"></param>
-        /// <returns></returns>
-        public static async Task<HttpResponseMessage> PatchAsJsonReliably(
-            this HttpClient client,
-            Uri uri,
-            string payload,
-            HttpFailureLogger logger,
-            string contentType = "application/json",
-            CancellationToken token = default)
-        {
-            var result = await RetryRequest(() => client.PatchAsync(uri, new StringContent(payload, Encoding.UTF8, contentType), token), logger);
-
-            return result;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="client"></param>
-        /// <param name="uri"></param>
-        /// <param name="logger"></param>
-        /// <param name="contentType"></param>
-        /// <param name="token"></param>
-        /// <returns></returns>
-        public static async Task<HttpResponseMessage> GetAsJsonReliably(
-                this HttpClient client,
-                Uri uri,
-                HttpFailureLogger logger,
-                string contentType = "application/json",
-                CancellationToken token = default)
-        {
-            var result = await RetryRequest(() => client.GetAsync(uri, token), logger);
-
-            return result;
         }
 
         /// <summary>

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
+using System.Net.Http;
 using CaptainHook.Common;
-using CaptainHook.Common.Configuration;
 using CaptainHook.Common.Telemetry.Web;
 using Eshopworld.Core;
 
@@ -16,19 +16,19 @@ namespace CaptainHook.EventHandlerActor.Handlers
         private readonly IBigBrother _bigBrother;
         private readonly MessageData _message;
         private readonly string _uri;
-        private readonly HttpVerb _httpVerb;
+        private readonly HttpMethod _httpMethod;
 
-        public HttpFailureLogger(IBigBrother bigBrother, MessageData message, string uri, HttpVerb httpVerb)
+        public HttpFailureLogger(IBigBrother bigBrother, MessageData message, string uri, HttpMethod httpMethod)
         {
             _bigBrother = bigBrother;
             _message = message;
             _uri = uri;
-            _httpVerb = httpVerb;
+            _httpMethod = httpMethod;
         }
 
         public void Publish(string message, HttpStatusCode statusCode, string correlationId)
         {
-            _bigBrother.Publish(new HttpClientFailure(_message.EventHandlerActorId, _message.Type, message, _uri, _httpVerb, statusCode, correlationId));
+            _bigBrother.Publish(new HttpClientFailure(_message.EventHandlerActorId, _message.Type, message, _uri, _httpMethod, statusCode, correlationId));
         }
     }
 }

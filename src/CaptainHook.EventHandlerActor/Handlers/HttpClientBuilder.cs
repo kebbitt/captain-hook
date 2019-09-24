@@ -29,12 +29,9 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <summary>
         /// Gets a configured http client for use in a request from the http client factory
         /// </summary>
-        /// <param name="cancellationToken"></param>
         /// <param name="config"></param>
-        /// <param name="authenticationScheme"></param>
-        /// <param name="correlationId"></param>
         /// <returns></returns>
-        public async Task<HttpClient> BuildAsync(WebhookConfig config, AuthenticationType authenticationScheme, string correlationId, CancellationToken cancellationToken)
+        public async HttpClient Build(WebhookConfig config)
         {
             var uri = new Uri(config.Uri);
 
@@ -42,18 +39,6 @@ namespace CaptainHook.EventHandlerActor.Handlers
             {
                 throw new ArgumentNullException(nameof(httpClient), $"HttpClient for {uri.Host} was not found");
             }
-
-            //httpClient.DefaultRequestHeaders.Remove(Constants.Headers.CorrelationId);
-            //httpClient.DefaultRequestHeaders.Add(Constants.Headers.CorrelationId, correlationId);
-
-            if (authenticationScheme == AuthenticationType.None)
-            {
-                return httpClient;
-            }
-
-            var acquireTokenHandler = await _authenticationHandlerFactory.GetAsync(uri, cancellationToken);
-            await acquireTokenHandler.GetTokenAsync(httpClient, cancellationToken);
-
             return httpClient;
         }
     }
