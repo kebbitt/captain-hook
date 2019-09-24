@@ -4,6 +4,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
+using CaptainHook.Common.Telemetry.Web;
+using CaptainHook.EventHandlerActor.Handlers.Authentication;
 using Eshopworld.Core;
 
 namespace CaptainHook.EventHandlerActor.Handlers
@@ -44,7 +46,16 @@ namespace CaptainHook.EventHandlerActor.Handlers
             var handler = new HttpFailureLogger(BigBrother, messageData, uri.AbsoluteUri, httpVerb);
             var response = await httpClient.ExecuteAsJsonReliably(httpVerb, uri, payload, handler, "application/json", cancellationToken);
 
-            await RequestLogger.LogAsync(httpClient, response, messageData, uri, httpVerb);
+            BigBrother.Publish(
+                new WebhookEvent(
+                    messageData.EventHandlerActorId, 
+                    messageData.Type, 
+                    $"Response status code {response.StatusCode}", 
+                    uri.AbsoluteUri, 
+                    httpVerb, 
+                    response.StatusCode,
+                    messageData.CorrelationId
+                ));
 
             if (metadata == null)
             {

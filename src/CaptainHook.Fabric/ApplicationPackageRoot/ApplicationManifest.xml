@@ -3,30 +3,17 @@
   <Parameters>
     <Parameter Name="KeyVault_Base_Uri" DefaultValue="N/A" />
     <Parameter Name="AspNetCore_Environment" DefaultValue="N/A" />
-
-    <Parameter Name="MessagingDirectorActorService_PartitionCount" DefaultValue="10" />
-    <Parameter Name="MessagingDirectorActorService_MinReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="MessagingDirectorActorService_TargetReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="EventHandlerActorService_PartitionCount" DefaultValue="10" />
-    <Parameter Name="EventHandlerActorService_MinReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="EventHandlerActorService_TargetReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="PoolManagerActorService_PartitionCount" DefaultValue="10" />
-    <Parameter Name="PoolManagerActorService_MinReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="PoolManagerActorService_TargetReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="EventReaderActorService_PartitionCount" DefaultValue="10" />
-    <Parameter Name="EventReaderActorService_MinReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="EventReaderActorService_TargetReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="CaptainHook.DirectorService_DefaultMinReplicaSetSize" DefaultValue="3"/>
+    <Parameter Name="CaptainHook.DirectorService_DefaultTargetReplicaSetSize" DefaultValue="3"/>
+    <Parameter Name="CaptainHook.DirectorService_DefaultPartitionCount" DefaultValue="1"/>
+    <Parameter Name="CaptainHook.DirectorService_DefaultPlacementConstraints" DefaultValue=""/>
+    <Parameter Name="CaptainHook.DirectorService_MinReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="CaptainHook.DirectorService_PartitionCount" DefaultValue="1" />
+    <Parameter Name="CaptainHook.DirectorService_TargetReplicaSetSize" DefaultValue="3" />
   </Parameters>
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion 
        should match the Name and Version attributes of the ServiceManifest element defined in the 
        ServiceManifest.xml file. -->
-  <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="CaptainHook.PoolManagerActorPkg" ServiceManifestVersion="1.0.0" />
-    <EnvironmentOverrides CodePackageRef="Code">
-      <EnvironmentVariable Name="KEYVAULT_BASE_URI" Value="[KeyVault_Base_Uri]" />
-      <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="[AspNetCore_Environment]" />
-    </EnvironmentOverrides>
-  </ServiceManifestImport>
   <ServiceManifestImport>
     <ServiceManifestRef ServiceManifestName="CaptainHook.EventHandlerActorPkg" ServiceManifestVersion="1.0.0" />
     <EnvironmentOverrides CodePackageRef="Code">
@@ -35,40 +22,43 @@
     </EnvironmentOverrides>
   </ServiceManifestImport>
   <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="CaptainHook.EventReaderActorPkg" ServiceManifestVersion="1.0.0" />
+    <ServiceManifestRef ServiceManifestName="CaptainHook.EventReaderServicePkg" ServiceManifestVersion="1.0.0" />
     <EnvironmentOverrides CodePackageRef="Code">
       <EnvironmentVariable Name="KEYVAULT_BASE_URI" Value="[KeyVault_Base_Uri]" />
       <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="[AspNetCore_Environment]" />
     </EnvironmentOverrides>
   </ServiceManifestImport>
   <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="CaptainHook.MessagingDirectorPkg" ServiceManifestVersion="1.0.0" />
+    <ServiceManifestRef ServiceManifestName="CaptainHook.DirectorServicePkg" ServiceManifestVersion="1.0.0" />
+    <ConfigOverrides>
+      <ConfigOverride Name="Config">
+        <Settings>
+          <Section Name="DefaultServiceConfig">
+            <Parameter Name="DefaultMinReplicaSetSize" Value="[CaptainHook.DirectorService_DefaultMinReplicaSetSize]"/>
+            <Parameter Name="DefaultTargetReplicaSetSize" Value="[CaptainHook.DirectorService_DefaultTargetReplicaSetSize]"/>
+            <Parameter Name="DefaultPartitionCount" Value="[CaptainHook.DirectorService_DefaultPartitionCount]"/>
+            <Parameter Name="DefaultPlacementConstraints" Value="[CaptainHook.DirectorService_DefaultPlacementConstraints]"/>
+          </Section>
+        </Settings>
+      </ConfigOverride>
+    </ConfigOverrides>
+    <EnvironmentOverrides CodePackageRef="Code">
+      <EnvironmentVariable Name="KEYVAULT_BASE_URI" Value="[KeyVault_Base_Uri]" />
+      <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="[AspNetCore_Environment]" />
+    </EnvironmentOverrides>
+  </ServiceManifestImport>
+  <ServiceManifestImport>
+    <ServiceManifestRef ServiceManifestName="CaptainHook.EndpointDispatcherActorPkg" ServiceManifestVersion="1.0.0" />
+    <EnvironmentOverrides CodePackageRef="Code">
+      <EnvironmentVariable Name="KEYVAULT_BASE_URI" Value="[KeyVault_Base_Uri]" />
+      <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="[AspNetCore_Environment]" />
+    </EnvironmentOverrides>
   </ServiceManifestImport>
   <DefaultServices>
-    <Service Name="EventHandlerActorService" GeneratedIdRef="5f534f03-abfa-4f36-9fca-c9e0f131fc7a|Persisted">
-      <StatefulService ServiceTypeName="EventHandlerActorServiceType" TargetReplicaSetSize="[EventHandlerActorService_TargetReplicaSetSize]" MinReplicaSetSize="[EventHandlerActorService_MinReplicaSetSize]">
-        <UniformInt64Partition PartitionCount="[EventHandlerActorService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
+    <Service Name="CaptainHook.DirectorService" ServicePackageActivationMode="ExclusiveProcess">
+      <StatefulService ServiceTypeName="CaptainHook.DirectorServiceType" TargetReplicaSetSize="[CaptainHook.DirectorService_TargetReplicaSetSize]" MinReplicaSetSize="[CaptainHook.DirectorService_MinReplicaSetSize]">
+        <SingletonPartition />
       </StatefulService>
     </Service>
-    <Service Name="MessagingDirectorActorService" GeneratedIdRef="c3129cea-65b2-4d45-a2d9-e7d7160fc2e0|Persisted">
-      <StatefulService ServiceTypeName="MessagingDirectorActorServiceType" TargetReplicaSetSize="[MessagingDirectorActorService_TargetReplicaSetSize]" MinReplicaSetSize="[MessagingDirectorActorService_MinReplicaSetSize]">
-        <UniformInt64Partition PartitionCount="[MessagingDirectorActorService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
-      </StatefulService>
-    </Service>
-    <Service Name="PoolManagerActorService" GeneratedIdRef="40a21cc9-613c-46e0-a95c-d03db8182571|Persisted">
-      <StatefulService ServiceTypeName="PoolManagerActorServiceType" TargetReplicaSetSize="[PoolManagerActorService_TargetReplicaSetSize]" MinReplicaSetSize="[PoolManagerActorService_MinReplicaSetSize]">
-        <UniformInt64Partition PartitionCount="[PoolManagerActorService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
-      </StatefulService>
-    </Service>
-    <Service Name="EventReaderActorService" GeneratedIdRef="721b0349-2561-4ed0-8296-401fc9bd13e5|Persisted">
-      <StatefulService ServiceTypeName="EventReaderActorServiceType" TargetReplicaSetSize="[EventReaderActorService_TargetReplicaSetSize]" MinReplicaSetSize="[EventReaderActorService_MinReplicaSetSize]">
-        <UniformInt64Partition PartitionCount="[EventReaderActorService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
-      </StatefulService>
-    </Service>
-    <!-- The section below creates instances of service types, when an instance of this 
-         application type is created. You can also create one or more instances of service type using the 
-         ServiceFabric PowerShell module.
-         
-         The attribute ServiceTypeName below must match the name defined in the imported ServiceManifest.xml file. -->
   </DefaultServices>
 </ApplicationManifest>

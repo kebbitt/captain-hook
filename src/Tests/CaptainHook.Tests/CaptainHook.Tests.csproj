@@ -2,9 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
     <TargetLatestRuntimePatch>True</TargetLatestRuntimePatch>
-
     <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
     <LangVersion>latest</LangVersion>
     <DebugType>Full</DebugType>
@@ -15,15 +13,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Eshopworld.Telemetry" Version="2.1.5" />
     <PackageReference Include="Eshopworld.Tests.Core" Version="1.1.1" />
     <PackageReference Include="JetBrains.DotMemoryUnit" Version="3.0.20171219.105559" />
-    <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.24.1" />
+    <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.25.0" />
     <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="5.2.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
     <PackageReference Include="Microsoft.Rest.ClientRuntime.Azure.Authentication" Version="2.4.0" />
     <PackageReference Include="Moq" Version="4.12.0" />
     <PackageReference Include="RichardSzalay.MockHttp" Version="5.0.0" />
-    <PackageReference Include="ServiceFabric.Mocks" Version="3.4.17" />
+    <PackageReference Include="ServiceFabric.Mocks" Version="3.4.19" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
       <PrivateAssets>all</PrivateAssets>
@@ -32,9 +31,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\CaptainHook.Common\CaptainHook.Common.csproj" />
     <ProjectReference Include="..\..\CaptainHook.EventHandlerActor\CaptainHook.EventHandlerActor.csproj" />
-    <ProjectReference Include="..\..\CaptainHook.EventReaderActor\CaptainHook.EventReaderActor.csproj" />
-    <ProjectReference Include="..\..\CaptainHook.PoolManagerActor\CaptainHook.PoolManagerActor.csproj" />
+    <ProjectReference Include="..\..\CaptainHook.EventReaderService\CaptainHook.EventReaderService.csproj" />
   </ItemGroup>
 
 </Project>

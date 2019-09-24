@@ -1,17 +1,17 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
-using CaptainHook.Common.Telemetry;
+using CaptainHook.Common.Telemetry.Actor;
 using CaptainHook.EventHandlerActor.Handlers;
 using CaptainHook.Interfaces;
 using Eshopworld.Core;
 using Eshopworld.Telemetry;
 using Microsoft.ServiceFabric.Actors;
-using Microsoft.ServiceFabric.Actors.Client;
 using Microsoft.ServiceFabric.Actors.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Client;
 
 namespace CaptainHook.EventHandlerActor
 {
@@ -29,7 +29,6 @@ namespace CaptainHook.EventHandlerActor
         private readonly IEventHandlerFactory _eventHandlerFactory;
         private readonly IBigBrother _bigBrother;
         private IActorTimer _handleTimer;
-        private readonly CancellationTokenSource _cancellationTokenSource;
 
         /// <summary>
         /// Initializes a new instance of EventHandlerActor
@@ -47,7 +46,6 @@ namespace CaptainHook.EventHandlerActor
         {
             _eventHandlerFactory = eventHandlerFactory;
             _bigBrother = bigBrother;
-            _cancellationTokenSource = new CancellationTokenSource();
         }
 
         /// <summary>
@@ -71,81 +69,69 @@ namespace CaptainHook.EventHandlerActor
 
         protected override Task OnDeactivateAsync()
         {
-            if (_handleTimer != null)
-            {
-                UnregisterTimer(_handleTimer);
-            }
-            _cancellationTokenSource.Cancel();
-
             _bigBrother.Publish(new ActorDeactivated(this));
             return base.OnDeactivateAsync();
         }
 
-        public async Task Handle(Guid handle, string payload, string type)
+        public async Task Handle(MessageData messageData)
         {
-            var messageData = new MessageData
-            {
-                Handle = handle,
-                Payload = payload,
-                Type = type
-            };
-
-            await StateManager.AddOrUpdateStateAsync(handle.ToString(), messageData, (s, pair) => pair);
+            await StateManager.AddOrUpdateStateAsync(messageData.HandlerId.ToString(), messageData, (s, pair) => pair);
 
             _handleTimer = RegisterTimer(
                 InternalHandle,
-                handle.ToString(),
+                messageData,
                 TimeSpan.FromMilliseconds(100),
                 TimeSpan.MaxValue);
         }
 
         private async Task InternalHandle(object state)
         {
-            var correlationId = Guid.NewGuid();
-            var handle = Guid.NewGuid();
             var messageDelivered = true;
+            MessageData messageData = null;
             try
             {
                 UnregisterTimer(_handleTimer);
 
-                if (state != null)
+                messageData = state as MessageData;
+                if (messageData == null)
                 {
-                    var result = Guid.TryParse(state.ToString(), out handle);
-                    if (!result)
-                    {
-                        _bigBrother.Publish(new ActorError($"{state} could not be parsed to a guid so removing it.", this));
-                        return;
-                    }
-                }
-                else
-                {
-                    _bigBrother.Publish(new ActorError($"Timer state was null so cannot process any message", this));
+                    _bigBrother.Publish(new ActorError($" actor timer state could not be parsed to a guid so removing it.", this));
                     return;
                 }
 
-                var messageDataConditional = await StateManager.TryGetStateAsync<MessageData>(handle.ToString());
-                if (!messageDataConditional.HasValue)
+                if (string.IsNullOrWhiteSpace(messageData.Type))
                 {
-                    _bigBrother.Publish(new ActorError("message from state manager was empty", this));
+                    _bigBrother.Publish(new ActorError($"message is missing type - it cannot be processed", this));
                     return;
                 }
-
-                var messageData = messageDataConditional.Value;
-                handle = messageData.Handle;
-                messageData.CorrelationId = correlationId.ToString();
 
                 var handler = _eventHandlerFactory.CreateEventHandler(messageData.Type);
-                await handler.CallAsync(messageData, new Dictionary<string, object>(), _cancellationTokenSource.Token);
+                await handler.CallAsync(messageData, new Dictionary<string, object>(), CancellationToken.None);
             }
             catch (Exception e)
             {
-                messageDelivered = false;
                 BigBrother.Write(e.ToExceptionEvent());
+                messageDelivered = false;
             }
             finally
             {
-                await StateManager.RemoveStateAsync(handle.ToString());
-                await ActorProxy.Create<IPoolManagerActor>(new ActorId(0)).CompleteWork(handle, messageDelivered);
+                if (messageData != null)
+                {
+                    try
+                    {
+
+                        await StateManager.RemoveStateAsync(messageData.HandlerId.ToString());
+
+                        var readerServiceNameUri =
+                            $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceShortName}.{messageData.Type}";
+                        await ServiceProxy.Create<IEventReaderService>(new Uri(readerServiceNameUri))
+                            .CompleteMessage(messageData, messageDelivered);
+                    }
+                    catch (Exception e)
+                    {
+                        BigBrother.Write(e.ToExceptionEvent());
+                    }
+                }
             }
         }
     }

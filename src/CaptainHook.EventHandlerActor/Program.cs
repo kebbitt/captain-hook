@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -117,6 +117,7 @@ namespace CaptainHook.EventHandlerActor
             }
             catch (Exception e)
             {
+                ActorEventSource.Current.ActorHostInitializationFailed(e.ToString());
                 BigBrother.Write(e);
                 throw;
             }

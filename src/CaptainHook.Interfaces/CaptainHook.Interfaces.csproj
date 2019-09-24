@@ -15,4 +15,8 @@
     <PackageReference Include="Microsoft.ServiceFabric.Actors" Version="3.4.658" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CaptainHook.Common\CaptainHook.Common.csproj" />
+  </ItemGroup>
+
 </Project>

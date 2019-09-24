@@ -2,7 +2,7 @@
 using System.Net;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
-using CaptainHook.Common.Telemetry;
+using CaptainHook.Common.Telemetry.Web;
 using Eshopworld.Core;
 
 namespace CaptainHook.EventHandlerActor.Handlers
@@ -28,7 +28,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
         public void Publish(string message, HttpStatusCode statusCode, string correlationId)
         {
-            _bigBrother.Publish(new HttpClientFailure(_message.Handle, _message.Type, message, _uri, _httpVerb, statusCode, correlationId));
+            _bigBrother.Publish(new HttpClientFailure(_message.EventHandlerActorId, _message.Type, message, _uri, _httpVerb, statusCode, correlationId));
         }
     }
 }
