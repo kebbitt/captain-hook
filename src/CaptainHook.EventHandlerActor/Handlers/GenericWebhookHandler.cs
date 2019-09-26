@@ -78,13 +78,13 @@ namespace CaptainHook.EventHandlerActor.Handlers
             }
         }
 
-        protected async Task AddAuthenticationHeaderAsync(CancellationToken cancellationToken, AuthenticationType authenticationScheme, Uri uri, HttpHeaders httpHeaders)
+        protected async Task AddAuthenticationHeaderAsync(CancellationToken cancellationToken, AuthenticationType authenticationScheme, Uri uri, WebHookHeaders webHookHeaders)
         {
             if (authenticationScheme == AuthenticationType.None)
             {
                 var acquireTokenHandler = await _authenticationHandlerFactory.GetAsync(uri, cancellationToken);
                 var result = await acquireTokenHandler.GetTokenAsync(cancellationToken);
-                httpHeaders.AddRequestHeader(Constants.Headers.Authorization, result);
+                webHookHeaders.AddRequestHeader(Constants.Headers.Authorization, result);
             }
         }
     }

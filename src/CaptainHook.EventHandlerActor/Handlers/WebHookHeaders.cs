@@ -2,9 +2,9 @@
 
 namespace CaptainHook.EventHandlerActor.Handlers
 {
-    public class HttpHeaders
+    public class WebHookHeaders
     {
-        public HttpHeaders()
+        public WebHookHeaders()
         {
             ContentHeaders = new Dictionary<string, string>();
             RequestHeaders = new Dictionary<string, string>();

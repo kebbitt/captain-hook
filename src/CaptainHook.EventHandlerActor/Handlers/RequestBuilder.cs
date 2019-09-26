@@ -229,9 +229,9 @@ namespace CaptainHook.EventHandlerActor.Handlers
         }
 
         /// <inheritdoc />
-        public HttpHeaders GetHeaders(WebhookConfig webhookConfig, MessageData messageData)
+        public WebHookHeaders GetHeaders(WebhookConfig webhookConfig, MessageData messageData)
         {
-            var headers = new HttpHeaders();
+            var headers = new WebHookHeaders();
 
             headers.AddContentHeader(Constants.Headers.ContentType, webhookConfig.ContentType);
             headers.AddRequestHeader(Constants.Headers.CorrelationId, messageData.CorrelationId);
