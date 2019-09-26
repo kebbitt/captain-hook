@@ -41,7 +41,7 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
 
             var httpClient = HttpClientFactory.Get(OidcAuthenticationConfig.Uri);
 
-            var headers = new HttpHeaders();
+            var headers = new WebHookHeaders();
             headers.AddContentHeader(Constants.Headers.ContentType, "application/json-patch+json");
             headers.AddRequestHeader("client_id", OidcAuthenticationConfig.ClientId);
             headers.AddContentHeader("client_secret", OidcAuthenticationConfig.ClientSecret);
