@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using CaptainHook.Common.Authentication;
 
 namespace CaptainHook.Common.Configuration
@@ -120,11 +121,16 @@ namespace CaptainHook.Common.Configuration
         public DataType Type { get; set; } = DataType.Property;
     }
 
+    [DataContract]
     public enum HttpVerb
     {
+        [EnumMember]
         Get = 1,
+        [EnumMember]
         Put = 2,
+        [EnumMember]
         Post = 4,
+        [EnumMember]
         Patch = 5,
     }
 

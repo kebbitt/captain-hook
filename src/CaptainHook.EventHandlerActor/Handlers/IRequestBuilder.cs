@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using CaptainHook.Common;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
 
@@ -47,5 +48,17 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <param name="payload"></param>
         /// <returns></returns>
         WebhookConfig SelectWebhookConfig(WebhookConfig webhookConfig, string payload);
+
+        /// <summary>
+        /// build complete DTO <see cref="DispatchRequest"/> for one leg of dispatch
+        ///
+        /// at the moment, the callback is treated as a separate request
+        /// </summary>
+        /// <param name="config">web hook config</param>
+        /// <param name="payload">payload itself</param>
+        /// <param name="metadata">additional metadata</param>
+        /// <returns>dispatch request</returns>
+        DispatchRequest BuildDispatchRequest(WebhookConfig config, string payload,
+            IDictionary<string, object> metadata = null);
     }
 }

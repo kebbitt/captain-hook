@@ -224,5 +224,17 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
             return route;
         }
+
+        /// <inheritdoc />
+        public DispatchRequest BuildDispatchRequest(WebhookConfig config, string payload, IDictionary<string, object> metadata = null)
+        {
+            return new DispatchRequest
+            {
+                AuthenticationConfig = config.AuthenticationConfig,
+                Payload = BuildPayload(config, payload, metadata),
+                Uri = BuildUri(config, payload).ToString(),
+                Verb = SelectHttpVerb(config, payload)
+            };
+        }
     }
 }

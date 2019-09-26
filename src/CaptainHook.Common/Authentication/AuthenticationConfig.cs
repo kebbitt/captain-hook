@@ -1,5 +1,8 @@
-﻿namespace CaptainHook.Common.Authentication
+﻿using System.Runtime.Serialization;
+
+namespace CaptainHook.Common.Authentication
 {
+    [DataContract]
     public class AuthenticationConfig
     {
         /// <summary>

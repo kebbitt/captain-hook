@@ -1,4 +1,7 @@
-﻿namespace CaptainHook.Interfaces
+﻿using System.Threading.Tasks;
+using CaptainHook.Common;
+
+namespace CaptainHook.Interfaces
 {
     using Microsoft.ServiceFabric.Services.Remoting;
 
@@ -7,5 +10,6 @@
     /// </summary>
     public interface IEventDispatcherService : IService
     {
+        Task Dispatch(DispatchRequest request); //TODO: return response object
     }
 }
