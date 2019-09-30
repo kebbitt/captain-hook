@@ -266,7 +266,7 @@ namespace CaptainHook.Tests.Services.Reliable
                 };
             }
 
-            await service.CompleteMessage(messageData, messageDelivered);
+            await service.CompleteMessageAsync(messageData, messageDelivered, CancellationToken.None);
 
             //Assert that the dictionary contains 1 processing message and associated handle
             dictionary = await _stateManager.GetOrAddAsync<IReliableDictionary2<int, MessageDataHandle>>(nameof(MessageDataHandle));
