@@ -39,6 +39,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
             foreach (var key in webHookHeaders.RequestHeaders.Keys)
             {
+                //todo is this the correct thing to do when there is a CorrelationVector with multiple Children.
                 if (request.Headers.Contains(key))
                 {
                     request.Headers.Remove(key);

@@ -17,11 +17,11 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
     public class MmAuthenticationHandler : OidcAuthenticationHandler
     {
         public MmAuthenticationHandler(
-            IHttpClientFactory httpClientFactory, 
-            AuthenticationConfig authenticationConfig, 
-            IBigBrother bigBrother) 
+            IHttpClientFactory httpClientFactory,
+            AuthenticationConfig authenticationConfig,
+            IBigBrother bigBrother)
             : base(httpClientFactory, authenticationConfig, bigBrother)
-        {}
+        { }
 
         /// <inheritdoc />
         /// <summary>
@@ -44,13 +44,13 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
             var headers = new WebHookHeaders();
             headers.AddContentHeader(Constants.Headers.ContentType, "application/json-patch+json");
             headers.AddRequestHeader("client_id", OidcAuthenticationConfig.ClientId);
-            headers.AddContentHeader("client_secret", OidcAuthenticationConfig.ClientSecret);
+            headers.AddRequestHeader("client_secret", OidcAuthenticationConfig.ClientSecret);
 
             var authProviderResponse = await httpClient.SendRequestReliablyAsync(
                 HttpMethod.Post,
                 new Uri(OidcAuthenticationConfig.Uri),
                 headers,
-                "",
+                string.Empty,
                 cancellationToken);
 
             if (authProviderResponse.StatusCode != HttpStatusCode.Created || authProviderResponse.Content == null)
@@ -60,7 +60,7 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
 
             var responseContent = await authProviderResponse.Content.ReadAsStringAsync();
             var stsResult = JsonConvert.DeserializeObject<OidcAuthenticationToken>(responseContent);
-            
+
             OidcAuthenticationToken = stsResult;
 
             BigBrother.Publish(new ClientTokenRequest
