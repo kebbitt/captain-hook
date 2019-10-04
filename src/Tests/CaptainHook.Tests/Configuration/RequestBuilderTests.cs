@@ -496,7 +496,7 @@ namespace CaptainHook.Tests.Configuration
                             }
                         },
                     "{\"OrderCode\":\"9744b831-df2c-4d59-9d9d-691f4121f73a\", \"BrandType\":\"Brand2\"}",
-                    HttpVerb.Put
+                    HttpMethod.Put
                 }
             };
 

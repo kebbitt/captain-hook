@@ -123,6 +123,7 @@ namespace CaptainHook.Common.Configuration
         public DataType Type { get; set; } = DataType.Property;
     }
 
+    [Obsolete]
     public enum HttpVerb
     {
         Get = 1,
