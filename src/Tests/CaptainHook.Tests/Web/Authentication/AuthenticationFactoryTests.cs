@@ -37,7 +37,7 @@ namespace CaptainHook.Tests.Web.Authentication
         [IsLayer0]
         [Theory]
         [MemberData(nameof(AuthenticationTestData))]
-        public async Task GetTokenProvider(string configurationName, AuthenticationConfig authenticationConfig, IAcquireTokenHandler expectedHandler)
+        public async Task GetTokenProvider(string configurationName, AuthenticationConfig authenticationConfig, IAuthenticationHandler expectedHandler)
         {
             var indexedDictionary = new IndexDictionary<string, WebhookConfig>
             {

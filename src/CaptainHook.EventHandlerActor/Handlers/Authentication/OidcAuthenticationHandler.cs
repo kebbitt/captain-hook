@@ -14,7 +14,7 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
     /// Gets a token from the supplied STS details included the supplied scopes.
     /// Requests token once
     /// </summary>
-    public class OidcAuthenticationHandler : AuthenticationHandler, IAcquireTokenHandler
+    public class OidcAuthenticationHandler : AuthenticationHandler, IAuthenticationHandler
     {
         //todo cache and make it thread safe, ideally should have one per each auth domain and have the expiry set correctly
         protected OidcAuthenticationToken OidcAuthenticationToken = new OidcAuthenticationToken();

@@ -80,7 +80,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
         protected async Task AddAuthenticationHeaderAsync(CancellationToken cancellationToken, AuthenticationType authenticationScheme, Uri uri, WebHookHeaders webHookHeaders)
         {
-            if (authenticationScheme == AuthenticationType.None)
+            if (authenticationScheme != AuthenticationType.None)
             {
                 var acquireTokenHandler = await _authenticationHandlerFactory.GetAsync(uri, cancellationToken);
                 var result = await acquireTokenHandler.GetTokenAsync(cancellationToken);

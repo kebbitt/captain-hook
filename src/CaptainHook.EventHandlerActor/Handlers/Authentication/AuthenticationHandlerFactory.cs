@@ -16,7 +16,7 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
     public class AuthenticationHandlerFactory : IAuthenticationHandlerFactory
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly ConcurrentDictionary<string, IAcquireTokenHandler> _handlers;
+        private readonly ConcurrentDictionary<string, IAuthenticationHandler> _handlers;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private readonly IIndex<string, WebhookConfig> _webHookConfigs;
         private readonly IBigBrother _bigBrother;
@@ -30,7 +30,7 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
             _bigBrother = bigBrother;
             _httpClientFactory = httpClientFactory;
 
-            _handlers = new ConcurrentDictionary<string, IAcquireTokenHandler>();
+            _handlers = new ConcurrentDictionary<string, IAuthenticationHandler>();
         }
 
         /// <summary>
@@ -39,15 +39,14 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
         /// <param name="uri"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public async Task<IAcquireTokenHandler> GetAsync(Uri uri, CancellationToken cancellationToken)
+        public async Task<IAuthenticationHandler> GetAsync(Uri uri, CancellationToken cancellationToken)
         {
             if (uri == null)
             {
                 throw new ArgumentNullException(nameof(uri));
             }
 
-            var host = uri.Host;
-            return await GetAsync(host, cancellationToken);
+            return await GetAsync(uri.AbsoluteUri, cancellationToken);
         }
 
         /// <summary>
@@ -56,7 +55,7 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
         /// <param name="key"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public async Task<IAcquireTokenHandler> GetAsync(string key, CancellationToken cancellationToken)
+        public async Task<IAuthenticationHandler> GetAsync(string key, CancellationToken cancellationToken)
         {
             if (_handlers.TryGetValue(key.ToLower(), out var handler))
             {

@@ -32,10 +32,12 @@ namespace CaptainHook.EventHandlerActor.Handlers
             string payload,
             CancellationToken token = default)
         {
-            var request = new HttpRequestMessage(httpMethod, uri)
+            var request = new HttpRequestMessage(httpMethod, uri);
+
+            if (httpMethod != HttpMethod.Get)
             {
-                Content = new StringContent(payload, Encoding.UTF8, webHookHeaders.ContentHeaders[Constants.Headers.ContentType])
-            };
+                request.Content = new StringContent(payload, Encoding.UTF8, webHookHeaders.ContentHeaders[Constants.Headers.ContentType]);
+            }
 
             foreach (var key in webHookHeaders.RequestHeaders.Keys)
             {

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace CaptainHook.EventHandlerActor.Handlers.Authentication
 {
-    public interface IAcquireTokenHandler
+    public interface IAuthenticationHandler
     {
         /// <summary>
         /// Gets a token from the STS based on the supplied credentials and scopes using the client grant OIDC 2 Flow

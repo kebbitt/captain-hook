@@ -12,7 +12,7 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
         /// <param name="key"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<IAcquireTokenHandler> GetAsync(string key, CancellationToken cancellationToken);
+        Task<IAuthenticationHandler> GetAsync(string key, CancellationToken cancellationToken);
 
         /// <summary>
         /// Gets the token provider based on host
@@ -20,6 +20,6 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
         /// <param name="uri"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<IAcquireTokenHandler> GetAsync(Uri uri, CancellationToken cancellationToken);
+        Task<IAuthenticationHandler> GetAsync(Uri uri, CancellationToken cancellationToken);
     }
 }
