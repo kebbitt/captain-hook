@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common.Authentication;
+using CaptainHook.EventHandlerActor.Handlers;
 using CaptainHook.EventHandlerActor.Handlers.Authentication;
 using Eshopworld.Core;
 using Eshopworld.Telemetry;
@@ -38,7 +39,6 @@ namespace CaptainHook.Tests.Web.Authentication
                 Scopes = new[] { "bob.scope.all" },
                 Uri = "http://localhost/authendpoint"
             };
-            var handler = new OidcAuthenticationHandler(new Mock<EventHandlerActor.Handlers.IHttpClientFactory>().Object, config, _bigBrother);
 
             var mockHttp = new MockHttpMessageHandler(BackendDefinitionBehavior.Always);
             var mockRequest = mockHttp.When(HttpMethod.Post, config.Uri)
@@ -49,15 +49,20 @@ namespace CaptainHook.Tests.Web.Authentication
                     {
                         AccessToken = "6015CF7142BA060F5026BE9CC442C12ED7F0D5AECCBAA0678DEEBC51C6A1B282"
                     }));
-
             var httpClient = mockHttp.ToHttpClient();
 
-            await handler.GetTokenAsync(_cancellationToken);
+            var httpClientFactory = new HttpClientFactory(new IndexDictionary<string, HttpClient>
+            {
+                {new Uri(config.Uri).Host, httpClient},
+            });
+
+            var handler = new OidcAuthenticationHandler(httpClientFactory, config, _bigBrother);
+
+            var token = await handler.GetTokenAsync(_cancellationToken);
 
             Assert.Equal(1, mockHttp.GetMatchCount(mockRequest));
-            Assert.NotNull(httpClient.DefaultRequestHeaders.Authorization);
-            Assert.Equal(expectedAccessToken, httpClient.DefaultRequestHeaders.Authorization.Parameter);
-            Assert.Equal("Bearer", httpClient.DefaultRequestHeaders.Authorization.Scheme);
+            Assert.Null(httpClient.DefaultRequestHeaders.Authorization);
+            Assert.Equal($"Bearer {expectedAccessToken}", token);
         }
 
         /// <summary>
