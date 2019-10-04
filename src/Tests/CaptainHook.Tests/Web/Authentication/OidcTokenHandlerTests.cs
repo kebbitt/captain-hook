@@ -51,12 +51,14 @@ namespace CaptainHook.Tests.Web.Authentication
                     }));
             var httpClient = mockHttp.ToHttpClient();
 
-            var httpClientFactory = new HttpClientFactory(new IndexDictionary<string, HttpClient>
-            {
-                {new Uri(config.Uri).Host, httpClient},
-            });
-
-            var handler = new OidcAuthenticationHandler(httpClientFactory, config, _bigBrother);
+            var handler = new OidcAuthenticationHandler(
+                new HttpClientFactory(
+                    new IndexDictionary<string, HttpClient>
+                    {
+                        {new Uri(config.Uri).Host, httpClient},
+                    }),
+                config,
+                _bigBrother);
 
             var token = await handler.GetTokenAsync(_cancellationToken);
 
@@ -73,7 +75,7 @@ namespace CaptainHook.Tests.Web.Authentication
         /// <param name="refreshBeforeInSeconds"></param>
         /// <param name="expiryTimeInSeconds"></param>
         /// <param name="expectedStsCallCount"></param>
-        /// <param name="token"></param>
+        /// <param name="expectedToken"></param>
         /// <returns></returns>
         [IsLayer0]
         [Theory]
@@ -81,7 +83,7 @@ namespace CaptainHook.Tests.Web.Authentication
         [InlineData(1, 5, 1, "6015CF7142BA060F5026BE9CC442C12ED7F0D5AECCBAA0678DEEBC51C6A1B282")]
         [InlineData(5, 5, 2, "6015CF7142BA060F5026BE9CC442C12ED7F0D5AECCBAA0678DEEBC51C6A1B282")]
         [InlineData(5, 10, 1, "6015CF7142BA060F5026BE9CC442C12ED7F0D5AECCBAA0678DEEBC51C6A1B282")]
-        public async Task RefreshToken(int refreshBeforeInSeconds, int expiryTimeInSeconds, int expectedStsCallCount, string token)
+        public async Task RefreshToken(int refreshBeforeInSeconds, int expiryTimeInSeconds, int expectedStsCallCount, string expectedToken)
         {
             var config = new OidcAuthenticationConfig
             {
@@ -92,8 +94,6 @@ namespace CaptainHook.Tests.Web.Authentication
                 RefreshBeforeInSeconds = refreshBeforeInSeconds
             };
 
-            var handler = new OidcAuthenticationHandler(new Mock<EventHandlerActor.Handlers.IHttpClientFactory>().Object, config, _bigBrother);
-
             var mockHttp = new MockHttpMessageHandler();
             var mockRequest = mockHttp.When(HttpMethod.Post, config.Uri)
                 .WithFormData("client_id", config.ClientId)
@@ -101,21 +101,27 @@ namespace CaptainHook.Tests.Web.Authentication
                 .Respond(HttpStatusCode.OK, "application/json",
                     JsonConvert.SerializeObject(new OidcAuthenticationToken
                     {
-                        AccessToken = token,
+                        AccessToken = expectedToken,
                         ExpiresIn = expiryTimeInSeconds
                     }));
 
-            var httpClient = mockHttp.ToHttpClient();
+            var handler = new OidcAuthenticationHandler(
+                new HttpClientFactory(
+                    new IndexDictionary<string, HttpClient>
+                    {
+                        {new Uri(config.Uri).Host, mockHttp.ToHttpClient()},
+                    }),
+                config,
+                _bigBrother);
 
             await handler.GetTokenAsync(_cancellationToken);
 
             await Task.Delay(TimeSpan.FromSeconds(1), _cancellationToken);
 
-            await handler.GetTokenAsync(_cancellationToken);
+            var token = await handler.GetTokenAsync(_cancellationToken);
 
             Assert.Equal(expectedStsCallCount, mockHttp.GetMatchCount(mockRequest));
-            Assert.Equal(token, httpClient.DefaultRequestHeaders.Authorization.Parameter);
-            Assert.Equal("Bearer", httpClient.DefaultRequestHeaders.Authorization.Scheme);
+            Assert.Equal($"Bearer {expectedToken}", token);
         }
     }
 }
