@@ -50,7 +50,7 @@ namespace CaptainHook.Tests.Web.Authentication
                 }
             };
 
-            var factory = new AuthenticationHandlerFactory(indexedDictionary, new Mock<IBigBrother>().Object, new Mock<IHttpClientFactory>().Object);
+            var factory = new AuthenticationHandlerFactory(indexedDictionary, new Mock<IBigBrother>().Object, new HttpClientFactory());
 
             var handler = await factory.GetAsync(configurationName, CancellationToken.None);
 

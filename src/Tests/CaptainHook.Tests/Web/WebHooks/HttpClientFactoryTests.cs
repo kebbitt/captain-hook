@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Net.Http;
 using CaptainHook.Common.Configuration;
 using CaptainHook.EventHandlerActor.Handlers;
-using CaptainHook.Tests.Web.Authentication;
 using Eshopworld.Tests.Core;
 using RichardSzalay.MockHttp;
 using Xunit;
@@ -19,7 +18,7 @@ namespace CaptainHook.Tests.Web.WebHooks
         {
             var mockHttp = new MockHttpMessageHandler();
 
-            var httpClients = new IndexDictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } };
+            var httpClients = new Dictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } };
 
             var httpClientBuilder = new HttpClientFactory(httpClients);
 
@@ -35,7 +34,7 @@ namespace CaptainHook.Tests.Web.WebHooks
         {
             var mockHttp = new MockHttpMessageHandler();
 
-            var httpClients = new IndexDictionary<string, HttpClient> { { new Uri("https://blahblah.com").Host, mockHttp.ToHttpClient() } };
+            var httpClients = new Dictionary<string, HttpClient> { { new Uri("https://blahblah.com").Host, mockHttp.ToHttpClient() } };
 
             var httpClientBuilder = new HttpClientFactory(httpClients);
 

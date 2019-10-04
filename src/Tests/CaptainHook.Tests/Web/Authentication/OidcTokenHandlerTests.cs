@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -53,7 +54,7 @@ namespace CaptainHook.Tests.Web.Authentication
 
             var handler = new OidcAuthenticationHandler(
                 new HttpClientFactory(
-                    new IndexDictionary<string, HttpClient>
+                    new Dictionary<string, HttpClient>
                     {
                         {new Uri(config.Uri).Host, httpClient},
                     }),
@@ -107,7 +108,7 @@ namespace CaptainHook.Tests.Web.Authentication
 
             var handler = new OidcAuthenticationHandler(
                 new HttpClientFactory(
-                    new IndexDictionary<string, HttpClient>
+                    new Dictionary<string, HttpClient>
                     {
                         {new Uri(config.Uri).Host, mockHttp.ToHttpClient()},
                     }),

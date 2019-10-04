@@ -44,7 +44,7 @@ namespace CaptainHook.Tests.Web.WebHooks
 
             var mockBigBrother = new Mock<IBigBrother>();
 
-            var httpClients = new IndexDictionary<string, HttpClient>
+            var httpClients = new Dictionary<string, HttpClient>
             {
                 {new Uri(config.WebhookConfig.Uri).Host, mockHttpHandler.ToHttpClient()},
                 {new Uri(config.CallbackConfig.Uri).Host, mockHttpHandler.ToHttpClient()}
@@ -105,7 +105,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             var mockWebHookRequest = mockHttpHandler.When(HttpMethod.Put, expectedCallbackUri)
                 .Respond(HttpStatusCode.OK, "application/json", "{\"msg\":\"Hello World\"}");
 
-            var httpClients = new IndexDictionary<string, HttpClient>
+            var httpClients = new Dictionary<string, HttpClient>
             {
                 {new Uri(config.WebhookConfig.Uri).Host, mockHttpHandler.ToHttpClient()},
                 {new Uri(config.CallbackConfig.Uri).Host, mockHttpHandler.ToHttpClient()}
@@ -163,7 +163,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                 .WithContentType("application/json; charset=utf-8", expectedContent)
                 .Respond(HttpStatusCode.OK, "application/json", "{\"msg\":\"Hello World\"}");
 
-            var httpClients = new IndexDictionary<string, HttpClient>
+            var httpClients = new Dictionary<string, HttpClient>
             {
                 {new Uri(config.CallbackConfig.Uri).Host, mockHttpHandler.ToHttpClient()}
             };
@@ -222,7 +222,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                 .WithContentType("application/json; charset=utf-8", expectedContent)
                 .Respond(HttpStatusCode.OK, "application/json", "{\"msg\":\"Hello World\"}");
 
-            var httpClients = new IndexDictionary<string, HttpClient>
+            var httpClients = new Dictionary<string, HttpClient>
             {
                 {new Uri(config.WebhookConfig.Uri).Host, mockHttpHandler.ToHttpClient()},
                 {new Uri(config.CallbackConfig.Uri).Host, mockHttpHandler.ToHttpClient()}

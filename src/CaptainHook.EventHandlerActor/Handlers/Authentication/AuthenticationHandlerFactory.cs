@@ -57,12 +57,13 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
         /// <returns></returns>
         public async Task<IAuthenticationHandler> GetAsync(string key, CancellationToken cancellationToken)
         {
-            if (_handlers.TryGetValue(key.ToLower(), out var handler))
+            if (_handlers.TryGetValue(key.ToLowerInvariant(), out var handler))
             {
                 return handler;
             }
 
-            if (!_webHookConfigs.TryGetValue(key.ToLower(), out var config))
+            var uri = new Uri(key);
+            if (!_webHookConfigs.TryGetValue(uri.Host.ToLowerInvariant(), out var config))
             {
                 throw new Exception($"Authentication Provider {key} not found");
             }

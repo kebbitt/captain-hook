@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net.Http;
-using Autofac.Features.Indexed;
 using CaptainHook.Common.Configuration;
 
 namespace CaptainHook.EventHandlerActor.Handlers
@@ -10,14 +11,21 @@ namespace CaptainHook.EventHandlerActor.Handlers
     /// </summary>
     public class HttpClientFactory : IHttpClientFactory
     {
-        /// <summary>
-        /// Contains an indexed list of http clients which are created from config at startup through config parsing and ioc
-        /// </summary>
-        private readonly IIndex<string, HttpClient> _httpClients;
+        private readonly ConcurrentDictionary<string, HttpClient> _httpClients;
 
-        public HttpClientFactory(IIndex<string, HttpClient> httpClients)
+        public HttpClientFactory()
         {
-            _httpClients = httpClients;
+            _httpClients = new ConcurrentDictionary<string, HttpClient>();
+        }
+
+        public HttpClientFactory(Dictionary<string, HttpClient> httpClients)
+        {
+            _httpClients = new ConcurrentDictionary<string, HttpClient>();
+
+            foreach (var (key, value) in httpClients)
+            {
+                _httpClients.TryAdd(key, value);
+            }
         }
 
         /// <summary>
@@ -29,9 +37,17 @@ namespace CaptainHook.EventHandlerActor.Handlers
         {
             var uri = new Uri(config.Uri);
 
-            if (!_httpClients.TryGetValue(uri.Host.ToLowerInvariant(), out var httpClient))
+            if (_httpClients.TryGetValue(uri.Host.ToLowerInvariant(), out var httpClient))
             {
-                throw new ArgumentNullException(nameof(httpClient), $"HttpClient for {uri.Host} was not found");
+                return httpClient;
+            }
+
+            httpClient = new HttpClient {Timeout = config.Timeout};
+            var result = _httpClients.TryAdd(uri.Host.ToLowerInvariant(), httpClient);
+
+            if (!result)
+            {
+                throw new ArgumentNullException(nameof(httpClient), $"HttpClient for {uri.Host} could not be added to the dictionary of http clients");
             }
             return httpClient;
         }
@@ -43,11 +59,18 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <returns></returns>
         public HttpClient Get(string uri)
         {
-            if (!_httpClients.TryGetValue(new Uri(uri).Host.ToLowerInvariant(), out var httpClient))
+            if (_httpClients.TryGetValue(uri.ToLowerInvariant(), out var httpClient))
             {
-                throw new ArgumentNullException(nameof(httpClient), $"HttpClient for {new Uri(uri).Host} was not found");
+                return httpClient;
             }
 
+            httpClient = new HttpClient();
+            var result = _httpClients.TryAdd(uri.ToLowerInvariant(), httpClient);
+
+            if (!result)
+            {
+                throw new ArgumentNullException(nameof(httpClient), $"HttpClient for {uri} could not be added to the dictionary of http clients");
+            }
             return httpClient;
         }
     }

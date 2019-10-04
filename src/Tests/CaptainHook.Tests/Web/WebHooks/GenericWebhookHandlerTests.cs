@@ -59,7 +59,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                 .Respond(HttpStatusCode.OK, "application/json", string.Empty);
 
             var mockBigBrother = new Mock<IBigBrother>();
-            var httpClients = new IndexDictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } };
+            var httpClients = new Dictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } };
 
             var httpClientBuilder = new HttpClientFactory(httpClients);
             var requestBuilder = new RequestBuilder();

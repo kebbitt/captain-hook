@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -51,7 +52,7 @@ namespace CaptainHook.Tests.Web.Authentication
                 .WithContentType("application/json-patch+json; charset=utf-8", string.Empty)
                 .Respond(HttpStatusCode.Created, "application/json-patch+json", expectedResponse);
 
-            var httpClientFactory = new HttpClientFactory(new IndexDictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } });
+            var httpClientFactory = new HttpClientFactory(new Dictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } });
 
 
             var handler = new MmAuthenticationHandler(httpClientFactory, config, _bigBrother);

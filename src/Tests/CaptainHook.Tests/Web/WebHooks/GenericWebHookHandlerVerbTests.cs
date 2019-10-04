@@ -42,7 +42,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             var mockBigBrother = new Mock<IBigBrother>();
 
             var host = new Uri(config.Uri).Host;
-            var httpClients = new IndexDictionary<string, HttpClient> { { host, mockHttp.ToHttpClient() } };
+            var httpClients = new Dictionary<string, HttpClient> { { host, mockHttp.ToHttpClient() } };
             var mockAuthenticationFactory = new Mock<IAuthenticationHandlerFactory>();
 
             var httpClientBuilder = new HttpClientFactory(httpClients);
@@ -71,7 +71,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                 .Respond(expectedResponseCode, "application/json", expectedResponseBody);
 
             var mockBigBrother = new Mock<IBigBrother>();
-            var httpClients = new IndexDictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } };
+            var httpClients = new Dictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } };
 
             var httpClientBuilder = new HttpClientFactory(httpClients);
             var requestBuilder = new RequestBuilder();
