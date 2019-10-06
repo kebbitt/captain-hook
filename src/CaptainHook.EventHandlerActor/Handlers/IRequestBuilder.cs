@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using CaptainHook.Common;
-using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
 
 namespace CaptainHook.EventHandlerActor.Handlers
@@ -40,7 +39,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <param name="webhookConfig"></param>
         /// <param name="payload"></param>
         /// <returns></returns>
-        AuthenticationType SelectAuthenticationScheme(WebhookConfig webhookConfig, string payload);
+        WebhookConfig GetAuthenticationConfig(WebhookConfig webhookConfig, string payload);
 
         /// <summary>
         /// Selects the webhook config to use for the endpoint for which the request is destined based on supplied webhook rules and configs

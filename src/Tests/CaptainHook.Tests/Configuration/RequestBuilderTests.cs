@@ -56,9 +56,9 @@ namespace CaptainHook.Tests.Configuration
             string sourcePayload,
             AuthenticationType expectedAuthenticationType)
         {
-            var selectedAuthenticationScheme = new RequestBuilder().SelectAuthenticationScheme(config, sourcePayload);
+            var authenticationConfig = new RequestBuilder().GetAuthenticationConfig(config, sourcePayload);
 
-            Assert.Equal(expectedAuthenticationType, selectedAuthenticationScheme);
+            Assert.Equal(expectedAuthenticationType, authenticationConfig.AuthenticationConfig.Type);
         }
 
         public static IEnumerable<object[]> UriData =>

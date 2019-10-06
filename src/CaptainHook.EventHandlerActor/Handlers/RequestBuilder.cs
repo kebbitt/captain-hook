@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using CaptainHook.Common;
-using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -174,13 +173,13 @@ namespace CaptainHook.EventHandlerActor.Handlers
         }
 
         /// <inheritdoc />
-        public AuthenticationType SelectAuthenticationScheme(WebhookConfig webhookConfig, string payload)
+        public WebhookConfig GetAuthenticationConfig(WebhookConfig webhookConfig, string payload)
         {
             //build the uri from the routes first
             var rules = webhookConfig.WebhookRequestRules.FirstOrDefault(r => r.Destination.RuleAction == RuleAction.Route);
             if (rules == null)
             {
-                return webhookConfig.AuthenticationConfig.Type;
+                return webhookConfig;
             }
 
             var value = ModelParser.ParsePayloadPropertyAsString(rules.Source.Path, payload);
@@ -195,7 +194,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
             {
                 throw new Exception("route http verb mapping/selector not found between config and the properties on the domain object");
             }
-            return route.AuthenticationConfig.Type;
+            return route;
         }
 
         /// <inheritdoc />

@@ -61,11 +61,11 @@ namespace CaptainHook.EventHandlerActor.Handlers
                 var payload = RequestBuilder.BuildPayload(this.WebhookConfig, messageData.Payload, metadata);
                 var config = RequestBuilder.SelectWebhookConfig(WebhookConfig, messageData.Payload);
                 var headers = RequestBuilder.GetHeaders(WebhookConfig, messageData);
-                var authenticationScheme = RequestBuilder.SelectAuthenticationScheme(WebhookConfig, messageData.Payload);
+                var authenticationConfig = RequestBuilder.GetAuthenticationConfig(WebhookConfig, messageData.Payload);
 
                 var httpClient = HttpClientFactory.Get(config);
                 
-                await AddAuthenticationHeaderAsync(cancellationToken, authenticationScheme, uri, headers);
+                await AddAuthenticationHeaderAsync(cancellationToken, authenticationConfig, headers);
                 
                 var response = await httpClient.SendRequestReliablyAsync(httpMethod, uri, headers, payload, cancellationToken);
 
@@ -78,11 +78,11 @@ namespace CaptainHook.EventHandlerActor.Handlers
             }
         }
 
-        protected async Task AddAuthenticationHeaderAsync(CancellationToken cancellationToken, AuthenticationType authenticationScheme, Uri uri, WebHookHeaders webHookHeaders)
+        protected async Task AddAuthenticationHeaderAsync(CancellationToken cancellationToken, WebhookConfig config, WebHookHeaders webHookHeaders)
         {
-            if (authenticationScheme != AuthenticationType.None)
+            if (config.AuthenticationConfig.Type != AuthenticationType.None)
             {
-                var acquireTokenHandler = await _authenticationHandlerFactory.GetAsync(uri, cancellationToken);
+                var acquireTokenHandler = await _authenticationHandlerFactory.GetAsync(config, cancellationToken);
                 var result = await acquireTokenHandler.GetTokenAsync(cancellationToken);
                 webHookHeaders.AddRequestHeader(Constants.Headers.Authorization, result);
             }
