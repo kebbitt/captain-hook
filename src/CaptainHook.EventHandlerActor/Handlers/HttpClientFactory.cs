@@ -55,17 +55,18 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="uri"></param>
+        /// <param name="endpoint"></param>
         /// <returns></returns>
-        public HttpClient Get(string uri)
+        public HttpClient Get(string endpoint)
         {
-            if (_httpClients.TryGetValue(uri.ToLowerInvariant(), out var httpClient))
+            var uri = new Uri(endpoint);
+            if (_httpClients.TryGetValue(uri.Host.ToLowerInvariant(), out var httpClient))
             {
                 return httpClient;
             }
 
             httpClient = new HttpClient();
-            var result = _httpClients.TryAdd(uri.ToLowerInvariant(), httpClient);
+            var result = _httpClients.TryAdd(uri.Host.ToLowerInvariant(), httpClient);
 
             if (!result)
             {

@@ -15,8 +15,8 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <summary>
         /// Gets a http client for a particular uri. If one is not found it creates one, stores and reuses later
         /// </summary>
-        /// <param name="uri"></param>
+        /// <param name="endpoint"></param>
         /// <returns></returns>
-        HttpClient Get(string uri);
+        HttpClient Get(string endpoint);
     }
 }

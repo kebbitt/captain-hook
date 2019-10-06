@@ -27,20 +27,6 @@ namespace CaptainHook.Tests.Web.WebHooks
             Assert.NotNull(httpClient);
         }
 
-        [IsLayer0]
-        [Theory]
-        [MemberData(nameof(Data))]
-        public void CannotGetHttpClient(WebhookConfig config)
-        {
-            var mockHttp = new MockHttpMessageHandler();
-
-            var httpClients = new Dictionary<string, HttpClient> { { new Uri("https://blahblah.com").Host, mockHttp.ToHttpClient() } };
-
-            var httpClientBuilder = new HttpClientFactory(httpClients);
-
-            Assert.Throws<ArgumentNullException>(() => httpClientBuilder.Get(config));
-        }
-
         public static IEnumerable<object[]> Data =>
             new List<object[]>
             {

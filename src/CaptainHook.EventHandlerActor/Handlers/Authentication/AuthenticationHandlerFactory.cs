@@ -20,8 +20,8 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
         private readonly IBigBrother _bigBrother;
 
         public AuthenticationHandlerFactory(
-            IBigBrother bigBrother, 
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            IBigBrother bigBrother)
         {
             _bigBrother = bigBrother;
             _httpClientFactory = httpClientFactory;

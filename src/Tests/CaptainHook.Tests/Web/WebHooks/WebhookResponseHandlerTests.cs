@@ -55,7 +55,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                 .ReturnsAsync(Guid.NewGuid().ToString);
 
             var mockAuthHandlerFactory = new Mock<IAuthenticationHandlerFactory>();
-            mockAuthHandlerFactory.Setup(s => s.GetAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+            mockAuthHandlerFactory.Setup(s => s.GetAsync(It.IsAny<WebhookConfig>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => mockTokenHandler.Object);
 
             var httpClientBuilder = new HttpClientFactory(httpClients);
@@ -83,8 +83,7 @@ namespace CaptainHook.Tests.Web.WebHooks
 
             await webhookResponseHandler.CallAsync(messageData, new Dictionary<string, object>(), _cancellationToken);
 
-            mockAuthHandlerFactory.Verify(e => e.GetAsync(It.IsAny<string>(), _cancellationToken), Times.Never);
-            mockAuthHandlerFactory.Verify(e => e.GetAsync(It.IsAny<Uri>(), _cancellationToken), Times.Once);
+            mockAuthHandlerFactory.Verify(e => e.GetAsync(It.IsAny<WebhookConfig>(), _cancellationToken), Times.Once);
             Assert.Equal(1, mockHttpHandler.GetMatchCount(mockWebHookRequestWithCallback));
         }
 
@@ -115,7 +114,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             mockAuthenticationTokenHandler.Setup(s => s.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid().ToString);
 
             var mockAuthHandlerFactory = new Mock<IAuthenticationHandlerFactory>();
-            mockAuthHandlerFactory.Setup(s => s.GetAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+            mockAuthHandlerFactory.Setup(s => s.GetAsync(It.IsAny<WebhookConfig>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => mockAuthenticationTokenHandler.Object);
 
             var httpClientBuilder = new HttpClientFactory(httpClients);
@@ -142,8 +141,7 @@ namespace CaptainHook.Tests.Web.WebHooks
 
             await webhookResponseHandler.CallAsync(messageData, new Dictionary<string, object>(), _cancellationToken);
 
-            mockAuthHandlerFactory.Verify(e => e.GetAsync(It.IsAny<string>(), _cancellationToken), Times.Never);
-            mockAuthHandlerFactory.Verify(e => e.GetAsync(It.IsAny<Uri>(), _cancellationToken), Times.Once);
+            mockAuthHandlerFactory.Verify(e => e.GetAsync(It.IsAny<WebhookConfig>(), _cancellationToken), Times.Once);
             mockHandlerFactory.Verify(e => e.CreateWebhookHandler(It.IsAny<string>()), Times.AtMostOnce);
 
             Assert.Equal(1, mockHttpHandler.GetMatchCount(mockWebHookRequest));
@@ -202,7 +200,7 @@ namespace CaptainHook.Tests.Web.WebHooks
 
             await webhookResponseHandler.CallAsync(messageData, new Dictionary<string, object>(), _cancellationToken);
 
-            mockAuthHandlerFactory.Verify(e => e.GetAsync(It.IsAny<string>(), _cancellationToken), Times.AtMostOnce);
+            mockAuthHandlerFactory.Verify(e => e.GetAsync(It.IsAny<WebhookConfig>(), _cancellationToken), Times.AtMostOnce);
             mockHandlerFactory.Verify(e => e.CreateWebhookHandler(It.IsAny<string>()), Times.AtMostOnce);
 
             Assert.Equal(1, mockHttpHandler.GetMatchCount(multiRouteCall));
