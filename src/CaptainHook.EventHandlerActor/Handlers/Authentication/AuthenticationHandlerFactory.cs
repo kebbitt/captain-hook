@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
-using Autofac.Features.Indexed;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
 using Eshopworld.Core;
@@ -18,15 +17,12 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ConcurrentDictionary<string, IAuthenticationHandler> _handlers;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-        private readonly IIndex<string, WebhookConfig> _webHookConfigs;
         private readonly IBigBrother _bigBrother;
 
         public AuthenticationHandlerFactory(
-            IIndex<string, WebhookConfig> webHookConfigs, 
             IBigBrother bigBrother, 
             IHttpClientFactory httpClientFactory)
         {
-            _webHookConfigs = webHookConfigs;
             _bigBrother = bigBrother;
             _httpClientFactory = httpClientFactory;
 
@@ -34,39 +30,14 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
         }
 
         /// <summary>
-        /// Get the token provider based on host
-        /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public async Task<IAuthenticationHandler> GetAsync(Uri uri, CancellationToken cancellationToken)
-        {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-
-            return await GetAsync(uri.AbsoluteUri, cancellationToken);
-        }
-
-        /// <summary>
         /// 
         /// </summary>
-        /// <param name="key"></param>
+        /// <param name="config"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public async Task<IAuthenticationHandler> GetAsync(string key, CancellationToken cancellationToken)
+        public async Task<IAuthenticationHandler> GetAsync(WebhookConfig config, CancellationToken cancellationToken)
         {
-            if (_handlers.TryGetValue(key.ToLowerInvariant(), out var handler))
-            {
-                return handler;
-            }
-
-            var uri = new Uri(key);
-            if (!_webHookConfigs.TryGetValue(uri.Host.ToLowerInvariant(), out var config))
-            {
-                throw new Exception($"Authentication Provider {key} not found");
-            }
+            var key = config.Uri;
 
             switch (config.AuthenticationConfig.Type)
             {
