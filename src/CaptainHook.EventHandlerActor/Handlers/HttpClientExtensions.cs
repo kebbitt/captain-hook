@@ -32,25 +32,28 @@ namespace CaptainHook.EventHandlerActor.Handlers
             string payload,
             CancellationToken token = default)
         {
-            var request = new HttpRequestMessage(httpMethod, uri);
-
-            if (httpMethod != HttpMethod.Get)
+            var result = await RetryRequest(() =>
             {
-                request.Content = new StringContent(payload, Encoding.UTF8, webHookHeaders.ContentHeaders[Constants.Headers.ContentType]);
-            }
+                var request = new HttpRequestMessage(httpMethod, uri);
 
-            foreach (var key in webHookHeaders.RequestHeaders.Keys)
-            {
-                //todo is this the correct thing to do when there is a CorrelationVector with multiple Children.
-                if (request.Headers.Contains(key))
+                if (httpMethod != HttpMethod.Get)
                 {
-                    request.Headers.Remove(key);
+                    request.Content = new StringContent(payload, Encoding.UTF8, webHookHeaders.ContentHeaders[Constants.Headers.ContentType]);
                 }
 
-                request.Headers.Add(key, webHookHeaders.RequestHeaders[key]);
-            }
+                foreach (var key in webHookHeaders.RequestHeaders.Keys)
+                {
+                    //todo is this the correct thing to do when there is a CorrelationVector with multiple Children.
+                    if (request.Headers.Contains(key))
+                    {
+                        request.Headers.Remove(key);
+                    }
 
-            var result = await RetryRequest(() => client.SendAsync(request, token));
+                    request.Headers.Add(key, webHookHeaders.RequestHeaders[key]);
+                }
+
+                return client.SendAsync(request, token);
+            });
 
             return result;
         }
