@@ -200,11 +200,14 @@ namespace CaptainHook.EventReaderService
                     {
                         if (_messageReceiver.IsClosedOrClosing) continue;
 
-                        var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
+                        var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromSeconds(1));
                         if (messages == null || messages.Count == 0)
                         {
                             // ReSharper disable once MethodSupportsCancellation - no need to cancellation token here
+#if DEBUG
+                            //this is done due to enable SF mocks to run as receiver call is not awaited and therefore RunAsync would never await
                             await Task.Delay(TimeSpan.FromMilliseconds(10));
+#endif
                             continue;
                         }
 
