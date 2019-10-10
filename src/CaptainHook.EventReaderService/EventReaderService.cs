@@ -98,6 +98,7 @@ namespace CaptainHook.EventReaderService
             _proxyFactory = proxyFactory;
             _settings = settings;
             _eventType = Encoding.UTF8.GetString(context.InitializationData);
+            _initHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
         }
 
         /// <summary>
