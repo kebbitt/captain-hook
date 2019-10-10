@@ -45,6 +45,7 @@ namespace CaptainHook.EventReaderService
         private ConcurrentQueue<int> _freeHandlers = new ConcurrentQueue<int>();
         private IMessageReceiver _messageReceiver;
         private CancellationToken _cancellationToken;
+        private EventWaitHandle _initHandle;
 
         //todo move this to config driven in the code package
         internal int HandlerCount = 10;
@@ -71,6 +72,7 @@ namespace CaptainHook.EventReaderService
             _proxyFactory = proxyFactory;
             _settings = settings;
             _eventType = Encoding.UTF8.GetString(context.InitializationData);
+            _initHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
         }
 
         /// <summary>
@@ -190,6 +192,8 @@ namespace CaptainHook.EventReaderService
                 await GetHandlerCountsOnStartup();
                 await SetupServiceBus();
 
+                _initHandle.Set();
+
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     try
@@ -275,6 +279,7 @@ namespace CaptainHook.EventReaderService
         {
             try
             {
+                _initHandle.WaitOne();
                 using (var tx = StateManager.CreateTransaction())
                 {
                     var handle = await _messageHandles.TryRemoveAsync(tx, messageData.HandlerId, _defaultServiceFabricStateOperationTimeout, cancellationToken);
