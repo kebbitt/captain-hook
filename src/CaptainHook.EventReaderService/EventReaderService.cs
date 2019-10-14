@@ -45,6 +45,7 @@ namespace CaptainHook.EventReaderService
         private ConcurrentQueue<int> _freeHandlers = new ConcurrentQueue<int>();
         private IMessageReceiver _messageReceiver;
         private CancellationToken _cancellationToken;
+        private EventWaitHandle _initHandle;
 
         //todo move this to config driven in the code package
         internal int HandlerCount = 10;
@@ -71,6 +72,7 @@ namespace CaptainHook.EventReaderService
             _proxyFactory = proxyFactory;
             _settings = settings;
             _eventType = Encoding.UTF8.GetString(context.InitializationData);
+            _initHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
         }
 
         /// <summary>
@@ -96,6 +98,7 @@ namespace CaptainHook.EventReaderService
             _proxyFactory = proxyFactory;
             _settings = settings;
             _eventType = Encoding.UTF8.GetString(context.InitializationData);
+            _initHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
         }
 
         /// <summary>
@@ -190,17 +193,22 @@ namespace CaptainHook.EventReaderService
                 await GetHandlerCountsOnStartup();
                 await SetupServiceBus();
 
+                _initHandle.Set();
+
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     try
                     {
                         if (_messageReceiver.IsClosedOrClosing) continue;
 
-                        var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromMilliseconds(50));
+                        var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromSeconds(1));
                         if (messages == null || messages.Count == 0)
                         {
                             // ReSharper disable once MethodSupportsCancellation - no need to cancellation token here
+#if DEBUG
+                            //this is done due to enable SF mocks to run as receiver call is not awaited and therefore RunAsync would never await
                             await Task.Delay(TimeSpan.FromMilliseconds(10));
+#endif
                             continue;
                         }
 
@@ -275,6 +283,7 @@ namespace CaptainHook.EventReaderService
         {
             try
             {
+                _initHandle.WaitOne();
                 using (var tx = StateManager.CreateTransaction())
                 {
                     var handle = await _messageHandles.TryRemoveAsync(tx, messageData.HandlerId, _defaultServiceFabricStateOperationTimeout, cancellationToken);
