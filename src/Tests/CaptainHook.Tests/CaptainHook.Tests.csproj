@@ -32,8 +32,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\CaptainHook.Common\CaptainHook.Common.csproj" />
+    <ProjectReference Include="..\..\CaptainHook.EventDispatcherService\CaptainHook.EventDispatcherService.csproj" />
     <ProjectReference Include="..\..\CaptainHook.EventHandlerActor\CaptainHook.EventHandlerActor.csproj" />
     <ProjectReference Include="..\..\CaptainHook.EventReaderService\CaptainHook.EventReaderService.csproj" />
+    <ProjectReference Include="..\..\CaptainHook.TokenManagementActor\CaptainHook.TokenManagementActor.csproj" />
   </ItemGroup>
 
 </Project>

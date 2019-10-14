@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
-using CaptainHook.EventHandlerActor.Handlers;
+using CaptainHook.EventDispatcherService.Handlers;
 using Eshopworld.Tests.Core;
 using Xunit;
 

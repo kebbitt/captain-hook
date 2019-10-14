@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CaptainHook.EventHandlerActor.Handlers
+namespace CaptainHook.EventDispatcherService.Handlers
 {
     public static class StringExtensions
     {

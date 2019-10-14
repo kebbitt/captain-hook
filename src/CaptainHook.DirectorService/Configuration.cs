@@ -6,7 +6,7 @@ namespace CaptainHook.DirectorService
     {
         public DefaultServiceSettings DefaultServiceSettings { get; set; }
 
-        public DispatcherConfigType DispatcherConfig { get;  set; }
+        public DispatcherConfigType DispatcherConfig { get; set; }
 
         public class DispatcherConfigType
         {

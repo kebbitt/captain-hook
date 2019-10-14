@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common.Authentication;
 
-namespace CaptainHook.EventHandlerActor.Handlers.Authentication
+namespace CaptainHook.TokenManagementActor.Handlers.Authentication
 {
     /// <summary>
     /// Basic Authentication Handler which returns a http client with a basic http authentication header

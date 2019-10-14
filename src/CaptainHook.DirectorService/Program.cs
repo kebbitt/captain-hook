@@ -25,7 +25,7 @@ namespace CaptainHook.DirectorService
         {
             try
             {
-                var kvUri = Environment.GetEnvironmentVariable(ConfigurationSettings.KeyVaultUriEnvVariable);
+                var kvUri = Environment.GetEnvironmentVariable(PlatformConfigurationSettings.KeyVaultUriEnvVariable);
 
                 var config = new ConfigurationBuilder().AddAzureKeyVault(
                                                            kvUri,
@@ -33,12 +33,12 @@ namespace CaptainHook.DirectorService
                                                            new DefaultKeyVaultSecretManager())
                                                        .Build();
 
-                var settings = new ConfigurationSettings();
+                var settings = new PlatformConfigurationSettings();
                 config.Bind(settings);
 
                 //Get configs from the Config Package
                 var activationContext = FabricRuntime.GetActivationContext();
-                var defaultServicesSettings = ConfigFabricCodePackage(activationContext);
+                var serviceConfig = ConfigFabricCodePackage(activationContext.GetConfigurationPackageObject("Config"));
 
                 var bb = new BigBrother(settings.InstrumentationKey, settings.InstrumentationKey);
                 bb.UseEventSourceSink().ForExceptions();
@@ -51,7 +51,7 @@ namespace CaptainHook.DirectorService
                 builder.RegisterInstance(settings)
                        .SingleInstance();
 
-                builder.RegisterInstance(defaultServicesSettings)
+                builder.RegisterInstance(serviceConfig)
                     .SingleInstance();
 
                 builder.RegisterType<FabricClient>().SingleInstance();
@@ -92,36 +92,46 @@ namespace CaptainHook.DirectorService
         /// </summary>
         /// <param name="activationContext"></param>
         /// <returns></returns>
-        private static DefaultServiceSettings ConfigFabricCodePackage(ICodePackageActivationContext activationContext)
+        private static Configuration ConfigFabricCodePackage(ConfigurationPackage configurationPackage)
         {
-            var configurationPackage = activationContext.GetConfigurationPackageObject("Config");
             var section = configurationPackage.Settings.Sections[nameof(Constants.CaptainHookApplication.DefaultServiceConfig)];
+            var dispatcherPoolConfigSection = configurationPackage.Settings.Sections["EventDispatcherPoolConfig"];
 
-            return new DefaultServiceSettings
+            return new Configuration
             {
-                DefaultMinReplicaSetSize = GetValueAsInt(Constants.CaptainHookApplication.DefaultServiceConfig.DefaultMinReplicaSetSize, section),
-                DefaultPartitionCount = GetValueAsInt(Constants.CaptainHookApplication.DefaultServiceConfig.DefaultPartitionCount, section),
-                DefaultTargetReplicaSetSize = GetValueAsInt(Constants.CaptainHookApplication.DefaultServiceConfig.TargetReplicaSetSize, section),
-                DefaultPlacementConstraints = section.Parameters[Constants.CaptainHookApplication.DefaultServiceConfig.DefaultPlacementConstraints].Value
+                DefaultServiceSettings =
+             new DefaultServiceSettings
+             {
+                 DefaultMinReplicaSetSize = GetValueAsInt(Constants.CaptainHookApplication.DefaultServiceConfig.DefaultMinReplicaSetSize, section),
+                 DefaultPartitionCount = GetValueAsInt(Constants.CaptainHookApplication.DefaultServiceConfig.DefaultPartitionCount, section),
+                 DefaultTargetReplicaSetSize = GetValueAsInt(Constants.CaptainHookApplication.DefaultServiceConfig.TargetReplicaSetSize, section),
+                 DefaultPlacementConstraints = section.Parameters[Constants.CaptainHookApplication.DefaultServiceConfig.DefaultPlacementConstraints].Value
+             },
+                DispatcherConfig = new Configuration.DispatcherConfigType
+                {
+                    PoolSize = GetValueAsInt(nameof(Configuration.DispatcherConfigType.PoolSize),
+                        dispatcherPoolConfigSection)
+                }
             };
-        }
 
-        /// <summary>
-        /// Simple helper to parse the ConfigurationSection from ServiceFabric Manifests for particular values.
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="section"></param>
-        /// <returns></returns>
-        private static int GetValueAsInt(string key, System.Fabric.Description.ConfigurationSection section)
-        {
-            var result = int.TryParse(section.Parameters[key].Value, out var value);
 
-            if (!result)
+            /// <summary>
+            /// Simple helper to parse the ConfigurationSection from ServiceFabric Manifests for particular values.
+            /// </summary>
+            /// <param name="key"></param>
+            /// <param name="section"></param>
+            /// <returns></returns>
+            static int GetValueAsInt(string key, System.Fabric.Description.ConfigurationSection section)
             {
-                throw new Exception($"Code package could not be parsed for value {key}");
-            }
+                var result = int.TryParse(section.Parameters[key].Value, out var value);
 
-            return value;
+                if (!result)
+                {
+                    throw new Exception($"Code package could not be parsed for value {key}");
+                }
+
+                return value;
+            }
         }
     }
 }

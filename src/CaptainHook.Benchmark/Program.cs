@@ -7,7 +7,7 @@ using BenchmarkDotNet.Running;
 using CaptainHook.Common;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
-using CaptainHook.EventHandlerActor.Handlers;
+using CaptainHook.EventDispatcherService.Handlers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 

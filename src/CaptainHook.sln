@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.28606.126
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.Interfaces", "CaptainHook.Interfaces\CaptainHook.Interfaces.csproj", "{2EFD6F18-374F-4DB7-95D9-419310F5283E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.EndpointDispatcherActor", "CaptainHook.EndpointDispatcherActor\CaptainHook.EndpointDispatcherActor.csproj", "{84A8AF48-7380-4032-AD1C-DBFB947B97F8}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.Common", "CaptainHook.Common\CaptainHook.Common.csproj", "{5889AD8A-FFD2-4296-935F-C0111177D742}"
 EndProject
 Project("{A07B5EB6-E848-4116-A8D0-A826331D98C6}") = "CaptainHook.Fabric", "CaptainHook.Fabric\CaptainHook.Fabric.sfproj", "{D44FA61E-30BD-487C-97CB-877E596872A8}"
@@ -26,7 +24,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.DirectorService
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.EventReaderService", "CaptainHook.EventReaderService\CaptainHook.EventReaderService.csproj", "{14BFB3AF-6805-458C-9F84-D475D536C4E9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CaptainHook.EventHandlerActor", "CaptainHook.EventHandlerActor\CaptainHook.EventHandlerActor.csproj", "{36DB72DA-DE01-4686-9311-DDE619AAC567}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.EventHandlerActor", "CaptainHook.EventHandlerActor\CaptainHook.EventHandlerActor.csproj", "{36DB72DA-DE01-4686-9311-DDE619AAC567}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.EventDispatcherService", "CaptainHook.EventDispatcherService\CaptainHook.EventDispatcherService.csproj", "{4CE8D682-5170-48D2-ABB1-39EEF7E2758E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainHook.TokenManagementActor", "CaptainHook.TokenManagementActor\CaptainHook.TokenManagementActor.csproj", "{994292C8-F158-46E8-BF93-7B8995F86315}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,12 +44,6 @@ Global
 		{2EFD6F18-374F-4DB7-95D9-419310F5283E}.Release|Any CPU.ActiveCfg = Release|x64
 		{2EFD6F18-374F-4DB7-95D9-419310F5283E}.Release|x64.ActiveCfg = Release|x64
 		{2EFD6F18-374F-4DB7-95D9-419310F5283E}.Release|x64.Build.0 = Release|x64
-		{84A8AF48-7380-4032-AD1C-DBFB947B97F8}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{84A8AF48-7380-4032-AD1C-DBFB947B97F8}.Debug|x64.ActiveCfg = Debug|x64
-		{84A8AF48-7380-4032-AD1C-DBFB947B97F8}.Debug|x64.Build.0 = Debug|x64
-		{84A8AF48-7380-4032-AD1C-DBFB947B97F8}.Release|Any CPU.ActiveCfg = Release|x64
-		{84A8AF48-7380-4032-AD1C-DBFB947B97F8}.Release|x64.ActiveCfg = Release|x64
-		{84A8AF48-7380-4032-AD1C-DBFB947B97F8}.Release|x64.Build.0 = Release|x64
 		{5889AD8A-FFD2-4296-935F-C0111177D742}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{5889AD8A-FFD2-4296-935F-C0111177D742}.Debug|x64.ActiveCfg = Debug|x64
 		{5889AD8A-FFD2-4296-935F-C0111177D742}.Debug|x64.Build.0 = Debug|x64
@@ -94,6 +90,20 @@ Global
 		{36DB72DA-DE01-4686-9311-DDE619AAC567}.Release|Any CPU.ActiveCfg = Release|x64
 		{36DB72DA-DE01-4686-9311-DDE619AAC567}.Release|x64.ActiveCfg = Release|x64
 		{36DB72DA-DE01-4686-9311-DDE619AAC567}.Release|x64.Build.0 = Release|x64
+		{4CE8D682-5170-48D2-ABB1-39EEF7E2758E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4CE8D682-5170-48D2-ABB1-39EEF7E2758E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4CE8D682-5170-48D2-ABB1-39EEF7E2758E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4CE8D682-5170-48D2-ABB1-39EEF7E2758E}.Debug|x64.Build.0 = Debug|Any CPU
+		{4CE8D682-5170-48D2-ABB1-39EEF7E2758E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4CE8D682-5170-48D2-ABB1-39EEF7E2758E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4CE8D682-5170-48D2-ABB1-39EEF7E2758E}.Release|x64.ActiveCfg = Release|Any CPU
+		{4CE8D682-5170-48D2-ABB1-39EEF7E2758E}.Release|x64.Build.0 = Release|Any CPU
+		{994292C8-F158-46E8-BF93-7B8995F86315}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{994292C8-F158-46E8-BF93-7B8995F86315}.Debug|x64.ActiveCfg = Debug|x64
+		{994292C8-F158-46E8-BF93-7B8995F86315}.Debug|x64.Build.0 = Debug|x64
+		{994292C8-F158-46E8-BF93-7B8995F86315}.Release|Any CPU.ActiveCfg = Release|x64
+		{994292C8-F158-46E8-BF93-7B8995F86315}.Release|x64.ActiveCfg = Release|x64
+		{994292C8-F158-46E8-BF93-7B8995F86315}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

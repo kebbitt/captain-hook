@@ -1,4 +1,4 @@
-﻿namespace CaptainHook.EventHandlerActor.Handlers
+﻿namespace CaptainHook.EventDispatcherService.Handlers
 {
     /// <summary>
     /// Manages the creation or reuse of specific webhook handler

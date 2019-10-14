@@ -25,14 +25,14 @@ namespace CaptainHook.EventReaderService
         {
             try
             {
-                var kvUri = Environment.GetEnvironmentVariable(ConfigurationSettings.KeyVaultUriEnvVariable);
+                var kvUri = Environment.GetEnvironmentVariable(PlatformConfigurationSettings.KeyVaultUriEnvVariable);
 
                 var config = new ConfigurationBuilder().AddAzureKeyVault(
                     kvUri,
                     new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(new AzureServiceTokenProvider().KeyVaultTokenCallback)),
                     new DefaultKeyVaultSecretManager()).Build();
 
-                var settings = new ConfigurationSettings();
+                var settings = new PlatformConfigurationSettings();
                 config.Bind(settings);
 
                 var bigBrother = new BigBrother(settings.InstrumentationKey, settings.InstrumentationKey);

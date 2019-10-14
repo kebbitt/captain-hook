@@ -4,10 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
+using CaptainHook.EventHandlerActor.Handlers;
 using Eshopworld.Core;
-using JetBrains.Annotations;
 
-namespace CaptainHook.EventHandlerActor.Handlers.Authentication
+namespace CaptainHook.TokenManagementActor.Handlers.Authentication
 {
     /// <summary>
     /// Selects the correct authentication handler based on the type specified by the authentication type.
@@ -87,9 +87,7 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
                 await _semaphore.WaitAsync(cancellationToken);
 
                 if (_handlers.ContainsKey(key))
-                {
                     return;
-                }
                 action();
             }
             finally

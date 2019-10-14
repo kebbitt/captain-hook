@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using CaptainHook.Common.Configuration;
 
-namespace CaptainHook.EventHandlerActor.Handlers.Authentication
+namespace CaptainHook.TokenManagementActor.Handlers.Authentication
 {
     public interface IAuthenticationHandlerFactory
     {

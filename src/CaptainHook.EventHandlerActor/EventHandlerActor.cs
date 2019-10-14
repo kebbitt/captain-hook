@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Telemetry.Actor;
-using CaptainHook.EventHandlerActor.Handlers;
 using CaptainHook.Interfaces;
 using Eshopworld.Core;
 using Eshopworld.Telemetry;
@@ -26,7 +25,6 @@ namespace CaptainHook.EventHandlerActor
     [StatePersistence(StatePersistence.Persisted)]
     public class EventHandlerActor : Actor, IEventHandlerActor
     {
-        private readonly IEventHandlerFactory _eventHandlerFactory;
         private readonly IBigBrother _bigBrother;
         private IActorTimer _handleTimer;
 
@@ -35,16 +33,13 @@ namespace CaptainHook.EventHandlerActor
         /// </summary>
         /// <param name="actorService">The Microsoft.ServiceFabric.Actors.Runtime.ActorService that will host this actor instance.</param>
         /// <param name="actorId">The Microsoft.ServiceFabric.Actors.ActorId for this actor instance.</param>
-        /// <param name="eventHandlerFactory"></param>
         /// <param name="bigBrother"></param>
         public EventHandlerActor(
             ActorService actorService,
             ActorId actorId,
-            IEventHandlerFactory eventHandlerFactory,
             IBigBrother bigBrother)
             : base(actorService, actorId)
         {
-            _eventHandlerFactory = eventHandlerFactory;
             _bigBrother = bigBrother;
         }
 
@@ -105,8 +100,9 @@ namespace CaptainHook.EventHandlerActor
                     return;
                 }
 
-                var handler = _eventHandlerFactory.CreateEventHandler(messageData.Type);
-                await handler.CallAsync(messageData, new Dictionary<string, object>(), CancellationToken.None);
+                //var handler = _eventHandlerFactory.CreateEventHandler(messageData.Type);
+                //await handler.CallAsync(messageData, new Dictionary<string, object>(), CancellationToken.None);//TODO: remove
+                await SendToDispatcher(messageData);
             }
             catch (Exception e)
             {
@@ -129,6 +125,15 @@ namespace CaptainHook.EventHandlerActor
                     }
                 }
             }
+        }
+
+        private async Task SendToDispatcher(MessageData messageData)
+        {
+            //look up config
+            //if (!_eventHandlerConfig.TryGetValue(messageData.Type.ToLower(), out var eventHandlerConfig))
+            //{
+            //    throw new Exception($"Boom, handler event type {messageData.Type} was not found, cannot process the message");
+            //}
         }
     }
 }

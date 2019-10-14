@@ -8,9 +8,10 @@ using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
+using CaptainHook.EventDispatcherService.Handlers;
 using CaptainHook.EventHandlerActor.Handlers;
-using CaptainHook.EventHandlerActor.Handlers.Authentication;
 using CaptainHook.Tests.Web.Authentication;
+using CaptainHook.TokenManagementActor.Handlers.Authentication;
 using Eshopworld.Core;
 using Eshopworld.Tests.Core;
 using Moq;
@@ -66,7 +67,6 @@ namespace CaptainHook.Tests.Web.WebHooks
             mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
                 new GenericWebhookHandler(
                     httpClientBuilder,
-                    mockAuthHandlerFactory.Object,
                     requestBuilder,
                     requestLogger,
                     mockBigBrother.Object,
@@ -76,7 +76,6 @@ namespace CaptainHook.Tests.Web.WebHooks
                 mockHandlerFactory.Object,
                 httpClientBuilder,
                 requestBuilder,
-                mockAuthHandlerFactory.Object,
                 requestLogger,
                 mockBigBrother.Object,
                 config);
@@ -124,7 +123,6 @@ namespace CaptainHook.Tests.Web.WebHooks
             mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
                 new GenericWebhookHandler(
                     httpClientBuilder,
-                    new Mock<IAuthenticationHandlerFactory>().Object,
                     new RequestBuilder(),
                     new RequestLogger(mockBigBrother.Object),
                     mockBigBrother.Object,
@@ -134,7 +132,6 @@ namespace CaptainHook.Tests.Web.WebHooks
                 mockHandlerFactory.Object,
                 httpClientBuilder,
                 new RequestBuilder(),
-                mockAuthHandlerFactory.Object,
                 new RequestLogger(mockBigBrother.Object),
                 mockBigBrother.Object,
                 config);
@@ -183,7 +180,6 @@ namespace CaptainHook.Tests.Web.WebHooks
             mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
                 new GenericWebhookHandler(
                     httpClientBuilder,
-                    new Mock<IAuthenticationHandlerFactory>().Object,
                     new RequestBuilder(),
                     new RequestLogger(mockBigBrother.Object),
                     mockBigBrother.Object,
@@ -193,7 +189,6 @@ namespace CaptainHook.Tests.Web.WebHooks
                 mockHandlerFactory.Object,
                 httpClientBuilder,
                 new RequestBuilder(),
-                new Mock<IAuthenticationHandlerFactory>().Object,
                 new RequestLogger(mockBigBrother.Object),
                 mockBigBrother.Object,
                 config);
@@ -233,7 +228,6 @@ namespace CaptainHook.Tests.Web.WebHooks
             mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
                 new GenericWebhookHandler(
                     httpClientBuilder,
-                    new Mock<IAuthenticationHandlerFactory>().Object,
                     new RequestBuilder(),
                     new RequestLogger(mockBigBrother.Object),
                     mockBigBrother.Object,
@@ -243,7 +237,6 @@ namespace CaptainHook.Tests.Web.WebHooks
                 mockHandlerFactory.Object,
                 httpClientBuilder,
                 new RequestBuilder(),
-                new Mock<IAuthenticationHandlerFactory>().Object,
                 new RequestLogger(mockBigBrother.Object),
                 mockBigBrother.Object,
                 config);

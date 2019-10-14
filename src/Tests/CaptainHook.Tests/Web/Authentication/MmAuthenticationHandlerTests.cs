@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common.Authentication;
 using CaptainHook.EventHandlerActor.Handlers;
-using CaptainHook.EventHandlerActor.Handlers.Authentication;
+using CaptainHook.TokenManagementActor.Handlers.Authentication;
 using Eshopworld.Core;
 using Eshopworld.Telemetry;
 using Eshopworld.Tests.Core;

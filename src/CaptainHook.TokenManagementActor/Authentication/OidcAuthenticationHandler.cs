@@ -4,10 +4,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Telemetry.Web;
+using CaptainHook.EventHandlerActor.Handlers;
 using Eshopworld.Core;
 using IdentityModel.Client;
 
-namespace CaptainHook.EventHandlerActor.Handlers.Authentication
+namespace CaptainHook.TokenManagementActor.Handlers.Authentication
 {
     /// <summary>
     /// OAuth2 authentication handler.
@@ -60,7 +61,6 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
                 });
             }
             else if (CheckExpired())
-            {
                 await EnterSemaphore(cancellationToken, async () =>
                 {
                     if (CheckExpired())
@@ -78,7 +78,6 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
                         });
                     }
                 });
-            }
 
             return $"Bearer {OidcAuthenticationToken.AccessToken}";
         }

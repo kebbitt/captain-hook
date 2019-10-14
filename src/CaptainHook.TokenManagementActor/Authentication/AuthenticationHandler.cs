@@ -3,16 +3,14 @@ using CaptainHook.Common.Exceptions;
 using IdentityModel.Client;
 using Newtonsoft.Json;
 
-namespace CaptainHook.EventHandlerActor.Handlers.Authentication
+namespace CaptainHook.TokenManagementActor.Handlers.Authentication
 {
     public abstract class AuthenticationHandler
     {
         protected static void ReportTokenUpdateFailure(OidcAuthenticationConfig config, TokenResponse response)
         {
             if (!response.IsError)
-            {
                 return;
-            }
 
             throw new ClientTokenFailureException(response.Exception)
             {

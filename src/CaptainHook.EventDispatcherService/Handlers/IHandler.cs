@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CaptainHook.EventHandlerActor.Handlers
+namespace CaptainHook.EventDispatcherService.Handlers
 {
     public interface IHandler
     {

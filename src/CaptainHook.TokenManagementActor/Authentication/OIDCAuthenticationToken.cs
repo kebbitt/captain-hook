@@ -1,12 +1,12 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace CaptainHook.EventHandlerActor.Handlers.Authentication
+namespace CaptainHook.TokenManagementActor.Handlers.Authentication
 {
     /// <summary>
     /// Local cache token for requests to whatever
     /// </summary>
-    public class OidcAuthenticationToken 
+    public class OidcAuthenticationToken
     {
         private int _expiresIn;
 

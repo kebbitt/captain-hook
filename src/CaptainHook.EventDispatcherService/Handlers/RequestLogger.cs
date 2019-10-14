@@ -6,7 +6,7 @@ using CaptainHook.Common.Telemetry;
 using CaptainHook.Common.Telemetry.Web;
 using Eshopworld.Core;
 
-namespace CaptainHook.EventHandlerActor.Handlers
+namespace CaptainHook.EventDispatcherService.Handlers
 {
     /// <summary>
     /// Handles logging successful or failed webhook calls to the destination endpoints
@@ -40,9 +40,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
             //only log the failed requests in more depth, need to have a good think about this - debugging v privacy
             if (response.IsSuccessStatusCode)
-            {
                 return;
-            }
 
             _bigBrother.Publish(new FailedWebHookEvent(
                 httpClient.DefaultRequestHeaders.ToString(),
@@ -61,9 +59,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
         private static async Task<string> GetPayloadAsync(HttpResponseMessage response)
         {
             if (response?.Content == null)
-            {
                 return string.Empty;
-            }
             var result = await response.Content.ReadAsStringAsync();
             return result;
         }

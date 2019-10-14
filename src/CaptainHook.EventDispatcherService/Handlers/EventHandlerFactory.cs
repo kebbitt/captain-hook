@@ -1,10 +1,10 @@
 ﻿using System;
 using Autofac.Features.Indexed;
 using CaptainHook.Common.Configuration;
-using CaptainHook.EventHandlerActor.Handlers.Authentication;
+using CaptainHook.EventHandlerActor.Handlers;
 using Eshopworld.Core;
 
-namespace CaptainHook.EventHandlerActor.Handlers
+namespace CaptainHook.EventDispatcherService.Handlers
 {
     public class EventHandlerFactory : IEventHandlerFactory
     {
@@ -12,7 +12,6 @@ namespace CaptainHook.EventHandlerActor.Handlers
         private readonly IIndex<string, EventHandlerConfig> _eventHandlerConfig;
         private readonly IIndex<string, WebhookConfig> _webHookConfig;
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IAuthenticationHandlerFactory _authenticationHandlerFactory;
         private readonly IRequestLogger _requestLogger;
         private readonly IRequestBuilder _requestBuilder;
 
@@ -21,8 +20,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
             IIndex<string, EventHandlerConfig> eventHandlerConfig,
             IIndex<string, WebhookConfig> webHookConfig,
             IHttpClientFactory httpClientFactory,
-            IAuthenticationHandlerFactory authenticationHandlerFactory,
-            IRequestLogger requestLogger, 
+            IRequestLogger requestLogger,
             IRequestBuilder requestBuilder)
         {
             _bigBrother = bigBrother;
@@ -30,7 +28,6 @@ namespace CaptainHook.EventHandlerActor.Handlers
             _httpClientFactory = httpClientFactory;
             _requestLogger = requestLogger;
             _requestBuilder = requestBuilder;
-            _authenticationHandlerFactory = authenticationHandlerFactory;
             _webHookConfig = webHookConfig;
         }
 
@@ -43,21 +40,16 @@ namespace CaptainHook.EventHandlerActor.Handlers
         public IHandler CreateEventHandler(string eventType)
         {
             if (!_eventHandlerConfig.TryGetValue(eventType.ToLower(), out var eventHandlerConfig))
-            {
                 throw new Exception($"Boom, handler event type {eventType} was not found, cannot process the message");
-            }
 
             if (eventHandlerConfig.CallBackEnabled)
-            {
                 return new WebhookResponseHandler(
                     this,
                     _httpClientFactory,
                     _requestBuilder,
-                    _authenticationHandlerFactory,
                     _requestLogger,
                     _bigBrother,
                     eventHandlerConfig);
-            }
 
             return CreateWebhookHandler(eventHandlerConfig.WebhookConfig.Name);
         }
@@ -71,16 +63,13 @@ namespace CaptainHook.EventHandlerActor.Handlers
         public IHandler CreateWebhookHandler(string webHookName)
         {
             if (!_webHookConfig.TryGetValue(webHookName.ToLower(), out var webhookConfig))
-            {
                 throw new Exception("Boom, handler webhook not found cannot process the message");
-            }
 
             return new GenericWebhookHandler(
                 _httpClientFactory,
-                _authenticationHandlerFactory,
                 _requestBuilder,
                 _requestLogger,
-                _bigBrother, 
+                _bigBrother,
                 webhookConfig);
         }
     }

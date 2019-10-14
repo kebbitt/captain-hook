@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Telemetry.Web;
+using CaptainHook.EventHandlerActor.Handlers;
 using Eshopworld.Core;
 using Newtonsoft.Json;
 
-namespace CaptainHook.EventHandlerActor.Handlers.Authentication
+namespace CaptainHook.TokenManagementActor.Handlers.Authentication
 {
     /// <summary>
     /// Custom Authentication Handler
@@ -30,14 +31,10 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
         public override async Task<string> GetTokenAsync(CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(OidcAuthenticationConfig.ClientId))
-            {
                 throw new ArgumentNullException(nameof(OidcAuthenticationConfig.ClientId));
-            }
 
             if (string.IsNullOrEmpty(OidcAuthenticationConfig.ClientSecret))
-            {
                 throw new ArgumentNullException(nameof(OidcAuthenticationConfig.ClientSecret));
-            }
 
             var httpClient = HttpClientFactory.Get(OidcAuthenticationConfig.Uri);
 
@@ -54,9 +51,7 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
                 cancellationToken);
 
             if (authProviderResponse.StatusCode != HttpStatusCode.Created || authProviderResponse.Content == null)
-            {
                 throw new Exception("didn't get a token from the provider");
-            }
 
             var responseContent = await authProviderResponse.Content.ReadAsStringAsync();
             var stsResult = JsonConvert.DeserializeObject<OidcAuthenticationToken>(responseContent);

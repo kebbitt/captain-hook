@@ -1,13 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Integration.ServiceFabric;
 using CaptainHook.Common.Configuration;
-using CaptainHook.EventHandlerActor.Handlers;
-using CaptainHook.EventHandlerActor.Handlers.Authentication;
 using Eshopworld.Core;
 using Eshopworld.Telemetry;
 using Microsoft.Azure.KeyVault;
@@ -26,7 +22,7 @@ namespace CaptainHook.EventHandlerActor
         {
             try
             {
-                var kvUri = Environment.GetEnvironmentVariable(ConfigurationSettings.KeyVaultUriEnvVariable);
+                var kvUri = Environment.GetEnvironmentVariable(PlatformConfigurationSettings.KeyVaultUriEnvVariable);
 
                 var config = new ConfigurationBuilder().AddAzureKeyVault(
                     kvUri,
@@ -36,41 +32,41 @@ namespace CaptainHook.EventHandlerActor
                     new DefaultKeyVaultSecretManager()).Build();
 
                 //autowire up configs in keyvault to webhooks
-                var section = config.GetSection("event");
-                var values = section.GetChildren().ToList();
+                //var section = config.GetSection("event");
+                //var values = section.GetChildren().ToList();
 
-                var eventHandlerList = new List<EventHandlerConfig>();
-                var webhookList = new List<WebhookConfig>(values.Count);
-                var endpointList = new Dictionary<string, WebhookConfig>(values.Count);
+                //var eventHandlerList = new List<EventHandlerConfig>();
+                //var webhookList = new List<WebhookConfig>(values.Count);
+                //var endpointList = new Dictionary<string, WebhookConfig>(values.Count);
 
-                foreach (var configurationSection in values)
-                {
-                    //temp work around until config comes in through the API
-                    var eventHandlerConfig = configurationSection.Get<EventHandlerConfig>();
-                    eventHandlerList.Add(eventHandlerConfig);
+                //foreach (var configurationSection in values)
+                //{
+                //    //temp work around until config comes in through the API
+                //    var eventHandlerConfig = configurationSection.Get<EventHandlerConfig>();
+                //    eventHandlerList.Add(eventHandlerConfig);
 
-                    var path = "webhookconfig";
-                    if (eventHandlerConfig.WebhookConfig != null)
-                    {
-                        ConfigParser.ParseAuthScheme(eventHandlerConfig.WebhookConfig, configurationSection, $"{path}:authenticationconfig");
-                        eventHandlerConfig.WebhookConfig.EventType = eventHandlerConfig.Type;
-                        webhookList.Add(eventHandlerConfig.WebhookConfig);
-                        ConfigParser.AddEndpoints(eventHandlerConfig.WebhookConfig, endpointList, configurationSection, path);
-                    }
+                //    var path = "webhookconfig";
+                //    if (eventHandlerConfig.WebhookConfig != null)
+                //    {
+                //        ConfigParser.ParseAuthScheme(eventHandlerConfig.WebhookConfig, configurationSection, $"{path}:authenticationconfig");
+                //        eventHandlerConfig.WebhookConfig.EventType = eventHandlerConfig.Type;
+                //        webhookList.Add(eventHandlerConfig.WebhookConfig);
+                //        ConfigParser.AddEndpoints(eventHandlerConfig.WebhookConfig, endpointList, configurationSection, path);
+                //    }
 
-                    if (!eventHandlerConfig.CallBackEnabled)
-                    {
-                        continue;
-                    }
+                //    if (!eventHandlerConfig.CallBackEnabled)
+                //    {
+                //        continue;
+                //    }
 
-                    path = "callbackconfig";
-                    ConfigParser.ParseAuthScheme(eventHandlerConfig.CallbackConfig, configurationSection, $"{path}:authenticationconfig");
-                    eventHandlerConfig.CallbackConfig.EventType = eventHandlerConfig.Type;
-                    webhookList.Add(eventHandlerConfig.CallbackConfig);
-                    ConfigParser.AddEndpoints(eventHandlerConfig.CallbackConfig, endpointList, configurationSection, path);
-                }
+                //    path = "callbackconfig";
+                //    ConfigParser.ParseAuthScheme(eventHandlerConfig.CallbackConfig, configurationSection, $"{path}:authenticationconfig");
+                //    eventHandlerConfig.CallbackConfig.EventType = eventHandlerConfig.Type;
+                //    webhookList.Add(eventHandlerConfig.CallbackConfig);
+                //    ConfigParser.AddEndpoints(eventHandlerConfig.CallbackConfig, endpointList, configurationSection, path);
+                //}
 
-                var settings = new ConfigurationSettings();
+                var settings = new PlatformConfigurationSettings();
                 config.Bind(settings);
 
                 var bb = new BigBrother(settings.InstrumentationKey, settings.InstrumentationKey);
@@ -84,22 +80,16 @@ namespace CaptainHook.EventHandlerActor
                 builder.RegisterInstance(settings)
                     .SingleInstance();
 
-                builder.RegisterType<EventHandlerFactory>().As<IEventHandlerFactory>().SingleInstance();
-                builder.RegisterType<AuthenticationHandlerFactory>().As<IAuthenticationHandlerFactory>().SingleInstance();
-                builder.RegisterType<HttpClientFactory>().As<Handlers.IHttpClientFactory>();
-                builder.RegisterType<RequestLogger>().As<IRequestLogger>();
-                builder.RegisterType<RequestBuilder>().As<IRequestBuilder>();
-
                 //Register each webhook authenticationConfig separately for injection
-                foreach (var setting in eventHandlerList)
-                {
-                    builder.RegisterInstance(setting).Named<EventHandlerConfig>(setting.Name);
-                }
+                //foreach (var setting in eventHandlerList)
+                //{
+                //    builder.RegisterInstance(setting).Named<EventHandlerConfig>(setting.Name);
+                //}
 
-                foreach (var webhookConfig in webhookList)
-                {
-                    builder.RegisterInstance(webhookConfig).Named<WebhookConfig>(webhookConfig.Name);
-                }
+                //foreach (var webhookConfig in webhookList)
+                //{
+                //    builder.RegisterInstance(webhookConfig).Named<WebhookConfig>(webhookConfig.Name);
+                //}
 
                 ////creates a list of unique endpoint and the corresponding http client for each which can be selected at runtime
                 //foreach (var (key, value) in endpointList)

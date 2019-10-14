@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Net.Http;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
+using CaptainHook.EventHandlerActor.Handlers;
 
-namespace CaptainHook.EventHandlerActor.Handlers
+namespace CaptainHook.EventDispatcherService.Handlers
 {
     public interface IRequestBuilder
     {

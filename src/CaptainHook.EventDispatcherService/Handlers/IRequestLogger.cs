@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using CaptainHook.Common;
 
-namespace CaptainHook.EventHandlerActor.Handlers
+namespace CaptainHook.EventDispatcherService.Handlers
 {
     public interface IRequestLogger
     {

@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
 using CaptainHook.Common.Telemetry.Web;
-using CaptainHook.EventHandlerActor.Handlers.Authentication;
+using CaptainHook.EventHandlerActor.Handlers;
 using Eshopworld.Core;
 
-namespace CaptainHook.EventHandlerActor.Handlers
+namespace CaptainHook.EventDispatcherService.Handlers
 {
     public class WebhookResponseHandler : GenericWebhookHandler
     {
@@ -19,11 +19,10 @@ namespace CaptainHook.EventHandlerActor.Handlers
             IEventHandlerFactory eventHandlerFactory,
             IHttpClientFactory httpClientFactory,
             IRequestBuilder requestBuilder,
-            IAuthenticationHandlerFactory authenticationHandlerFactory,
             IRequestLogger requestLogger,
             IBigBrother bigBrother,
             EventHandlerConfig eventHandlerConfig)
-            : base(httpClientFactory, authenticationHandlerFactory, requestBuilder, requestLogger, bigBrother, eventHandlerConfig.WebhookConfig)
+            : base(httpClientFactory, requestBuilder, requestLogger, bigBrother, eventHandlerConfig.WebhookConfig)
         {
             _eventHandlerFactory = eventHandlerFactory;
             _eventHandlerConfig = eventHandlerConfig;
@@ -32,13 +31,11 @@ namespace CaptainHook.EventHandlerActor.Handlers
         public override async Task CallAsync<TRequest>(TRequest request, IDictionary<string, object> metadata, CancellationToken cancellationToken)
         {
             if (!(request is MessageData messageData))
-            {
                 throw new Exception("injected wrong implementation");
-            }
 
             var uri = RequestBuilder.BuildUri(WebhookConfig, messageData.Payload);
             var httpMethod = RequestBuilder.SelectHttpMethod(WebhookConfig, messageData.Payload);
-            var payload = RequestBuilder.BuildPayload(this.WebhookConfig, messageData.Payload, metadata);
+            var payload = RequestBuilder.BuildPayload(WebhookConfig, messageData.Payload, metadata);
             var config = RequestBuilder.SelectWebhookConfig(WebhookConfig, messageData.Payload);
             var headers = RequestBuilder.GetHttpHeaders(WebhookConfig, messageData);
             var authenticationConfig = RequestBuilder.GetAuthenticationConfig(WebhookConfig, messageData.Payload);
@@ -51,23 +48,19 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
             BigBrother.Publish(
                 new WebhookEvent(
-                    messageData.EventHandlerActorId, 
-                    messageData.Type, 
-                    $"Response status code {response.StatusCode}", 
+                    messageData.EventHandlerActorId,
+                    messageData.Type,
+                    $"Response status code {response.StatusCode}",
                     uri.AbsoluteUri,
-                    httpMethod, 
+                    httpMethod,
                     response.StatusCode,
                     messageData.CorrelationId
                 ));
 
             if (metadata == null)
-            {
                 metadata = new Dictionary<string, object>();
-            }
             else
-            {
                 metadata.Clear();
-            }
 
             var content = await response.Content.ReadAsStringAsync();
             metadata.Add("HttpStatusCode", (int)response.StatusCode);

@@ -6,9 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
+using CaptainHook.EventDispatcherService.Handlers;
 using CaptainHook.EventHandlerActor.Handlers;
-using CaptainHook.EventHandlerActor.Handlers.Authentication;
 using CaptainHook.Tests.Web.Authentication;
+using CaptainHook.TokenManagementActor.Handlers.Authentication;
 using Eshopworld.Core;
 using Eshopworld.Tests.Core;
 using Moq;
@@ -51,7 +52,6 @@ namespace CaptainHook.Tests.Web.WebHooks
 
             var genericWebhookHandler = new GenericWebhookHandler(
                 httpClientBuilder,
-                mockAuthenticationFactory.Object,
                 requestBuilder,
                 requestLogger,
                 mockBigBrother.Object,
@@ -79,7 +79,6 @@ namespace CaptainHook.Tests.Web.WebHooks
 
             var genericWebhookHandler = new GenericWebhookHandler(
                 httpClientBuilder,
-                new Mock<IAuthenticationHandlerFactory>().Object,
                 requestBuilder,
                 requestLogger,
                 mockBigBrother.Object,

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
 using CaptainHook.EventHandlerActor.Handlers;
-using CaptainHook.EventHandlerActor.Handlers.Authentication;
+using CaptainHook.TokenManagementActor.Handlers.Authentication;
 using Eshopworld.Core;
 using Eshopworld.Tests.Core;
 using Moq;

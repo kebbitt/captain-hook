@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CaptainHook.EventHandlerActor.Handlers.Authentication
+namespace CaptainHook.TokenManagementActor.Handlers.Authentication
 {
     internal static class ServerDateTime
     {
