@@ -1,5 +1,6 @@
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
+using CaptainHook.Common.Telemetry;
 using CaptainHook.Common.Telemetry.Service;
 using CaptainHook.Interfaces;
 using Eshopworld.Core;
@@ -199,9 +200,17 @@ namespace CaptainHook.EventReaderService
                 {
                     try
                     {
-                        if (_messageReceiver.IsClosedOrClosing) continue;
+                        if (_messageReceiver.IsClosedOrClosing)
+                        {
+                            _bigBrother.Publish(new MessageReceiverClosingEvent { FabricId = $"{this.Context.ServiceName}:{this.Context.ReplicaId}" });
 
-                        var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromSeconds(1));
+                            continue; 
+                        }
+
+                      var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromSeconds(10));
+
+                        _bigBrother.Publish(new MessagePollingEvent { FabricId = $"{this.Context.ServiceName}:{this.Context.ReplicaId}", MessageCount = messages!=null? messages.Count:0 });
+
                         if (messages == null || messages.Count == 0)
                         {
                             // ReSharper disable once MethodSupportsCancellation - no need to cancellation token here
@@ -255,6 +264,8 @@ namespace CaptainHook.EventReaderService
                         BigBrother.Write(e.ToExceptionEvent());
                     }
                 }
+
+                _bigBrother.Publish(new Common.Telemetry.CancellationRequestedEvent { FabricId = $"{this.Context.ServiceName}:{this.Context.ReplicaId}" });
             }
             catch (Exception e)
             {
