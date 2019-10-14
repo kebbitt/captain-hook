@@ -18,7 +18,7 @@ using Xunit;
 namespace CaptainHook.Tests.Web.WebHooks
 {
     /// <summary>
-    /// Tests the HTTP HttpVerb selection maps to the actual requests made to the webhooks and callbacks
+    /// Tests the HTTP HttpMethod selection maps to the actual requests made to the webhooks and callbacks
     /// </summary>
     public class GenericWebHookHandlerVerbTests
     {
@@ -40,21 +40,24 @@ namespace CaptainHook.Tests.Web.WebHooks
                 .Respond(expectedResponseCode, "application/json", expectedResponseBody);
 
             var mockBigBrother = new Mock<IBigBrother>();
-            var httpClients = new IndexDictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } };
 
-            var mockAuthHandlerFactory = new Mock<IAuthenticationHandlerFactory>();
-            var httpClientBuilder = new HttpClientBuilder(mockAuthHandlerFactory.Object, httpClients);
+            var host = new Uri(config.Uri).Host;
+            var httpClients = new Dictionary<string, HttpClient> { { host, mockHttp.ToHttpClient() } };
+            var mockAuthenticationFactory = new Mock<IAuthenticationHandlerFactory>();
+
+            var httpClientBuilder = new HttpClientFactory(httpClients);
             var requestBuilder = new RequestBuilder();
             var requestLogger = new RequestLogger(mockBigBrother.Object);
 
             var genericWebhookHandler = new GenericWebhookHandler(
                 httpClientBuilder,
+                mockAuthenticationFactory.Object,
                 requestBuilder,
-                requestLogger, 
+                requestLogger,
                 mockBigBrother.Object,
                 config);
 
-            await genericWebhookHandler.CallAsync(new MessageData(payload, "TestType"), new Dictionary<string, object>(), _cancellationToken);
+            await genericWebhookHandler.CallAsync(new MessageData(payload, "TestType"){CorrelationId = Guid.NewGuid().ToString()}, new Dictionary<string, object>(), _cancellationToken);
             Assert.Equal(1, mockHttp.GetMatchCount(request));
         }
 
@@ -68,21 +71,21 @@ namespace CaptainHook.Tests.Web.WebHooks
                 .Respond(expectedResponseCode, "application/json", expectedResponseBody);
 
             var mockBigBrother = new Mock<IBigBrother>();
-            var httpClients = new IndexDictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } };
+            var httpClients = new Dictionary<string, HttpClient> { { new Uri(config.Uri).Host, mockHttp.ToHttpClient() } };
 
-            var mockAuthHandlerFactory = new Mock<IAuthenticationHandlerFactory>();
-            var httpClientBuilder = new HttpClientBuilder(mockAuthHandlerFactory.Object, httpClients);
+            var httpClientBuilder = new HttpClientFactory(httpClients);
             var requestBuilder = new RequestBuilder();
             var requestLogger = new RequestLogger(mockBigBrother.Object);
 
             var genericWebhookHandler = new GenericWebhookHandler(
                 httpClientBuilder,
+                new Mock<IAuthenticationHandlerFactory>().Object,
                 requestBuilder,
                 requestLogger,
                 mockBigBrother.Object,
                 config);
 
-            await genericWebhookHandler.CallAsync(new MessageData(payload, "TestType"), new Dictionary<string, object>(), _cancellationToken);
+            await genericWebhookHandler.CallAsync(new MessageData(payload, "TestType") { CorrelationId = Guid.NewGuid().ToString() }, new Dictionary<string, object>(), _cancellationToken);
             Assert.Equal(1, mockHttp.GetMatchCount(request));
         }
 
@@ -92,9 +95,9 @@ namespace CaptainHook.Tests.Web.WebHooks
         public static IEnumerable<object[]> CreationData =>
             new List<object[]>
             {
-                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/post", HttpVerb = HttpVerb.Post, }, HttpMethod.Post, "{\"Message\":\"Hello World Post\"}", HttpStatusCode.Created, string.Empty  },
-                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/put", HttpVerb = HttpVerb.Put }, HttpMethod.Put, "{\"Message\":\"Hello World Put\"}", HttpStatusCode.NoContent, string.Empty  },
-                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/patch", HttpVerb = HttpVerb.Patch }, HttpMethod.Patch, "{\"Message\":\"Hello World Patch\"}", HttpStatusCode.NoContent, string.Empty  },
+                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/post", HttpMethod = HttpMethod.Post, EventType = "Event1"}, HttpMethod.Post, "{\"Message\":\"Hello World Post\"}", HttpStatusCode.Created, string.Empty  },
+                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/put", HttpMethod = HttpMethod.Put, EventType = "Event2"}, HttpMethod.Put, "{\"Message\":\"Hello World Put\"}", HttpStatusCode.NoContent, string.Empty  },
+                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/patch", HttpMethod = HttpMethod.Patch, EventType = "Event3"}, HttpMethod.Patch, "{\"Message\":\"Hello World Patch\"}", HttpStatusCode.NoContent, string.Empty  },
             };
 
         /// <summary>
@@ -103,7 +106,7 @@ namespace CaptainHook.Tests.Web.WebHooks
         public static IEnumerable<object[]> GetData =>
             new List<object[]>
             {
-                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/get", HttpVerb = HttpVerb.Get }, HttpMethod.Get, null, HttpStatusCode.OK, string.Empty}
+                new object[] { new WebhookConfig{Uri = "http://localhost/webhook/get", HttpMethod = HttpMethod.Get, EventType = "Event1" }, HttpMethod.Get, null, HttpStatusCode.OK, string.Empty}
             };
     }
 }

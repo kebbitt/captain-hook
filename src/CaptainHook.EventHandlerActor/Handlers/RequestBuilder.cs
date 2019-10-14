@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using CaptainHook.Common;
-using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -14,6 +14,8 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <inheritdoc />
         public Uri BuildUri(WebhookConfig config, string payload)
         {
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
             var uri = config.Uri;
 
             //build the uri from the routes first
@@ -73,6 +75,8 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <inheritdoc />
         public string BuildPayload(WebhookConfig config, string sourcePayload, IDictionary<string, object> metadata)
         {
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
             var rules = config.WebhookRequestRules.Where(l => l.Destination.Location == Location.Body).ToList();
 
             if (!rules.Any())
@@ -147,13 +151,15 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
         /// <inheritdoc />
 
-        public HttpVerb SelectHttpVerb(WebhookConfig webhookConfig, string payload)
+        public HttpMethod SelectHttpMethod(WebhookConfig webhookConfig, string payload)
         {
+            if (webhookConfig == null) throw new ArgumentNullException(nameof(webhookConfig));
+
             //build the uri from the routes first
             var rules = webhookConfig.WebhookRequestRules.FirstOrDefault(r => r.Destination.RuleAction == RuleAction.Route);
             if (rules == null)
             {
-                return webhookConfig.HttpVerb;
+                return webhookConfig.HttpMethod;
             }
 
             var value = ModelParser.ParsePayloadPropertyAsString(rules.Source.Path, payload);
@@ -168,42 +174,48 @@ namespace CaptainHook.EventHandlerActor.Handlers
             {
                 throw new Exception("route http verb mapping/selector not found between config and the properties on the domain object");
             }
-            return route.HttpVerb;
+
+            return route.HttpMethod;
         }
 
         /// <inheritdoc />
-        public AuthenticationType SelectAuthenticationScheme(WebhookConfig webhookConfig, string payload)
+        public WebhookConfig GetAuthenticationConfig(WebhookConfig webhookConfig, string payload)
         {
+            if (webhookConfig == null) throw new ArgumentNullException(nameof(webhookConfig));
+
             //build the uri from the routes first
-            var rules = webhookConfig.WebhookRequestRules.FirstOrDefault(r => r.Destination.RuleAction == RuleAction.Route);
-            if (rules == null)
-            {
-                return webhookConfig.AuthenticationConfig.Type;
-            }
-
-            var value = ModelParser.ParsePayloadPropertyAsString(rules.Source.Path, payload);
-
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                throw new ArgumentNullException(nameof(rules.Source.Path), "routing path value in message payload is null or empty");
-            }
-
-            var route = rules.Routes.FirstOrDefault(r => r.Selector.Equals(value, StringComparison.OrdinalIgnoreCase));
-            if (route == null)
-            {
-                throw new Exception("route http verb mapping/selector not found between config and the properties on the domain object");
-            }
-            return route.AuthenticationConfig.Type;
-        }
-
-        public WebhookConfig SelectWebhookConfig(WebhookConfig webhookConfig, string payload)
-        {
             var rules = webhookConfig.WebhookRequestRules.FirstOrDefault(r => r.Destination.RuleAction == RuleAction.Route);
             if (rules == null)
             {
                 return webhookConfig;
             }
-            
+
+            var value = ModelParser.ParsePayloadPropertyAsString(rules.Source.Path, payload);
+
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentNullException(nameof(rules.Source.Path), "routing path value in message payload is null or empty");
+            }
+
+            var route = rules.Routes.FirstOrDefault(r => r.Selector.Equals(value, StringComparison.OrdinalIgnoreCase));
+            if (route == null)
+            {
+                throw new Exception("route http verb mapping/selector not found between config and the properties on the domain object");
+            }
+            return route;
+        }
+
+        /// <inheritdoc />
+        public WebhookConfig SelectWebhookConfig(WebhookConfig webhookConfig, string payload)
+        {
+            if (webhookConfig == null) throw new ArgumentNullException(nameof(webhookConfig));
+
+            var rules = webhookConfig.WebhookRequestRules.FirstOrDefault(r => r.Destination.RuleAction == RuleAction.Route);
+            if (rules == null)
+            {
+                return webhookConfig;
+            }
+
             var selector = string.Empty;
             if (rules.Source.Location == Location.Body)
             {
@@ -226,15 +238,19 @@ namespace CaptainHook.EventHandlerActor.Handlers
         }
 
         /// <inheritdoc />
-        public DispatchRequest BuildDispatchRequest(WebhookConfig config, string payload, IDictionary<string, object> metadata = null)
+        public WebHookHeaders GetHttpHeaders(WebhookConfig webhookConfig, MessageData messageData)
         {
-            return new DispatchRequest
-            {
-                AuthenticationConfig = config.AuthenticationConfig,
-                Payload = BuildPayload(config, payload, metadata),
-                Uri = BuildUri(config, payload).ToString(),
-                Verb = SelectHttpVerb(config, payload)
-            };
+            if (webhookConfig == null) throw new ArgumentNullException(nameof(webhookConfig));
+            if (messageData == null) throw new ArgumentNullException(nameof(messageData));
+
+            var headers = new WebHookHeaders();
+
+            headers.AddContentHeader(Constants.Headers.ContentType, webhookConfig.ContentType);
+            headers.AddRequestHeader(Constants.Headers.CorrelationId, messageData.CorrelationId);
+            headers.AddRequestHeader(Constants.Headers.EventDeliveryId, messageData.CorrelationId);
+            headers.AddRequestHeader(Constants.Headers.EventType, webhookConfig.EventType);
+
+            return headers;
         }
     }
 }

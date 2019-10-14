@@ -10,25 +10,10 @@
     <Parameter Name="CaptainHook.DirectorService_MinReplicaSetSize" DefaultValue="3" />
     <Parameter Name="CaptainHook.DirectorService_PartitionCount" DefaultValue="1" />
     <Parameter Name="CaptainHook.DirectorService_TargetReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="CaptainHook.EventDispatcherPoolConfig_PoolSize" DefaultValue="100" />
   </Parameters>
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion 
        should match the Name and Version attributes of the ServiceManifest element defined in the 
        ServiceManifest.xml file. -->
-  <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="CaptainHook.TokenManagementActorPkg" ServiceManifestVersion="1.0.0" />
-    <EnvironmentOverrides CodePackageRef="Code">
-      <EnvironmentVariable Name="KEYVAULT_BASE_URI" Value="[KeyVault_Base_Uri]" />
-      <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="[AspNetCore_Environment]" />
-    </EnvironmentOverrides>
-  </ServiceManifestImport>
-  <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="CaptainHook.EventDispatcherServicePkg" ServiceManifestVersion="1.0.0" />
-    <EnvironmentOverrides CodePackageRef="Code">
-      <EnvironmentVariable Name="KEYVAULT_BASE_URI" Value="[KeyVault_Base_Uri]" />
-      <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="[AspNetCore_Environment]" />
-    </EnvironmentOverrides>
-  </ServiceManifestImport>
   <ServiceManifestImport>
     <ServiceManifestRef ServiceManifestName="CaptainHook.EventHandlerActorPkg" ServiceManifestVersion="1.0.0" />
     <EnvironmentOverrides CodePackageRef="Code">
@@ -54,12 +39,16 @@
             <Parameter Name="DefaultPartitionCount" Value="[CaptainHook.DirectorService_DefaultPartitionCount]"/>
             <Parameter Name="DefaultPlacementConstraints" Value="[CaptainHook.DirectorService_DefaultPlacementConstraints]"/>
           </Section>
-          <Section Name="EventDispatcherPoolConfig">
-            <Parameter Name="PoolSize" Value="[CaptainHook.EventDispatcherPoolConfig_PoolSize]"/>
-          </Section>
         </Settings>
       </ConfigOverride>
     </ConfigOverrides>
+    <EnvironmentOverrides CodePackageRef="Code">
+      <EnvironmentVariable Name="KEYVAULT_BASE_URI" Value="[KeyVault_Base_Uri]" />
+      <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="[AspNetCore_Environment]" />
+    </EnvironmentOverrides>
+  </ServiceManifestImport>
+  <ServiceManifestImport>
+    <ServiceManifestRef ServiceManifestName="CaptainHook.EndpointDispatcherActorPkg" ServiceManifestVersion="1.0.0" />
     <EnvironmentOverrides CodePackageRef="Code">
       <EnvironmentVariable Name="KEYVAULT_BASE_URI" Value="[KeyVault_Base_Uri]" />
       <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="[AspNetCore_Environment]" />

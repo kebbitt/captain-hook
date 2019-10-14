@@ -33,7 +33,7 @@ namespace CaptainHook.Tests.Services.Reliable
 
         private readonly IBigBrother _mockedBigBrother;
 
-        private readonly PlatformConfigurationSettings _config;
+        private readonly ConfigurationSettings _config;
 
         private readonly MockActorProxyFactory _mockActorProxyFactory;
 
@@ -47,7 +47,7 @@ namespace CaptainHook.Tests.Services.Reliable
                 Encoding.UTF8.GetBytes("test.type"), replicaId:(new Random(int.MaxValue)).Next());
             _mockActorProxyFactory = new MockActorProxyFactory();
             _stateManager = new MockReliableStateManager();
-            _config = new PlatformConfigurationSettings();
+            _config = new ConfigurationSettings();
             _mockedBigBrother = new Mock<IBigBrother>().Object;
             _mockMessageProvider = new Mock<IMessageReceiver>();
 
@@ -266,7 +266,7 @@ namespace CaptainHook.Tests.Services.Reliable
                 };
             }
 
-            await service.CompleteMessage(messageData, messageDelivered);
+            await service.CompleteMessageAsync(messageData, messageDelivered, CancellationToken.None);
 
             //Assert that the dictionary contains 1 processing message and associated handle
             dictionary = await _stateManager.GetOrAddAsync<IReliableDictionary2<int, MessageDataHandle>>(nameof(MessageDataHandle));

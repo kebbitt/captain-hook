@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using CaptainHook.Common;
-using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
 
 namespace CaptainHook.EventHandlerActor.Handlers
@@ -31,7 +31,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <param name="webhookConfig"></param>
         /// <param name="payload"></param>
         /// <returns></returns>
-        HttpVerb SelectHttpVerb(WebhookConfig webhookConfig, string payload);
+        HttpMethod SelectHttpMethod(WebhookConfig webhookConfig, string payload);
 
         /// <summary>
         /// Determines the authentication scheme to use in the request.
@@ -39,7 +39,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <param name="webhookConfig"></param>
         /// <param name="payload"></param>
         /// <returns></returns>
-        AuthenticationType SelectAuthenticationScheme(WebhookConfig webhookConfig, string payload);
+        WebhookConfig GetAuthenticationConfig(WebhookConfig webhookConfig, string payload);
 
         /// <summary>
         /// Selects the webhook config to use for the endpoint for which the request is destined based on supplied webhook rules and configs
@@ -50,15 +50,9 @@ namespace CaptainHook.EventHandlerActor.Handlers
         WebhookConfig SelectWebhookConfig(WebhookConfig webhookConfig, string payload);
 
         /// <summary>
-        /// build complete DTO <see cref="DispatchRequest"/> for one leg of dispatch
-        ///
-        /// at the moment, the callback is treated as a separate request
+        /// Creates a dictionary of requests headers which are needed per request
         /// </summary>
-        /// <param name="config">web hook config</param>
-        /// <param name="payload">payload itself</param>
-        /// <param name="metadata">additional metadata</param>
-        /// <returns>dispatch request</returns>
-        DispatchRequest BuildDispatchRequest(WebhookConfig config, string payload,
-            IDictionary<string, object> metadata = null);
+        /// <returns></returns>
+        WebHookHeaders GetHttpHeaders(WebhookConfig webhookConfig, MessageData messageData);
     }
 }

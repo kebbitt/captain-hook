@@ -14,6 +14,7 @@ using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Fabric;
 using System.Linq;
@@ -37,15 +38,17 @@ namespace CaptainHook.EventReaderService
         private readonly IBigBrother _bigBrother;
         private readonly IServiceBusManager _serviceBusManager;
         private readonly IActorProxyFactory _proxyFactory;
-        private readonly PlatformConfigurationSettings _settings;
+        private readonly ConfigurationSettings _settings;
         private readonly string _eventType;
 
         private IReliableDictionary2<int, MessageDataHandle> _messageHandles;
-        private HashSet<int> _freeHandlers = new HashSet<int>();
+        private ConcurrentQueue<int> _freeHandlers = new ConcurrentQueue<int>();
         private IMessageReceiver _messageReceiver;
+        private CancellationToken _cancellationToken;
 
         //todo move this to config driven in the code package
         internal int HandlerCount = 10;
+        private readonly TimeSpan _defaultServiceFabricStateOperationTimeout = TimeSpan.FromSeconds(4); // 4 seconds is default defined by state operation methods in service fabric docs
 
         /// <summary>
         /// Default ctor used at runtime
@@ -60,7 +63,7 @@ namespace CaptainHook.EventReaderService
             IBigBrother bigBrother,
             IServiceBusManager serviceBusManager,
             IActorProxyFactory proxyFactory,
-            PlatformConfigurationSettings settings)
+            ConfigurationSettings settings)
             : base(context)
         {
             _bigBrother = bigBrother;
@@ -85,7 +88,7 @@ namespace CaptainHook.EventReaderService
             IBigBrother bigBrother,
             IServiceBusManager serviceBusManager,
             IActorProxyFactory proxyFactory,
-            PlatformConfigurationSettings settings)
+            ConfigurationSettings settings)
             : base(context, reliableStateManagerReplica)
         {
             _bigBrother = bigBrother;
@@ -94,11 +97,6 @@ namespace CaptainHook.EventReaderService
             _settings = settings;
             _eventType = Encoding.UTF8.GetString(context.InitializationData);
         }
-
-        /// <summary>
-        /// Gets the count of the numbers of messages which are in flight at the moment
-        /// </summary>
-        protected internal int InFlightMessageCount => HandlerCount - _freeHandlers.Count;
 
         /// <summary>
         /// Optional override to create listeners (e.g., HTTP, Service Remoting, WCF, etc.) for this service replica to handle client or user requests.
@@ -112,16 +110,16 @@ namespace CaptainHook.EventReaderService
             return this.CreateServiceRemotingReplicaListeners();
         }
 
-        protected override Task OnOpenAsync(ReplicaOpenMode openMode, CancellationToken cancellationToken)
+        protected override async Task OnOpenAsync(ReplicaOpenMode openMode, CancellationToken cancellationToken)
         {
             _bigBrother.Publish(new ServiceActivatedEvent(Context, InFlightMessageCount));
-            return base.OnOpenAsync(openMode, cancellationToken);
+            await base.OnOpenAsync(openMode, cancellationToken);
         }
 
-        protected override Task OnCloseAsync(CancellationToken cancellationToken)
+        protected override async Task OnCloseAsync(CancellationToken cancellationToken)
         {
             _bigBrother.Publish(new ServiceDeactivatedEvent(Context, InFlightMessageCount));
-            return base.OnCloseAsync(cancellationToken);
+            await base.OnCloseAsync(cancellationToken);
         }
 
         protected override void OnAbort()
@@ -130,41 +128,45 @@ namespace CaptainHook.EventReaderService
             base.OnAbort();
         }
 
-        protected override Task OnChangeRoleAsync(ReplicaRole newRole, CancellationToken cancellationToken)
+        protected override async Task OnChangeRoleAsync(ReplicaRole newRole, CancellationToken cancellationToken)
         {
             _bigBrother.Publish(new ServiceRoleChangeEvent(Context, newRole, InFlightMessageCount));
-            return base.OnChangeRoleAsync(newRole, cancellationToken);
+            await base.OnChangeRoleAsync(newRole, cancellationToken);
         }
 
         /// <summary>
         /// Determines the number of handlers to have based on the number of messages which are inflight
         /// </summary>
-        /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        internal async Task GetHandlerCountsOnStartup(CancellationToken cancellationToken)
+        internal async Task GetHandlerCountsOnStartup()
         {
             using (var tx = StateManager.CreateTransaction())
             {
                 var enumerator = (await _messageHandles.CreateKeyEnumerableAsync(tx)).GetAsyncEnumerator();
 
-                var list = new HashSet<int>();
-                while (await enumerator.MoveNextAsync(cancellationToken))
+                var set = new HashSet<int>();
+                while (await enumerator.MoveNextAsync(_cancellationToken))
                 {
-                    if (cancellationToken.IsCancellationRequested) return;
+                    if (_cancellationToken.IsCancellationRequested) return;
 
                     var handleData = await _messageHandles.TryGetValueAsync(tx, enumerator.Current);
                     if (!handleData.HasValue) continue;
 
-                    list.Add(handleData.Value.HandlerId);
+                    set.Add(handleData.Value.HandlerId);
                 }
 
                 await tx.CommitAsync();
 
-                var maxUsedHandlers = list.OrderByDescending(i => i).FirstOrDefault();
-                if (maxUsedHandlers > HandlerCount) HandlerCount = maxUsedHandlers;
-                _freeHandlers = Enumerable.Range(1, HandlerCount).Except(list).ToHashSet();
+                HandlerCount = Math.Max(HandlerCount, set.Count > 0 ? set.Max() : 0);
+                _freeHandlers = Enumerable.Range(1, HandlerCount).Except(set).ToConcurrentQueue();
             }
         }
+
+
+        /// <summary>
+        /// Gets the count of the numbers of messages which are in flight at the moment
+        /// </summary>
+        internal int InFlightMessageCount => HandlerCount - _freeHandlers.Count;
 
         private async Task SetupServiceBus()
         {
@@ -179,11 +181,13 @@ namespace CaptainHook.EventReaderService
         /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
+            _cancellationToken = cancellationToken;
+
             try
             {
                 _messageHandles = await StateManager.GetOrAddAsync<IReliableDictionary2<int, MessageDataHandle>>(nameof(MessageDataHandle));
 
-                await GetHandlerCountsOnStartup(cancellationToken);
+                await GetHandlerCountsOnStartup();
                 await SetupServiceBus();
 
                 while (!cancellationToken.IsCancellationRequested)
@@ -217,11 +221,16 @@ namespace CaptainHook.EventReaderService
 
                             using (var tx = StateManager.CreateTransaction())
                             {
-                                await _messageHandles.AddAsync(tx, handleData.HandlerId, handleData);
+                                var result = await _messageHandles.TryAddAsync(tx, handleData.HandlerId, handleData, _defaultServiceFabricStateOperationTimeout, _cancellationToken);
+
+                                if (!result)
+                                {
+                                    throw new FailureStateUpdateException(tx.TransactionId, handleData.HandlerId, _eventType, "Could not add message handle to state store in Reader Service", Context);
+                                }
 
                                 await _proxyFactory.CreateActorProxy<IEventHandlerActor>(
                                         new ActorId(messageData.EventHandlerActorId),
-                                        serviceName: $"{Constants.CaptainHookApplication.Services.EventHandlerServiceShortName}")
+                                        serviceName: Constants.CaptainHookApplication.Services.EventHandlerServiceShortName)
                                     .Handle(messageData);
 
                                 await tx.CommitAsync();
@@ -233,6 +242,10 @@ namespace CaptainHook.EventReaderService
                         BigBrother.Write(sbCommunicationException.ToExceptionEvent());
                         await SetupServiceBus();
                     }
+                    catch (Exception e)
+                    {
+                        BigBrother.Write(e.ToExceptionEvent());
+                    }
                 }
             }
             catch (Exception e)
@@ -243,14 +256,12 @@ namespace CaptainHook.EventReaderService
 
         internal int GetFreeHandlerId()
         {
-            var handlerId = _freeHandlers.FirstOrDefault();
-            if (handlerId == 0)
+            if (_freeHandlers.TryDequeue(out var handlerId))
             {
-                return ++HandlerCount;
+                return handlerId;
             }
 
-            _freeHandlers.Remove(handlerId);
-            return handlerId;
+            return ++HandlerCount;
         }
 
         /// <summary>
@@ -258,14 +269,15 @@ namespace CaptainHook.EventReaderService
         /// </summary>
         /// <param name="messageData"></param>
         /// <param name="messageDelivered"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public async Task CompleteMessage(MessageData messageData, bool messageDelivered)
+        public async Task CompleteMessageAsync(MessageData messageData, bool messageDelivered, CancellationToken cancellationToken = default)
         {
             try
             {
                 using (var tx = StateManager.CreateTransaction())
                 {
-                    var handle = await _messageHandles.TryRemoveAsync(tx, messageData.HandlerId);
+                    var handle = await _messageHandles.TryRemoveAsync(tx, messageData.HandlerId, _defaultServiceFabricStateOperationTimeout, cancellationToken);
                     if (!handle.HasValue)
                     {
                         throw new LockTokenNotFoundException("lock token was not found in reliable state")
@@ -276,13 +288,22 @@ namespace CaptainHook.EventReaderService
                         };
                     }
 
-                    //let the message naturally expire if it's an unsuccessful delivery
-                    if (messageDelivered)
+                    try
                     {
-                        await _messageReceiver.CompleteAsync(handle.Value.LockToken);
+                        //let the message naturally expire if it's an unsuccessful delivery
+                        if (messageDelivered)
+                        {
+                            await _messageReceiver.CompleteAsync(handle.Value.LockToken);
+                        }
                     }
-
-                    await tx.CommitAsync();
+                    catch (MessageLockLostException e)
+                    {
+                        BigBrother.Write(e.ToExceptionEvent());
+                    }
+                    finally
+                    {
+                        await tx.CommitAsync();
+                    }
                 }
             }
             catch (Exception e)
@@ -291,7 +312,7 @@ namespace CaptainHook.EventReaderService
             }
             finally
             {
-                _freeHandlers.Add(messageData.HandlerId);
+                _freeHandlers.Enqueue(messageData.HandlerId);
             }
         }
     }

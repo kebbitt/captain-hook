@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Autofac.Features.Indexed;
 using CaptainHook.Common;
-using CaptainHook.Common.Configuration;
 using CaptainHook.Common.Telemetry.Actor;
 using CaptainHook.EventHandlerActor.Handlers;
 using CaptainHook.Interfaces;
@@ -28,8 +26,8 @@ namespace CaptainHook.EventHandlerActor
     [StatePersistence(StatePersistence.Persisted)]
     public class EventHandlerActor : Actor, IEventHandlerActor
     {
+        private readonly IEventHandlerFactory _eventHandlerFactory;
         private readonly IBigBrother _bigBrother;
-        private readonly IIndex<string, EventHandlerConfig> _eventHandlerConfig;
         private IActorTimer _handleTimer;
 
         /// <summary>
@@ -37,16 +35,17 @@ namespace CaptainHook.EventHandlerActor
         /// </summary>
         /// <param name="actorService">The Microsoft.ServiceFabric.Actors.Runtime.ActorService that will host this actor instance.</param>
         /// <param name="actorId">The Microsoft.ServiceFabric.Actors.ActorId for this actor instance.</param>
+        /// <param name="eventHandlerFactory"></param>
         /// <param name="bigBrother"></param>
         public EventHandlerActor(
             ActorService actorService,
             ActorId actorId,
-            IBigBrother bigBrother,
-            IIndex<string, EventHandlerConfig> eventHandlerConfig)
+            IEventHandlerFactory eventHandlerFactory,
+            IBigBrother bigBrother)
             : base(actorService, actorId)
         {
+            _eventHandlerFactory = eventHandlerFactory;
             _bigBrother = bigBrother;
-            _eventHandlerConfig = eventHandlerConfig;
         }
 
         /// <summary>
@@ -106,9 +105,8 @@ namespace CaptainHook.EventHandlerActor
                     return;
                 }
 
-                await SendToDispatcher(messageData);
-                //var handler = _eventHandlerFactory.CreateEventHandler(messageData.Type);
-                //await handler.CallAsync(messageData, new Dictionary<string, object>(), CancellationToken.None);
+                var handler = _eventHandlerFactory.CreateEventHandler(messageData.Type);
+                await handler.CallAsync(messageData, new Dictionary<string, object>(), CancellationToken.None);
             }
             catch (Exception e)
             {
@@ -121,28 +119,15 @@ namespace CaptainHook.EventHandlerActor
                 {
                     try
                     {
-
                         await StateManager.RemoveStateAsync(messageData.HandlerId.ToString());
-
-                        var readerServiceNameUri =
-                            $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceShortName}.{messageData.Type}";
-                        await ServiceProxy.Create<IEventReaderService>(new Uri(readerServiceNameUri))
-                            .CompleteMessage(messageData, messageDelivered);
+                        var readerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceShortName}.{messageData.Type}";
+                        await ServiceProxy.Create<IEventReaderService>(new Uri(readerServiceNameUri)).CompleteMessageAsync(messageData, messageDelivered);
                     }
                     catch (Exception e)
                     {
                         BigBrother.Write(e.ToExceptionEvent());
                     }
                 }
-            }
-        }
-
-        private Task SendToDispatcher(MessageData messageData)
-        {
-            //look up config
-            if (!_eventHandlerConfig.TryGetValue(messageData.Type.ToLower(), out var eventHandlerConfig))
-            {
-                throw new Exception($"Boom, handler event type {messageData.Type} was not found, cannot process the message");
             }
         }
     }
