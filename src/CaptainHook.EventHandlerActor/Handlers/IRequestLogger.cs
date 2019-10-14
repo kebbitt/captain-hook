@@ -12,7 +12,8 @@ namespace CaptainHook.EventHandlerActor.Handlers
             HttpResponseMessage response,
             MessageData messageData,
             Uri uri,
-            HttpMethod httpMethod
+            HttpMethod httpMethod,
+            WebHookHeaders headers
         );
     }
 }

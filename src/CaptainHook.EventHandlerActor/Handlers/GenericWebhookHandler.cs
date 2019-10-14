@@ -69,7 +69,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
                 
                 var response = await httpClient.SendRequestReliablyAsync(httpMethod, uri, headers, payload, cancellationToken);
 
-                await _requestLogger.LogAsync(httpClient, response, messageData, uri, httpMethod);
+                await _requestLogger.LogAsync(httpClient, response, messageData, uri, httpMethod, headers);
             }
             catch (Exception e)
             {
