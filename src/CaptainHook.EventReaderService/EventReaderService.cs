@@ -17,8 +17,10 @@ using Microsoft.ServiceFabric.Services.Runtime;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Fabric;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,6 +49,8 @@ namespace CaptainHook.EventReaderService
         private IMessageReceiver _messageReceiver;
         private CancellationToken _cancellationToken;
         private EventWaitHandle _initHandle;
+        private IDisposable outerSubscription;
+        private IDisposable innerSubscription;
 
         //todo move this to config driven in the code package
         internal int HandlerCount = 10;
@@ -176,14 +180,45 @@ namespace CaptainHook.EventReaderService
         {
             await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, SubscriptionName, _eventType);
             _messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, SubscriptionName);
-        }
+            outerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
+            {
+                // subscribe to the Service Bus DiagnosticSource
+                if (listener.Name == "Microsoft.Azure.ServiceBus")
+                {
+                    // receive event from Service Bus DiagnosticSource
+                    innerSubscription = listener.Subscribe(delegate (KeyValuePair<string, object> evnt)
+                    {
+                        // Log operation details once it's done
+                        if (evnt.Key.EndsWith("Stop"))
+                        {
+                            Activity currentActivity = Activity.Current;
+                            var opName = currentActivity.OperationName;
+                            TaskStatus status = (TaskStatus)evnt.Value.GetProperty("Status");
+                            var entity = (string)evnt.Value.GetProperty("Entity");
 
-        /// <summary>
-        /// This is the main entry point for your service replica.
-        /// This method executes when this replica of your service becomes primary and has write status.
-        /// </summary>
-        /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
-        protected override async Task RunAsync(CancellationToken cancellationToken)
+                            if (opName.EndsWith("Exception", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var excp = (Exception)evnt.Value.GetProperty("Exception");
+                                _bigBrother.Publish(excp.ToExceptionEvent());
+                            }
+
+                            _bigBrother.Publish(new ServiceBusDiagnosticEvent { OperationName = opName, Status = status.ToString(), Value = evnt.Value.ToString(), Entity=entity });
+                            
+                            
+
+                            //serviceBusLogger.LogInformation($"Operation {currentActivity.OperationName} is finished, Duration={currentActivity.Duration}, Status={status}, Id={currentActivity.Id}, StartTime={currentActivity.StartTimeUtc}");
+                        }
+                    });
+                }
+            });            
+    }
+
+    /// <summary>
+    /// This is the main entry point for your service replica.
+    /// This method executes when this replica of your service becomes primary and has write status.
+    /// </summary>
+    /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
+    protected override async Task RunAsync(CancellationToken cancellationToken)
         {
             _cancellationToken = cancellationToken;
 
@@ -336,4 +371,12 @@ namespace CaptainHook.EventReaderService
             }
         }
     }
+
+    public static class PropertyExtensions
+    {
+        public static object GetProperty(this object _this, string propertyName)
+        {
+            return _this.GetType().GetTypeInfo().GetDeclaredProperty(propertyName)?.GetValue(_this);
+        }
+    };
 }
