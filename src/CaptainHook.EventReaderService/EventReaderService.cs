@@ -324,7 +324,7 @@ namespace CaptainHook.EventReaderService
         /// <returns></returns>
         public async Task CompleteMessageAsync(MessageData messageData, bool messageDelivered, CancellationToken cancellationToken = default)
         {
-            if (this.Partition.WriteStatus!=PartitionAccessStatus.Granted)
+            if (Partition.WriteStatus!=PartitionAccessStatus.Granted)
             {
                 _bigBrother.Publish(new ReadOnlyReplicaReachedEvent { Id = Context.ServiceName.ToString(), ReplicaId = Context.ReplicaId, WriteStatus = Partition.WriteStatus.ToString() });
                 throw new NoLongerPrimaryReplicaException();
