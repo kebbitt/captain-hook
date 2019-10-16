@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
+using CaptainHook.Common.Exceptions;
 using CaptainHook.Common.Telemetry.Actor;
 using CaptainHook.EventHandlerActor.Handlers;
 using CaptainHook.Interfaces;
@@ -117,16 +118,32 @@ namespace CaptainHook.EventHandlerActor
             {
                 if (messageData != null)
                 {
-                    try
-                    {
-                        await StateManager.RemoveStateAsync(messageData.HandlerId.ToString());
-                        var readerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceShortName}.{messageData.Type}";
-                        await ServiceProxy.Create<IEventReaderService>(new Uri(readerServiceNameUri)).CompleteMessageAsync(messageData, messageDelivered);
-                    }
-                    catch (Exception e)
-                    {
-                        BigBrother.Write(e.ToExceptionEvent());
-                    }
+                   
+                        try
+                        {
+                            await StateManager.RemoveStateAsync(messageData.HandlerId.ToString());
+                            var readerServiceNameUri = $"fabric:/{Constants.CaptainHookApplication.ApplicationName}/{Constants.CaptainHookApplication.Services.EventReaderServiceShortName}.{messageData.Type}";
+
+                            bool retry = false;
+                            do
+                            {
+                                try
+                                {
+                                    await ServiceProxy.Create<IEventReaderService>(new Uri(readerServiceNameUri)).CompleteMessageAsync(messageData, messageDelivered);
+                                }
+                                catch (AggregateException e) when (e.InnerException is NoLongerPrimaryReplicaException)
+                                {
+                                    retry = true;
+                                    BigBrother.Write(e.ToExceptionEvent());
+                                }
+                            }
+                            while (retry);
+
+                        }
+                        catch (Exception e)
+                        {
+                            BigBrother.Write(e.ToExceptionEvent());
+                        }                   
                 }
             }
         }

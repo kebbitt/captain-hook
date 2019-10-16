@@ -1,5 +1,6 @@
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
+using CaptainHook.Common.Exceptions;
 using CaptainHook.Common.Telemetry;
 using CaptainHook.Common.Telemetry.Service;
 using CaptainHook.Interfaces;
@@ -202,11 +203,7 @@ namespace CaptainHook.EventReaderService
                                 _bigBrother.Publish(excp.ToExceptionEvent());
                             }
 
-                            _bigBrother.Publish(new ServiceBusDiagnosticEvent { OperationName = opName, Status = status.ToString(), Value = evnt.Value.ToString(), Entity=entity });
-                            
-                            
-
-                            //serviceBusLogger.LogInformation($"Operation {currentActivity.OperationName} is finished, Duration={currentActivity.Duration}, Status={status}, Id={currentActivity.Id}, StartTime={currentActivity.StartTimeUtc}");
+                            _bigBrother.Publish(new ServiceBusDiagnosticEvent { OperationName = opName, Status = status.ToString(), Value = evnt.Value.ToString(), Entity=entity, Duration =  currentActivity.Duration.TotalMilliseconds});                                                       
                         }
                     });
                 }
@@ -327,6 +324,12 @@ namespace CaptainHook.EventReaderService
         /// <returns></returns>
         public async Task CompleteMessageAsync(MessageData messageData, bool messageDelivered, CancellationToken cancellationToken = default)
         {
+            if (this.Partition.WriteStatus!=PartitionAccessStatus.Granted)
+            {
+                _bigBrother.Publish(new ReadOnlyReplicaReachedEvent { Id = Context.ServiceName.ToString(), ReplicaId = Context.ReplicaId, WriteStatus = Partition.WriteStatus.ToString() });
+                throw new NoLongerPrimaryReplicaException();
+            }
+
             try
             {
                 _initHandle.WaitOne();
