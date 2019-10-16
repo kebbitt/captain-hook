@@ -324,12 +324,6 @@ namespace CaptainHook.EventReaderService
         /// <returns></returns>
         public async Task CompleteMessageAsync(MessageData messageData, bool messageDelivered, CancellationToken cancellationToken = default)
         {
-            if (Partition.WriteStatus!=PartitionAccessStatus.Granted)
-            {
-                _bigBrother.Publish(new ReadOnlyReplicaReachedEvent { Id = Context.ServiceName.ToString(), ReplicaId = Context.ReplicaId, WriteStatus = Partition.WriteStatus.ToString() });
-                throw new NoLongerPrimaryReplicaException();
-            }
-
             try
             {
                 _initHandle.WaitOne();
@@ -363,6 +357,11 @@ namespace CaptainHook.EventReaderService
                         await tx.CommitAsync();
                     }
                 }
+            }
+            catch (FabricNotPrimaryException)
+            {
+                _bigBrother.Publish(new ReadOnlyReplicaReachedEvent { Id = Context.ServiceName.ToString(), ReplicaId = Context.ReplicaId, WriteStatus = Partition.WriteStatus.ToString() });
+                throw new NoLongerPrimaryReplicaException();
             }
             catch (Exception e)
             {

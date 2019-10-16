@@ -202,7 +202,7 @@ namespace CaptainHook.Tests.Services.Reliable
             Assert.Equal(expectedHandlerId, service.HandlerCount);
         }
 
-        [Theory(Skip ="partition involvement")]
+        [Theory]
         [IsLayer0]
         [InlineData("test.type", "test.type-1", 1, 1, true, 0)]
         [InlineData("test.type", "test.type-1", 1, 1, false, 0)]
