@@ -190,6 +190,7 @@ namespace CaptainHook.EventReaderService
 
             await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, SubscriptionName, _eventType);
             _messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, SubscriptionName);
+            _sbReceiverWaitHandle.Set();
             outerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
             {
                 // subscribe to the Service Bus DiagnosticSource
@@ -243,8 +244,6 @@ namespace CaptainHook.EventReaderService
 
                 await GetHandlerCountsOnStartup();
                 await SetupServiceBus();
-
-                _sbReceiverWaitHandle.Set();
 
                 while (!cancellationToken.IsCancellationRequested)
                 {
