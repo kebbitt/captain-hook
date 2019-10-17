@@ -263,7 +263,7 @@ namespace CaptainHook.EventReaderService
 
                         receiveSW.Stop();
 
-                        if (receiveSW.ElapsedMilliseconds>1000)
+                        if (receiveSW.ElapsedMilliseconds>2000)
                         {
                             await ResetConnection(receiveSW.ElapsedMilliseconds);
                         }
