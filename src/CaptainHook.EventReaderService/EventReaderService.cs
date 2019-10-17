@@ -57,7 +57,7 @@ namespace CaptainHook.EventReaderService
         //todo move this to config driven in the code package
         internal int HandlerCount = 10;
         private readonly TimeSpan _defaultServiceFabricStateOperationTimeout = TimeSpan.FromSeconds(4); // 4 seconds is default defined by state operation methods in service fabric docs
-
+        
         /// <summary>
         /// Default ctor used at runtime
         /// </summary>
@@ -219,7 +219,8 @@ namespace CaptainHook.EventReaderService
                                 Value = evnt.Value.ToString(),
                                 Entity = entity,
                                 Duration = currentActivity.Duration.TotalMilliseconds,
-                                ReplicaId = Context.ReplicaId
+                                ReplicaId = Context.ReplicaId,
+                                PollGuid = Guid.NewGuid().ToString()
                             }) ;                                                       
                         }
                     });

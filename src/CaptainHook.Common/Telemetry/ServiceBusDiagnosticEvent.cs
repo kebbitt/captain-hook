@@ -13,5 +13,6 @@ namespace CaptainHook.Common.Telemetry
         public string Value { get; set; }
         public double Duration { get; set; }        
         public long ReplicaId { get; set; }
+        public string PollGuid { get; set; }
     }
 }
