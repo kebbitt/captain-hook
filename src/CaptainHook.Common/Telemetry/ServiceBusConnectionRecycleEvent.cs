@@ -8,5 +8,6 @@ namespace CaptainHook.Common.Telemetry
     public class ServiceBusConnectionRecycleEvent : TelemetryEvent
     {
         public double DurationTook { get; set; }
+        public string Entity { get; set; }
     }
 }

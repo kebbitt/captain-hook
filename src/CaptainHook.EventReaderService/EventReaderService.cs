@@ -268,7 +268,7 @@ namespace CaptainHook.EventReaderService
                             await ResetConnection(receiveSW.ElapsedMilliseconds);
                         }
 
-                        _bigBrother.Publish(new MessagePollingEvent { FabricId = $"{this.Context.ServiceName}:{this.Context.ReplicaId}", MessageCount = messages!=null? messages.Count:0 });
+                        _bigBrother.Publish(new MessagePollingEvent { FabricId = $"{Context.ServiceName}:{Context.ReplicaId}", MessageCount = messages!=null? messages.Count:0 });
 
                         if (messages == null || messages.Count == 0)
                         {
@@ -334,7 +334,7 @@ namespace CaptainHook.EventReaderService
 
         private async Task ResetConnection(double timeTaken)
         {
-            _bigBrother.Publish(new ServiceBusConnectionRecycleEvent { DurationTook = timeTaken });
+            _bigBrother.Publish(new ServiceBusConnectionRecycleEvent { DurationTook = timeTaken, Entity=Context.ServiceName.ToString() });
             _sbReceiverWaitHandle.Reset();
 
             await SetupServiceBus();
