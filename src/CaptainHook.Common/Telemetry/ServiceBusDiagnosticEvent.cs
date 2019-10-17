@@ -11,6 +11,7 @@ namespace CaptainHook.Common.Telemetry
         public string Status { get; set; }
         public string Entity { get; set; }
         public string Value { get; set; }
-        public double Duration { get; set; }
+        public double Duration { get; set; }        
+        public long ReplicaId { get; set; }
     }
 }

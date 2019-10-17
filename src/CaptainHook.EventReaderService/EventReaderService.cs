@@ -50,7 +50,7 @@ namespace CaptainHook.EventReaderService
         private ConcurrentQueue<int> _freeHandlers = new ConcurrentQueue<int>();
         private IMessageReceiver _messageReceiver;
         private CancellationToken _cancellationToken;
-        private EventWaitHandle _initHandle;
+        private EventWaitHandle _sbReceiverWaitHandle;
         private IDisposable outerSubscription;
         private IDisposable innerSubscription;
 
@@ -79,7 +79,7 @@ namespace CaptainHook.EventReaderService
             _proxyFactory = proxyFactory;
             _settings = settings;
             _eventType = Encoding.UTF8.GetString(context.InitializationData);
-            _initHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
+            _sbReceiverWaitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace CaptainHook.EventReaderService
             _proxyFactory = proxyFactory;
             _settings = settings;
             _eventType = Encoding.UTF8.GetString(context.InitializationData);
-            _initHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
+            _sbReceiverWaitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
         }
 
         /// <summary>
@@ -182,6 +182,12 @@ namespace CaptainHook.EventReaderService
         {
             ServicePointManager.DefaultConnectionLimit = 100;
 
+            if (innerSubscription != null)
+                innerSubscription.Dispose();
+
+            if (outerSubscription != null)
+                outerSubscription.Dispose();            
+
             await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, SubscriptionName, _eventType);
             _messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, SubscriptionName);
             outerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
@@ -206,7 +212,15 @@ namespace CaptainHook.EventReaderService
                                 _bigBrother.Publish(excp.ToExceptionEvent());
                             }
 
-                            _bigBrother.Publish(new ServiceBusDiagnosticEvent { OperationName = opName, Status = status.ToString(), Value = evnt.Value.ToString(), Entity=entity, Duration =  currentActivity.Duration.TotalMilliseconds});                                                       
+                            _bigBrother.Publish(new ServiceBusDiagnosticEvent
+                            {
+                                OperationName = opName,
+                                Status = status.ToString(),
+                                Value = evnt.Value.ToString(),
+                                Entity = entity,
+                                Duration = currentActivity.Duration.TotalMilliseconds,
+                                ReplicaId = Context.ReplicaId
+                            }) ;                                                       
                         }
                     });
                 }
@@ -229,7 +243,7 @@ namespace CaptainHook.EventReaderService
                 await GetHandlerCountsOnStartup();
                 await SetupServiceBus();
 
-                _initHandle.Set();
+                _sbReceiverWaitHandle.Set();
 
                 while (!cancellationToken.IsCancellationRequested)
                 {
@@ -241,8 +255,18 @@ namespace CaptainHook.EventReaderService
 
                             continue; 
                         }
+                     
+                        var receiveSW = new Stopwatch();
+                        receiveSW.Start();
 
-                      var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromSeconds(10));
+                        var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromSeconds(10));
+
+                        receiveSW.Stop();
+
+                        if (receiveSW.ElapsedMilliseconds>1000)
+                        {
+                            await ResetConnection(receiveSW.ElapsedMilliseconds);
+                        }
 
                         _bigBrother.Publish(new MessagePollingEvent { FabricId = $"{this.Context.ServiceName}:{this.Context.ReplicaId}", MessageCount = messages!=null? messages.Count:0 });
 
@@ -308,6 +332,14 @@ namespace CaptainHook.EventReaderService
             }
         }
 
+        private async Task ResetConnection(double timeTaken)
+        {
+            _bigBrother.Publish(new ServiceBusConnectionRecycleEvent { DurationTook = timeTaken });
+            _sbReceiverWaitHandle.Reset();
+
+            await SetupServiceBus();
+        }
+
         internal int GetFreeHandlerId()
         {
             if (_freeHandlers.TryDequeue(out var handlerId))
@@ -329,7 +361,7 @@ namespace CaptainHook.EventReaderService
         {
             try
             {
-                _initHandle.WaitOne();
+                _sbReceiverWaitHandle.WaitOne();
                 using (var tx = StateManager.CreateTransaction())
                 {
                     var handle = await _messageHandles.TryRemoveAsync(tx, messageData.HandlerId, _defaultServiceFabricStateOperationTimeout, cancellationToken);
