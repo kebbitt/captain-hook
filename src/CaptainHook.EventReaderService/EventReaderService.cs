@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Fabric;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -179,6 +180,8 @@ namespace CaptainHook.EventReaderService
 
         private async Task SetupServiceBus()
         {
+            ServicePointManager.DefaultConnectionLimit = 100;
+
             await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, SubscriptionName, _eventType);
             _messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, SubscriptionName);
             outerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
