@@ -58,6 +58,7 @@ namespace CaptainHook.EventReaderService
         internal int HandlerCount = 10;
         private readonly TimeSpan _defaultServiceFabricStateOperationTimeout = TimeSpan.FromSeconds(4); // 4 seconds is default defined by state operation methods in service fabric docs
         
+
         /// <summary>
         /// Default ctor used at runtime
         /// </summary>
@@ -189,6 +190,10 @@ namespace CaptainHook.EventReaderService
                 outerSubscription.Dispose();            
 
             await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, SubscriptionName, _eventType);
+
+            if (_messageReceiver != null)
+                await _messageReceiver.CloseAsync();
+
             _messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, SubscriptionName);
             _sbReceiverWaitHandle.Set();
             outerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
@@ -221,7 +226,8 @@ namespace CaptainHook.EventReaderService
                                 Entity = entity,
                                 Duration = currentActivity.Duration.TotalMilliseconds,
                                 ReplicaId = Context.ReplicaId,
-                                PollGuid = Guid.NewGuid().ToString()
+                                PollGuid = Guid.NewGuid().ToString(),
+                                PollProcessTime = DateTime.UtcNow
                             }) ;                                                       
                         }
                     });
@@ -323,6 +329,9 @@ namespace CaptainHook.EventReaderService
                         BigBrother.Write(e.ToExceptionEvent());
                     }
                 }
+
+                if (_messageReceiver != null)
+                    await _messageReceiver.CloseAsync();
 
                 _bigBrother.Publish(new Common.Telemetry.CancellationRequestedEvent { FabricId = $"{this.Context.ServiceName}:{this.Context.ReplicaId}" });
             }
