@@ -7,7 +7,7 @@ namespace CaptainHook.EventReaderService
     public class MessageProviderFactory : IMessageProviderFactory
     {
         private ServiceBusConnection conn;
-        public MessageReceiver Create(string serviceBusConnectionString, string topicName, string subscriptionName, MessageReceiver previousReceiver = null)
+        public IMessageReceiver Create(string serviceBusConnectionString, string topicName, string subscriptionName)
         {
             Validate(subscriptionName);
             Validate(serviceBusConnectionString);

@@ -171,7 +171,7 @@ namespace CaptainHook.EventReaderService
 
             await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, SubscriptionName, _eventType);
             
-            var messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, SubscriptionName, _activeMessageReader?.Receiver);
+            var messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, SubscriptionName);
 
             //add new receiver and set is as primary
             var wrapper = new MessageReceiverWrapper { Receiver = messageReceiver, ReceiverId = Guid.NewGuid() };
@@ -441,7 +441,7 @@ namespace CaptainHook.EventReaderService
 
     internal class MessageReceiverWrapper
     {
-        internal MessageReceiver Receiver;
+        internal IMessageReceiver Receiver;
         internal int ReceivedCount;
         internal DateTime ForceClosureAt;
         internal Guid ReceiverId;

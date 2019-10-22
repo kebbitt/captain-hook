@@ -103,7 +103,7 @@ namespace CaptainHook.Tests.Services.Reliable
                 _mockActorProxyFactory,
                 _config);
 
-            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             await service.InvokeRunAsync(cancellationTokenSource.Token);
 
             //Assert that the dictionary contains 1 processing message and associated handle            
@@ -195,7 +195,7 @@ namespace CaptainHook.Tests.Services.Reliable
                 mockActorProxyFactory,
                 _config);
 
-            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             await service.InvokeRunAsync(cancellationTokenSource.Token);
 
             Assert.Equal(expectedHandlerId, service.HandlerCount);
@@ -249,7 +249,7 @@ namespace CaptainHook.Tests.Services.Reliable
                 _mockActorProxyFactory,
                 _config);
 
-            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             await service.InvokeRunAsync(cancellationTokenSource.Token);
 
             var dictionary = await _stateManager.GetOrAddAsync<IReliableDictionary2<int, MessageDataHandle>>(nameof(MessageDataHandle));
