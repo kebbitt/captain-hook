@@ -103,12 +103,11 @@ namespace CaptainHook.Tests.Services.Reliable
                 _mockActorProxyFactory,
                 _config);
 
-            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             await service.InvokeRunAsync(cancellationTokenSource.Token);
 
-            //Assert that the dictionary contains 1 processing message and associated handle
-            var dictionary = await _stateManager.GetOrAddAsync<IReliableDictionary2<int, MessageDataHandle>>(nameof(MessageDataHandle));
-            Assert.Equal(expectedHandleCount, dictionary.Count);
+            //Assert that the dictionary contains 1 processing message and associated handle            
+            Assert.Equal(expectedHandleCount, service._inflightMessages.Count);
         }
 
         [Fact]
@@ -196,7 +195,7 @@ namespace CaptainHook.Tests.Services.Reliable
                 mockActorProxyFactory,
                 _config);
 
-            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             await service.InvokeRunAsync(cancellationTokenSource.Token);
 
             Assert.Equal(expectedHandlerId, service.HandlerCount);
@@ -250,7 +249,7 @@ namespace CaptainHook.Tests.Services.Reliable
                 _mockActorProxyFactory,
                 _config);
 
-            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             await service.InvokeRunAsync(cancellationTokenSource.Token);
 
             var dictionary = await _stateManager.GetOrAddAsync<IReliableDictionary2<int, MessageDataHandle>>(nameof(MessageDataHandle));
@@ -260,10 +259,7 @@ namespace CaptainHook.Tests.Services.Reliable
             {
                 var messageDataHandle = await dictionary.TryGetValueAsync(tx, expectedHandlerId);
                 //reconstruct the message so we can call complete
-                messageData = new MessageData("Hello World 1", eventName)
-                {
-                    HandlerId = messageDataHandle.Value.HandlerId
-                };
+                messageData = new MessageData("Hello World 1", eventName);               
             }
 
             await service.CompleteMessageAsync(messageData, messageDelivered, CancellationToken.None);
@@ -277,7 +273,7 @@ namespace CaptainHook.Tests.Services.Reliable
         /// Tests the service to determine that it can change role gracefully - while keeping messages and state inflight while migrating to the active secondaries.
         /// </summary>
         /// <returns></returns>
-        [Theory]
+        [Theory(Skip ="no longer applicable as state is not being transferred")]
         [IsLayer0]
         [InlineData("test.type", 1)]
         [InlineData("test.type", 10)]

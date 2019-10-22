@@ -26,7 +26,7 @@ namespace CaptainHook.EventReaderService
         /// <param name="topicName"></param>
         /// <param name="subscriptionName"></param>
         /// <returns></returns>
-        IMessageReceiver CreateMessageReceiver(string serviceBusConnectionString, string topicName, string subscriptionName);
+        MessageReceiver CreateMessageReceiver(string serviceBusConnectionString, string topicName, string subscriptionName, MessageReceiver previousReceiver=null);
 
         /// <summary>
         /// Abstraction around the ServiceBusMessage to get lock token

@@ -14,7 +14,7 @@ namespace CaptainHook.EventReaderService
         /// <param name="serviceBusConnectionString"></param>
         /// <param name="topicName"></param>
         /// <param name="subscriptionName"></param>
-        IMessageReceiver Create(string serviceBusConnectionString, string topicName, string subscriptionName);
+        MessageReceiver Create(string serviceBusConnectionString, string topicName, string subscriptionName, MessageReceiver previousReceiver= null);
 
         /// <summary>
         /// Batch size for the receiver to consume from the ServiceBus

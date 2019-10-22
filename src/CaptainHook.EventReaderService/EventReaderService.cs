@@ -1,20 +1,3 @@
-using CaptainHook.Common;
-using CaptainHook.Common.Configuration;
-using CaptainHook.Common.Exceptions;
-using CaptainHook.Common.Telemetry;
-using CaptainHook.Common.Telemetry.Service;
-using CaptainHook.Interfaces;
-using Eshopworld.Core;
-using Eshopworld.Telemetry;
-using Microsoft.Azure.ServiceBus;
-using Microsoft.Azure.ServiceBus.Core;
-using Microsoft.ServiceFabric.Actors;
-using Microsoft.ServiceFabric.Actors.Client;
-using Microsoft.ServiceFabric.Data;
-using Microsoft.ServiceFabric.Data.Collections;
-using Microsoft.ServiceFabric.Services.Communication.Runtime;
-using Microsoft.ServiceFabric.Services.Remoting.Runtime;
-using Microsoft.ServiceFabric.Services.Runtime;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -26,6 +9,21 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using CaptainHook.Common;
+using CaptainHook.Common.Configuration;
+using CaptainHook.Common.Telemetry;
+using CaptainHook.Common.Telemetry.Service;
+using CaptainHook.Interfaces;
+using Eshopworld.Core;
+using Eshopworld.Telemetry;
+using Microsoft.Azure.ServiceBus;
+using Microsoft.Azure.ServiceBus.Core;
+using Microsoft.ServiceFabric.Actors;
+using Microsoft.ServiceFabric.Actors.Client;
+using Microsoft.ServiceFabric.Data;
+using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Runtime;
+using Microsoft.ServiceFabric.Services.Runtime;
 
 namespace CaptainHook.EventReaderService
 {
@@ -46,18 +44,28 @@ namespace CaptainHook.EventReaderService
         private readonly ConfigurationSettings _settings;
         private readonly string _eventType;
 
-        private IReliableDictionary2<int, MessageDataHandle> _messageHandles;
+        internal ConcurrentDictionary<string, MessageDataHandle> _inflightMessages = new ConcurrentDictionary<string, MessageDataHandle>();
+
         private ConcurrentQueue<int> _freeHandlers = new ConcurrentQueue<int>();
-        private IMessageReceiver _messageReceiver;
         private CancellationToken _cancellationToken;
-        private EventWaitHandle _sbReceiverWaitHandle;
-        private IDisposable outerSubscription;
-        private IDisposable innerSubscription;
+        private IDisposable _diagSourceOuterSub;
+        private IDisposable _diagSourceInnerSub;
 
         //todo move this to config driven in the code package
         internal int HandlerCount = 10;
         private readonly TimeSpan _defaultServiceFabricStateOperationTimeout = TimeSpan.FromSeconds(4); // 4 seconds is default defined by state operation methods in service fabric docs
-        
+
+        ///defines behavior of new connection - any poll above <see cref="LongPollThreshold"/> will add to the <see cref="MessageReceiverWrapper.ConsecutiveLongPollCount"/> 
+        ///and if <see cref="consecutiveLongPollThreshold"/> is reached, new active receiver is created
+        private readonly TimeSpan LongPollThreshold = TimeSpan.FromMilliseconds(5000);
+        private readonly int ConsecutiveLongPollThreshold = 10;
+        //force time out timespan for phased out receivers
+        private readonly TimeSpan ForcedReceiverCloseTimeout = TimeSpan.FromMinutes(2);
+
+        internal ConcurrentDictionary<Guid, MessageReceiverWrapper> _messageReceivers = new ConcurrentDictionary<Guid, MessageReceiverWrapper>();
+        internal MessageReceiverWrapper _activeMessageReader;
+
+
 
         /// <summary>
         /// Default ctor used at runtime
@@ -80,7 +88,6 @@ namespace CaptainHook.EventReaderService
             _proxyFactory = proxyFactory;
             _settings = settings;
             _eventType = Encoding.UTF8.GetString(context.InitializationData);
-            _sbReceiverWaitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
         }
 
         /// <summary>
@@ -106,7 +113,6 @@ namespace CaptainHook.EventReaderService
             _proxyFactory = proxyFactory;
             _settings = settings;
             _eventType = Encoding.UTF8.GetString(context.InitializationData);
-            _sbReceiverWaitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
         }
 
         /// <summary>
@@ -151,28 +157,8 @@ namespace CaptainHook.EventReaderService
         /// <returns></returns>
         internal async Task GetHandlerCountsOnStartup()
         {
-            using (var tx = StateManager.CreateTransaction())
-            {
-                var enumerator = (await _messageHandles.CreateKeyEnumerableAsync(tx)).GetAsyncEnumerator();
-
-                var set = new HashSet<int>();
-                while (await enumerator.MoveNextAsync(_cancellationToken))
-                {
-                    if (_cancellationToken.IsCancellationRequested) return;
-
-                    var handleData = await _messageHandles.TryGetValueAsync(tx, enumerator.Current);
-                    if (!handleData.HasValue) continue;
-
-                    set.Add(handleData.Value.HandlerId);
-                }
-
-                await tx.CommitAsync();
-
-                HandlerCount = Math.Max(HandlerCount, set.Count > 0 ? set.Max() : 0);
-                _freeHandlers = Enumerable.Range(1, HandlerCount).Except(set).ToConcurrentQueue();
-            }
+            _freeHandlers = Enumerable.Range(1, HandlerCount).ToConcurrentQueue();
         }
-
 
         /// <summary>
         /// Gets the count of the numbers of messages which are in flight at the moment
@@ -183,71 +169,70 @@ namespace CaptainHook.EventReaderService
         {
             ServicePointManager.DefaultConnectionLimit = 100;
 
-            if (innerSubscription != null)
-                innerSubscription.Dispose();
-
-            if (outerSubscription != null)
-                outerSubscription.Dispose();            
-
             await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, SubscriptionName, _eventType);
+            
+            var messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, SubscriptionName, _activeMessageReader?.Receiver);
 
-            if (_messageReceiver != null)
-                await _messageReceiver.CloseAsync();
+            //add new receiver and set is as primary
+            var wrapper = new MessageReceiverWrapper { Receiver = messageReceiver, ReceiverId = Guid.NewGuid() };
+            _activeMessageReader = wrapper;
 
-            _messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, SubscriptionName);
-            _sbReceiverWaitHandle.Set();
-            outerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
+            _messageReceivers.TryAdd(wrapper.ReceiverId, wrapper); //this will always succeed (key is a new guid)
+
+            if (_diagSourceInnerSub == null && _diagSourceOuterSub == null)
             {
-                // subscribe to the Service Bus DiagnosticSource
-                if (listener.Name == "Microsoft.Azure.ServiceBus")
+                //set up diagnostic source
+                _diagSourceOuterSub = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
                 {
-                    // receive event from Service Bus DiagnosticSource
-                    innerSubscription = listener.Subscribe(delegate (KeyValuePair<string, object> evnt)
+                    // subscribe to the Service Bus DiagnosticSource
+                    if (listener.Name == "Microsoft.Azure.ServiceBus")
                     {
-                        // Log operation details once it's done
-                        if (evnt.Key.EndsWith("Stop"))
-                        {
-                            Activity currentActivity = Activity.Current;
-                            var opName = currentActivity.OperationName;
-                            TaskStatus status = (TaskStatus)evnt.Value.GetProperty("Status");
-                            var entity = (string)evnt.Value.GetProperty("Entity");
-
-                            if (opName.EndsWith("Exception", StringComparison.OrdinalIgnoreCase))
+                        // receive event from Service Bus DiagnosticSource
+                        _diagSourceInnerSub = listener.Subscribe(delegate (KeyValuePair<string, object> evnt)
                             {
-                                var excp = (Exception)evnt.Value.GetProperty("Exception");
-                                _bigBrother.Publish(excp.ToExceptionEvent());
-                            }
+                            // Log operation details once it's done
+                            if (evnt.Key.EndsWith("Stop"))
+                                {
+                                    Activity currentActivity = Activity.Current;
+                                    var opName = currentActivity.OperationName;
+                                    TaskStatus status = (TaskStatus)evnt.Value.GetProperty("Status");
+                                    var entity = (string)evnt.Value.GetProperty("Entity");
 
-                            _bigBrother.Publish(new ServiceBusDiagnosticEvent
-                            {
-                                OperationName = opName,
-                                Status = status.ToString(),
-                                Value = evnt.Value.ToString(),
-                                Entity = entity,
-                                Duration = currentActivity.Duration.TotalMilliseconds,
-                                ReplicaId = Context.ReplicaId,
-                                PollGuid = Guid.NewGuid().ToString(),
-                                PollProcessTime = DateTime.UtcNow
-                            }) ;                                                       
-                        }
-                    });
-                }
-            });            
-    }
+                                    if (opName.EndsWith("Exception", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        var excp = (Exception)evnt.Value.GetProperty("Exception");
+                                        _bigBrother.Publish(excp.ToExceptionEvent());
+                                    }
 
-    /// <summary>
-    /// This is the main entry point for your service replica.
-    /// This method executes when this replica of your service becomes primary and has write status.
-    /// </summary>
-    /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
-    protected override async Task RunAsync(CancellationToken cancellationToken)
+                                    _bigBrother.Publish(new ServiceBusDiagnosticEvent
+                                    {
+                                        OperationName = opName,
+                                        Status = status.ToString(),
+                                        Value = evnt.Value.ToString(),
+                                        Entity = entity,
+                                        Duration = currentActivity.Duration.TotalMilliseconds,
+                                        ReplicaId = Context.ReplicaId,
+                                        PollGuid = Guid.NewGuid().ToString(),
+                                        PollProcessTime = DateTime.UtcNow
+                                    });
+                                }
+                            });
+                    }
+                });
+            }
+        }
+
+        /// <summary>
+        /// This is the main entry point for your service replica.
+        /// This method executes when this replica of your service becomes primary and has write status.
+        /// </summary>
+        /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
+        protected override async Task RunAsync(CancellationToken cancellationToken)
         {
             _cancellationToken = cancellationToken;
 
             try
             {
-                _messageHandles = await StateManager.GetOrAddAsync<IReliableDictionary2<int, MessageDataHandle>>(nameof(MessageDataHandle));
-
                 await GetHandlerCountsOnStartup();
                 await SetupServiceBus();
 
@@ -255,26 +240,16 @@ namespace CaptainHook.EventReaderService
                 {
                     try
                     {
-                        if (_messageReceiver.IsClosedOrClosing)
-                        {
-                            _bigBrother.Publish(new MessageReceiverClosingEvent { FabricId = $"{this.Context.ServiceName}:{this.Context.ReplicaId}" });
+                        //if (_messageReceiver.IsClosedOrClosing)
+                        //{
+                        //    _bigBrother.Publish(new MessageReceiverClosingEvent { FabricId = $"{this.Context.ServiceName}:{this.Context.ReplicaId}" });
 
-                            continue; 
-                        }
-                     
-                        var receiveSW = new Stopwatch();
-                        receiveSW.Start();
+                        //    continue;
+                        //}
 
-                        var messages = await _messageReceiver.ReceiveAsync(BatchSize, TimeSpan.FromSeconds(10));
+                        var (messages, activeReaderId) = await ReceiveMessagesFromActiveReceiver();
 
-                        receiveSW.Stop();
-
-                        if (receiveSW.ElapsedMilliseconds>2000)
-                        {
-                            await ResetConnection(receiveSW.ElapsedMilliseconds);
-                        }
-
-                        _bigBrother.Publish(new MessagePollingEvent { FabricId = $"{Context.ServiceName}:{Context.ReplicaId}", MessageCount = messages!=null? messages.Count:0 });
+                        await ServiceReceiversLifecycle();
 
                         if (messages == null || messages.Count == 0)
                         {
@@ -297,26 +272,16 @@ namespace CaptainHook.EventReaderService
 
                             var handleData = new MessageDataHandle
                             {
-                                HandlerId = handlerId,
-                                LockToken = _serviceBusManager.GetLockToken(message)
+                                LockToken = _serviceBusManager.GetLockToken(message),
+                                ReceiverId = activeReaderId
                             };
 
-                            using (var tx = StateManager.CreateTransaction())
-                            {
-                                var result = await _messageHandles.TryAddAsync(tx, handleData.HandlerId, handleData, _defaultServiceFabricStateOperationTimeout, _cancellationToken);
+                            _inflightMessages.TryAdd(messageData.CorrelationId, handleData); //should again always succeed
 
-                                if (!result)
-                                {
-                                    throw new FailureStateUpdateException(tx.TransactionId, handleData.HandlerId, _eventType, "Could not add message handle to state store in Reader Service", Context);
-                                }
-
-                                await _proxyFactory.CreateActorProxy<IEventHandlerActor>(
-                                        new ActorId(messageData.EventHandlerActorId),
-                                        serviceName: Constants.CaptainHookApplication.Services.EventHandlerServiceShortName)
-                                    .Handle(messageData);
-
-                                await tx.CommitAsync();
-                            }
+                            await _proxyFactory.CreateActorProxy<IEventHandlerActor>(
+                                    new ActorId(messageData.EventHandlerActorId),
+                                    serviceName: Constants.CaptainHookApplication.Services.EventHandlerServiceShortName)
+                                .Handle(messageData);
                         }
                     }
                     catch (ServiceBusCommunicationException sbCommunicationException)
@@ -330,10 +295,17 @@ namespace CaptainHook.EventReaderService
                     }
                 }
 
-                if (_messageReceiver != null)
-                    await _messageReceiver.CloseAsync();
-
                 _bigBrother.Publish(new Common.Telemetry.CancellationRequestedEvent { FabricId = $"{this.Context.ServiceName}:{this.Context.ReplicaId}" });
+
+                //shutdown all kinds of things
+                if (_diagSourceInnerSub != null)
+                {
+                    _diagSourceInnerSub.Dispose();
+                }
+                if (_diagSourceOuterSub != null)
+                {
+                    _diagSourceOuterSub.Dispose();
+                }
             }
             catch (Exception e)
             {
@@ -341,10 +313,56 @@ namespace CaptainHook.EventReaderService
             }
         }
 
-        private async Task ResetConnection(double timeTaken)
+        /// <summary>
+        /// //TODO: add doco
+        /// </summary>
+        /// <returns></returns>
+        private async Task ServiceReceiversLifecycle()
         {
-            _bigBrother.Publish(new ServiceBusConnectionRecycleEvent { DurationTook = timeTaken, Entity=Context.ServiceName.ToString() });
-            _sbReceiverWaitHandle.Reset();
+            //detect new connection needed
+            if (_activeMessageReader.ConsecutiveLongPollCount >= ConsecutiveLongPollThreshold)
+            {
+                await ResetConnection();
+            }
+            //close exhausted phased out receivers
+            var list = _messageReceivers.Where(r => r.Value != _activeMessageReader && (r.Value.ReceivedCount == 0 || DateTime.Now >= r.Value.ForceClosureAt)).ToList();
+
+            foreach (var item in list)
+            {
+                //await item.Value.Receiver.CloseAsync(); 
+                _messageReceivers.Remove(item.Key, out _);
+            }
+        }
+
+        private async Task<(IList<Message> messages, Guid activeReader)> ReceiveMessagesFromActiveReceiver()
+        {
+            var receiveSW = new Stopwatch();
+            receiveSW.Start();
+
+            var messages = await _activeMessageReader.Receiver.ReceiveAsync(BatchSize, LongPollThreshold);
+
+            receiveSW.Stop();
+
+            if (messages != null && messages.Count != 0)
+            {
+                Interlocked.Add(ref _activeMessageReader.ReceivedCount, messages.Count);
+            }
+
+            if (receiveSW.ElapsedMilliseconds > LongPollThreshold.TotalMilliseconds)
+                _activeMessageReader.ConsecutiveLongPollCount++;
+            else
+                _activeMessageReader.ConsecutiveLongPollCount = 0;
+
+            _bigBrother.Publish(new MessagePollingEvent { FabricId = $"{Context.ServiceName}:{Context.ReplicaId}", MessageCount = messages != null ? messages.Count : 0, ConsecutiveLongPolls = _activeMessageReader.ConsecutiveLongPollCount });
+
+            return (messages, _activeMessageReader.ReceiverId);
+        }
+
+        private async Task ResetConnection()
+        {
+            _bigBrother.Publish(new ServiceBusConnectionRecycleEvent { Entity = Context.ServiceName.ToString() });
+
+            _activeMessageReader.ForceClosureAt = DateTime.Now.Add(ForcedReceiverCloseTimeout);
 
             await SetupServiceBus();
         }
@@ -370,42 +388,37 @@ namespace CaptainHook.EventReaderService
         {
             try
             {
-                _sbReceiverWaitHandle.WaitOne();
-                using (var tx = StateManager.CreateTransaction())
+                if (!_inflightMessages.TryRemove(messageData.CorrelationId, out var handle))
                 {
-                    var handle = await _messageHandles.TryRemoveAsync(tx, messageData.HandlerId, _defaultServiceFabricStateOperationTimeout, cancellationToken);
-                    if (!handle.HasValue)
+                    throw new LockTokenNotFoundException("lock token was not found in reliable state")
                     {
-                        throw new LockTokenNotFoundException("lock token was not found in reliable state")
-                        {
-                            EventType = messageData.Type,
-                            HandlerId = messageData.HandlerId,
-                            CorrelationId = messageData.CorrelationId
-                        };
-                    }
+                        EventType = messageData.Type,
+                        HandlerId = messageData.HandlerId,
+                        CorrelationId = messageData.CorrelationId
+                    };
+                }
 
-                    try
+                try
+                {
+                    //let the message naturally expire if it's an unsuccessful delivery
+                    if (messageDelivered)
                     {
-                        //let the message naturally expire if it's an unsuccessful delivery
-                        if (messageDelivered)
+                        //try to lookup the receiver 
+                        if (_messageReceivers.TryGetValue(handle.ReceiverId, out var receiverWrapper))
                         {
-                            await _messageReceiver.CompleteAsync(handle.Value.LockToken);
+                            Interlocked.Decrement(ref receiverWrapper.ReceivedCount);
+                            await receiverWrapper.Receiver.CompleteAsync(handle.LockToken);
+                        }
+                        else
+                        {
+                            _bigBrother.Publish(new MessageReceiverNoLongerAvailable { FabricId = Context.ServiceName.ToString() });
                         }
                     }
-                    catch (MessageLockLostException e)
-                    {
-                        BigBrother.Write(e.ToExceptionEvent());
-                    }
-                    finally
-                    {
-                        await tx.CommitAsync();
-                    }
                 }
-            }
-            catch (FabricNotPrimaryException)
-            {
-                _bigBrother.Publish(new ReadOnlyReplicaReachedEvent { Id = Context.ServiceName.ToString(), ReplicaId = Context.ReplicaId, WriteStatus = Partition.WriteStatus.ToString() });
-                throw new NoLongerPrimaryReplicaException();
+                catch (MessageLockLostException e)
+                {
+                    BigBrother.Write(e.ToExceptionEvent());
+                }
             }
             catch (Exception e)
             {
@@ -425,4 +438,13 @@ namespace CaptainHook.EventReaderService
             return _this.GetType().GetTypeInfo().GetDeclaredProperty(propertyName)?.GetValue(_this);
         }
     };
+
+    internal class MessageReceiverWrapper
+    {
+        internal MessageReceiver Receiver;
+        internal int ReceivedCount;
+        internal DateTime ForceClosureAt;
+        internal Guid ReceiverId;
+        internal int ConsecutiveLongPollCount;
+    }
 }

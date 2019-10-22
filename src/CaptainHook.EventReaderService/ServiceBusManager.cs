@@ -24,9 +24,9 @@ namespace CaptainHook.EventReaderService
             await azureTopic.CreateSubscriptionIfNotExists(subscriptionName);
         }
 
-        public IMessageReceiver CreateMessageReceiver(string serviceBusConnectionString, string topicName, string subscriptionName)
+        public MessageReceiver CreateMessageReceiver(string serviceBusConnectionString, string topicName, string subscriptionName, MessageReceiver previousReceiver=null)
         {
-            return _factory.Create(serviceBusConnectionString, TypeExtensions.GetEntityName(topicName), subscriptionName);
+            return _factory.Create(serviceBusConnectionString, TypeExtensions.GetEntityName(topicName), subscriptionName, previousReceiver);
         }
 
         public string GetLockToken(Message message)

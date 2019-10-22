@@ -9,5 +9,6 @@ namespace CaptainHook.Common.Telemetry
     {
         public string FabricId { get; set; }
         public int MessageCount { get; set; }
+        public int ConsecutiveLongPolls { get; set; }
     }
 }

@@ -6,14 +6,20 @@ namespace CaptainHook.EventReaderService
 {
     public class MessageProviderFactory : IMessageProviderFactory
     {
-        public IMessageReceiver Create(string serviceBusConnectionString, string topicName, string subscriptionName)
+        private ServiceBusConnection conn;
+        public MessageReceiver Create(string serviceBusConnectionString, string topicName, string subscriptionName, MessageReceiver previousReceiver = null)
         {
             Validate(subscriptionName);
             Validate(serviceBusConnectionString);
             Validate(topicName);
 
-            MessageReceiver = new MessageReceiver(
-                serviceBusConnectionString,
+            if (conn==null)
+            {
+                conn = new ServiceBusConnection(new ServiceBusConnectionStringBuilder(serviceBusConnectionString));
+            }
+
+                return new MessageReceiver(
+                conn,
                 EntityNameHelper.FormatSubscriptionPath(topicName, subscriptionName),
                 ReceiveMode.PeekLock,
                 new RetryExponential(
@@ -21,14 +27,12 @@ namespace CaptainHook.EventReaderService
                     BackoffMax,
                     ReceiverBatchSize),
                 ReceiverBatchSize);
-
-            return MessageReceiver;
         }
 
         /// <summary>
-        /// Batch size for the receiver to consume from the ServiceBus. Defaults to 3
+        /// Batch size for the receiver to consume from the ServiceBus. Defaults to 10
         /// </summary>
-        public int ReceiverBatchSize { get; set; } = 3;
+        public int ReceiverBatchSize { get; set; } = 10;
 
         /// <summary>
         /// Minimum backoff time for the ServiceBus retry calls in milliseconds. Defaults to 100ms
@@ -52,7 +56,7 @@ namespace CaptainHook.EventReaderService
 
         private void Validate(int prop)
         {
-            if (prop == default(int))
+            if (prop == default)
             {
                 throw new ArgumentException("value cannot be zero", nameof(prop));
             }

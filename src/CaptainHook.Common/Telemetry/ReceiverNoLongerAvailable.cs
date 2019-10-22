@@ -2,10 +2,8 @@
 
 namespace CaptainHook.Common.Telemetry
 {
-    public class CancellationRequestedEvent : TelemetryEvent
+    public class MessageReceiverNoLongerAvailable: TelemetryEvent
     {
         public string FabricId { get; set; }
-
-        public int InflightMessageCount { get; set; }
     }
 }
