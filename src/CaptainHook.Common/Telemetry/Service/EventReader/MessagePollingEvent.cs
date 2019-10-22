@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Eshopworld.Core;
+﻿using Eshopworld.Core;
 
-namespace CaptainHook.Common.Telemetry
+namespace CaptainHook.Common.Telemetry.Service.EventReader
 {
     public class MessagePollingEvent : TelemetryEvent
     {

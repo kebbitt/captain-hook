@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Eshopworld.Core;
 
-namespace CaptainHook.Common.Telemetry
+namespace CaptainHook.Common.Telemetry.Service.EventReader
 {
     public class ServiceBusDiagnosticEvent : TelemetryEvent
     {
@@ -11,7 +9,7 @@ namespace CaptainHook.Common.Telemetry
         public string Status { get; set; }
         public string Entity { get; set; }
         public string Value { get; set; }
-        public double Duration { get; set; }        
+        public double Duration { get; set; }
         public long ReplicaId { get; set; }
         public string PollGuid { get; set; }
         public DateTime PollProcessTime { get; set; }
