@@ -53,7 +53,6 @@ namespace CaptainHook.EventReaderService
 
         //todo move this to config driven in the code package
         internal int HandlerCount = 10;
-        private readonly TimeSpan _defaultServiceFabricStateOperationTimeout = TimeSpan.FromSeconds(4); // 4 seconds is default defined by state operation methods in service fabric docs
 
         ///defines behavior of new connection - any poll above <see cref="LongPollThreshold"/> will add to the <see cref="MessageReceiverWrapper.ConsecutiveLongPollCount"/> 
         ///and if <see cref="consecutiveLongPollThreshold"/> is reached, new active receiver is created
