@@ -390,7 +390,7 @@ namespace CaptainHook.EventReaderService
             {
                 if (!_inflightMessages.TryRemove(messageData.CorrelationId, out var handle))
                 {
-                    throw new LockTokenNotFoundException("lock token was not found in reliable state")
+                    throw new LockTokenNotFoundException("lock token was not found in inflight message queue")
                     {
                         EventType = messageData.Type,
                         HandlerId = messageData.HandlerId,
