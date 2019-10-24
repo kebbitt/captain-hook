@@ -26,7 +26,8 @@ namespace CaptainHook.EventHandlerActor.Handlers
             HttpResponseMessage response,
             MessageData messageData,
             Uri uri,
-            HttpMethod httpMethod
+            HttpMethod httpMethod,
+            WebHookHeaders headers
         )
         {
             _bigBrother.Publish(new WebhookEvent(
@@ -55,7 +56,10 @@ namespace CaptainHook.EventHandlerActor.Handlers
                 uri.AbsoluteUri,
                 httpMethod,
                 response.StatusCode,
-                messageData.CorrelationId));
+                messageData.CorrelationId)
+            { 
+                AuthToken = response.StatusCode==System.Net.HttpStatusCode.Unauthorized? headers?.RequestHeaders?[Constants.Headers.Authorization]: string.Empty
+            });
         }
 
         private static async Task<string> GetPayloadAsync(HttpResponseMessage response)

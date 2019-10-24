@@ -36,5 +36,8 @@ namespace CaptainHook.Common.Telemetry
         public string RequestBody { get; set; }
 
         public string ResponseBody { get; set; }
+
+        //only sent for 401 responses
+        public string AuthToken { get; set; }
     }
 }
