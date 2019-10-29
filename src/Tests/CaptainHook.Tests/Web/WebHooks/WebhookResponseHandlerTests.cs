@@ -35,7 +35,7 @@ namespace CaptainHook.Tests.Web.WebHooks
         [IsLayer0]
         [Theory]
         [MemberData(nameof(WebHookCallData))]
-        public async Task CheckWebhookCall(EventHandlerConfig config, MessageData messageData, string expectedUri, string expectedContent)
+        public async Task CheckWebhookCall(SubscriberConfiguration config, MessageData messageData, string expectedUri, string expectedContent)
         {
             var mockHttpHandler = new MockHttpMessageHandler();
             var mockWebHookRequestWithCallback = mockHttpHandler.When(HttpMethod.Post, expectedUri)
@@ -46,8 +46,8 @@ namespace CaptainHook.Tests.Web.WebHooks
 
             var httpClients = new Dictionary<string, HttpClient>
             {
-                {new Uri(config.WebhookConfig.Uri).Host, mockHttpHandler.ToHttpClient()},
-                {new Uri(config.CallbackConfig.Uri).Host, mockHttpHandler.ToHttpClient()}
+                {new Uri(config.Uri).Host, mockHttpHandler.ToHttpClient()},
+                {new Uri(config.Callback.Uri).Host, mockHttpHandler.ToHttpClient()}
             };
 
             var mockTokenHandler = new Mock<IAuthenticationHandler>();
@@ -63,14 +63,14 @@ namespace CaptainHook.Tests.Web.WebHooks
             var requestLogger = new RequestLogger(mockBigBrother.Object);
 
             var mockHandlerFactory = new Mock<IEventHandlerFactory>();
-            mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
+            mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.Callback.Name)).Returns(
                 new GenericWebhookHandler(
                     httpClientBuilder,
                     mockAuthHandlerFactory.Object,
                     requestBuilder,
                     requestLogger,
                     mockBigBrother.Object,
-                    config.CallbackConfig));
+                    config.Callback));
 
             var webhookResponseHandler = new WebhookResponseHandler(
                 mockHandlerFactory.Object,
@@ -94,7 +94,7 @@ namespace CaptainHook.Tests.Web.WebHooks
         [IsLayer0]
         [Theory]
         [MemberData(nameof(CallbackCallData))]
-        public async Task CheckCallbackCall(EventHandlerConfig config, MessageData messageData, string expectedWebHookUri, string expectedCallbackUri, string expectedContent)
+        public async Task CheckCallbackCall(SubscriberConfiguration config, MessageData messageData, string expectedWebHookUri, string expectedCallbackUri, string expectedContent)
         {
             var mockHttpHandler = new MockHttpMessageHandler();
             mockHttpHandler.When(HttpMethod.Post, expectedWebHookUri)
@@ -106,8 +106,8 @@ namespace CaptainHook.Tests.Web.WebHooks
 
             var httpClients = new Dictionary<string, HttpClient>
             {
-                {new Uri(config.WebhookConfig.Uri).Host, mockHttpHandler.ToHttpClient()},
-                {new Uri(config.CallbackConfig.Uri).Host, mockHttpHandler.ToHttpClient()}
+                {new Uri(config.Uri).Host, mockHttpHandler.ToHttpClient()},
+                {new Uri(config.Callback.Uri).Host, mockHttpHandler.ToHttpClient()}
             };
 
             var mockAuthenticationTokenHandler = new Mock<IAuthenticationHandler>();
@@ -121,14 +121,14 @@ namespace CaptainHook.Tests.Web.WebHooks
             var mockBigBrother = new Mock<IBigBrother>();
 
             var mockHandlerFactory = new Mock<IEventHandlerFactory>();
-            mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
+            mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.Callback.Name)).Returns(
                 new GenericWebhookHandler(
                     httpClientBuilder,
                     new Mock<IAuthenticationHandlerFactory>().Object,
                     new RequestBuilder(),
                     new RequestLogger(mockBigBrother.Object),
                     mockBigBrother.Object,
-                    config.CallbackConfig));
+                    config.Callback));
 
             var webhookResponseHandler = new WebhookResponseHandler(
                 mockHandlerFactory.Object,
@@ -154,7 +154,7 @@ namespace CaptainHook.Tests.Web.WebHooks
         [IsLayer0]
         [Theory]
         [MemberData(nameof(GoodMultiRouteCallData))]
-        public async Task GoodCheckMultiRouteSelection(EventHandlerConfig config, MessageData messageData, string expectedWebHookUri, string expectedContent)
+        public async Task GoodCheckMultiRouteSelection(SubscriberConfiguration config, MessageData messageData, string expectedWebHookUri, string expectedContent)
         {
             var mockHttpHandler = new MockHttpMessageHandler();
             var multiRouteCall = mockHttpHandler.When(HttpMethod.Post, expectedWebHookUri)
@@ -163,11 +163,11 @@ namespace CaptainHook.Tests.Web.WebHooks
 
             var httpClients = new Dictionary<string, HttpClient>
             {
-                {new Uri(config.CallbackConfig.Uri).Host, mockHttpHandler.ToHttpClient()}
+                {new Uri(config.Callback.Uri).Host, mockHttpHandler.ToHttpClient()}
             };
 
             //for each route in the path query, we create a mock http client in the factory
-            foreach (var rules in config.WebhookConfig.WebhookRequestRules.Where(r => r.Routes.Any()))
+            foreach (var rules in config.WebhookRequestRules.Where(r => r.Routes.Any()))
             {
                 foreach (var route in rules.Routes)
                 {
@@ -180,14 +180,14 @@ namespace CaptainHook.Tests.Web.WebHooks
             var mockBigBrother = new Mock<IBigBrother>();
 
             var mockHandlerFactory = new Mock<IEventHandlerFactory>();
-            mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
+            mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.Callback.Name)).Returns(
                 new GenericWebhookHandler(
                     httpClientBuilder,
                     new Mock<IAuthenticationHandlerFactory>().Object,
                     new RequestBuilder(),
                     new RequestLogger(mockBigBrother.Object),
                     mockBigBrother.Object,
-                    config.CallbackConfig));
+                    config.Callback));
 
             var webhookResponseHandler = new WebhookResponseHandler(
                 mockHandlerFactory.Object,
@@ -213,7 +213,7 @@ namespace CaptainHook.Tests.Web.WebHooks
         [IsLayer0]
         [Theory]
         [MemberData(nameof(BadMultiRouteCallData))]
-        public async Task BadCheckMultiRouteSelection(EventHandlerConfig config, MessageData messageData, string expectedWebHookUri, string expectedContent)
+        public async Task BadCheckMultiRouteSelection(SubscriberConfiguration config, MessageData messageData, string expectedWebHookUri, string expectedContent)
         {
             var mockHttpHandler = new MockHttpMessageHandler();
             mockHttpHandler.When(HttpMethod.Post, expectedWebHookUri)
@@ -222,22 +222,22 @@ namespace CaptainHook.Tests.Web.WebHooks
 
             var httpClients = new Dictionary<string, HttpClient>
             {
-                {new Uri(config.WebhookConfig.Uri).Host, mockHttpHandler.ToHttpClient()},
-                {new Uri(config.CallbackConfig.Uri).Host, mockHttpHandler.ToHttpClient()}
+                {new Uri(config.Uri).Host, mockHttpHandler.ToHttpClient()},
+                {new Uri(config.Callback.Uri).Host, mockHttpHandler.ToHttpClient()}
             };
 
             var httpClientBuilder = new HttpClientFactory(httpClients);
             var mockBigBrother = new Mock<IBigBrother>();
 
             var mockHandlerFactory = new Mock<IEventHandlerFactory>();
-            mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.CallbackConfig.Name)).Returns(
+            mockHandlerFactory.Setup(s => s.CreateWebhookHandler(config.Callback.Name)).Returns(
                 new GenericWebhookHandler(
                     httpClientBuilder,
                     new Mock<IAuthenticationHandlerFactory>().Object,
                     new RequestBuilder(),
                     new RequestLogger(mockBigBrother.Object),
                     mockBigBrother.Object,
-                    config.CallbackConfig));
+                    config.Callback));
 
             var webhookResponseHandler = new WebhookResponseHandler(
                 mockHandlerFactory.Object,

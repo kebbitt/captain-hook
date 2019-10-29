@@ -29,7 +29,6 @@ namespace CaptainHook.Common.Configuration
         /// <summary>
         /// 
         /// </summary>
-        [Obsolete("temp used - but should be removed when moving to api - event type should be the identifier")]
         public string Name { get; set; }
 
         /// <summary>
@@ -61,6 +60,9 @@ namespace CaptainHook.Common.Configuration
 
     public class SubscriberConfiguration : WebhookConfig
     {
+        public static string Key(string typeName, string subscriberName)
+            => $"{typeName};{subscriberName}".ToLowerInvariant();
+
         public WebhookConfig Callback { get; set; }
 
         public static SubscriberConfiguration FromWebhookConfig(WebhookConfig webhookConfig, WebhookConfig callback)
@@ -83,15 +85,15 @@ namespace CaptainHook.Common.Configuration
     /// </summary>
     public class EventHandlerConfig
     {
-        public List<SubscriberConfiguration> Clients { get; } = new List<SubscriberConfiguration>();
+        public List<SubscriberConfiguration> Subscribers { get; } = new List<SubscriberConfiguration>();
 
-        public IEnumerable<SubscriberConfiguration> Subscriptions
+        public IEnumerable<SubscriberConfiguration> AllSubscribers
         {
             get
             {
                 if (WebhookConfig != null)
                     yield return SubscriberConfiguration.FromWebhookConfig(WebhookConfig, CallbackConfig);
-                foreach (var conf in Clients)
+                foreach (var conf in Subscribers)
                     yield return conf;
             }
         }
@@ -160,15 +162,6 @@ namespace CaptainHook.Common.Configuration
         /// The data type of the property
         /// </summary>
         public DataType Type { get; set; } = DataType.Property;
-    }
-
-    [Obsolete]
-    public enum HttpVerb
-    {
-        Get = 1,
-        Put = 2,
-        Post = 4,
-        Patch = 5,
     }
 
     public enum DataType

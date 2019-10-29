@@ -38,7 +38,7 @@ namespace CaptainHook.EventHandlerActor
                 //autowire up configs in keyvault to webhooks
                 var values = config.GetSection("event").GetChildren().ToList();
 
-                var eventHandlerList = new List<EventHandlerConfig>();
+                var subscriberConfigurations = new Dictionary<string, SubscriberConfiguration>();
                 var webhookList = new List<WebhookConfig>(values.Count);
                 var endpointList = new Dictionary<string, WebhookConfig>(values.Count);
 
@@ -46,10 +46,12 @@ namespace CaptainHook.EventHandlerActor
                 {
                     //temp work around until config comes in through the API
                     var eventHandlerConfig = configurationSection.Get<EventHandlerConfig>();
-                    eventHandlerList.Add(eventHandlerConfig);
 
-                    foreach (var handler in eventHandlerConfig.Subscriptions)
+                    foreach (var handler in eventHandlerConfig.AllSubscribers)
                     {
+                        subscriberConfigurations.Add(
+                            SubscriberConfiguration.Key(eventHandlerConfig.Type, handler.Name),
+                            handler);
                         var path = "webhookconfig";
                         ConfigParser.ParseAuthScheme(eventHandlerConfig.WebhookConfig, configurationSection, $"{path}:authenticationconfig");
                         eventHandlerConfig.WebhookConfig.EventType = eventHandlerConfig.Type;
@@ -88,9 +90,9 @@ namespace CaptainHook.EventHandlerActor
                 builder.RegisterType<RequestBuilder>().As<IRequestBuilder>();
 
                 //Register each webhook authenticationConfig separately for injection
-                foreach (var setting in eventHandlerList)
+                foreach (var subsciber in subscriberConfigurations)
                 {
-                    builder.RegisterInstance(setting).Named<EventHandlerConfig>(setting.Name);
+                    builder.RegisterInstance(subsciber.Value).Named<SubscriberConfiguration>(subsciber.Key);
                 }
 
                 foreach (var webhookConfig in webhookList)

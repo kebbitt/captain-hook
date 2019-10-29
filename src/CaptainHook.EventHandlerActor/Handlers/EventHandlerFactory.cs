@@ -9,7 +9,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
     public class EventHandlerFactory : IEventHandlerFactory
     {
         private readonly IBigBrother _bigBrother;
-        private readonly IIndex<string, EventHandlerConfig> _eventHandlerConfig;
+        private readonly IIndex<string, SubscriberConfiguration> _subsciberConfigurations;
         private readonly IIndex<string, WebhookConfig> _webHookConfig;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IAuthenticationHandlerFactory _authenticationHandlerFactory;
@@ -18,7 +18,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
         public EventHandlerFactory(
             IBigBrother bigBrother,
-            IIndex<string, EventHandlerConfig> eventHandlerConfig,
+            IIndex<string, SubscriberConfiguration> subsciberConfigurations,
             IIndex<string, WebhookConfig> webHookConfig,
             IHttpClientFactory httpClientFactory,
             IAuthenticationHandlerFactory authenticationHandlerFactory,
@@ -26,7 +26,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
             IRequestBuilder requestBuilder)
         {
             _bigBrother = bigBrother;
-            _eventHandlerConfig = eventHandlerConfig;
+            _subsciberConfigurations = subsciberConfigurations;
             _httpClientFactory = httpClientFactory;
             _requestLogger = requestLogger;
             _requestBuilder = requestBuilder;
@@ -42,12 +42,13 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <returns></returns>
         public IHandler CreateEventHandler(string eventType, string webhookName)
         {
-            if (!_eventHandlerConfig.TryGetValue(eventType.ToLowerInvariant(), out var eventHandlerConfig))
+            var key = SubscriberConfiguration.Key(eventType, webhookName);
+            if (!_subsciberConfigurations.TryGetValue(key, out var subscriberConfig))
             {
                 throw new Exception($"Boom, handler event type {eventType} was not found, cannot process the message");
             }
 
-            if (eventHandlerConfig.CallbackConfig != null)
+            if (subscriberConfig.Callback != null)
             {
                 return new WebhookResponseHandler(
                     this,
@@ -56,10 +57,10 @@ namespace CaptainHook.EventHandlerActor.Handlers
                     _authenticationHandlerFactory,
                     _requestLogger,
                     _bigBrother,
-                    eventHandlerConfig);
+                    subscriberConfig);
             }
 
-            return CreateWebhookHandler(eventHandlerConfig.WebhookConfig.Name);
+            return CreateWebhookHandler(subscriberConfig.Name);
         }
 
         /// <summary>
