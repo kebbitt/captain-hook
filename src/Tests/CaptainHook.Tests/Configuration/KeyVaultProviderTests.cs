@@ -48,15 +48,13 @@ namespace CaptainHook.Tests.Configuration
                     ConfigParser.AddEndpoints(eventHandlerConfig.WebhookConfig, endpointList, configurationSection, path);
                 }
 
-                if (!eventHandlerConfig.CallBackEnabled)
+                if (eventHandlerConfig.CallbackConfig != null)
                 {
-                    continue;
+                    path = "callbackconfig";
+                    ConfigParser.ParseAuthScheme(eventHandlerConfig.CallbackConfig, configurationSection, $"{path}:authenticationconfig");
+                    webhookList.Add(eventHandlerConfig.CallbackConfig);
+                    ConfigParser.AddEndpoints(eventHandlerConfig.CallbackConfig, endpointList, configurationSection, path);
                 }
-
-                path = "callbackconfig";
-                ConfigParser.ParseAuthScheme(eventHandlerConfig.CallbackConfig, configurationSection, $"{path}:authenticationconfig");
-                webhookList.Add(eventHandlerConfig.CallbackConfig);
-                ConfigParser.AddEndpoints(eventHandlerConfig.CallbackConfig, endpointList, configurationSection, path);
             }
 
             Assert.NotEmpty(eventHandlerList);

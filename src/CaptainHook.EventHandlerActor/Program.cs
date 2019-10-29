@@ -36,8 +36,7 @@ namespace CaptainHook.EventHandlerActor
                     new DefaultKeyVaultSecretManager()).Build();
 
                 //autowire up configs in keyvault to webhooks
-                var section = config.GetSection("event");
-                var values = section.GetChildren().ToList();
+                var values = config.GetSection("event").GetChildren().ToList();
 
                 var eventHandlerList = new List<EventHandlerConfig>();
                 var webhookList = new List<WebhookConfig>(values.Count);
@@ -49,25 +48,23 @@ namespace CaptainHook.EventHandlerActor
                     var eventHandlerConfig = configurationSection.Get<EventHandlerConfig>();
                     eventHandlerList.Add(eventHandlerConfig);
 
-                    var path = "webhookconfig";
-                    if (eventHandlerConfig.WebhookConfig != null)
+                    foreach (var handler in eventHandlerConfig.Subscriptions)
                     {
+                        var path = "webhookconfig";
                         ConfigParser.ParseAuthScheme(eventHandlerConfig.WebhookConfig, configurationSection, $"{path}:authenticationconfig");
                         eventHandlerConfig.WebhookConfig.EventType = eventHandlerConfig.Type;
                         webhookList.Add(eventHandlerConfig.WebhookConfig);
                         ConfigParser.AddEndpoints(eventHandlerConfig.WebhookConfig, endpointList, configurationSection, path);
-                    }
 
-                    if (!eventHandlerConfig.CallBackEnabled)
-                    {
-                        continue;
+                        if (handler.Callback != null)
+                        {
+                            path = "callbackconfig";
+                            ConfigParser.ParseAuthScheme(eventHandlerConfig.CallbackConfig, configurationSection, $"{path}:authenticationconfig");
+                            eventHandlerConfig.CallbackConfig.EventType = eventHandlerConfig.Type;
+                            webhookList.Add(eventHandlerConfig.CallbackConfig);
+                            ConfigParser.AddEndpoints(eventHandlerConfig.CallbackConfig, endpointList, configurationSection, path);
+                        }
                     }
-
-                    path = "callbackconfig";
-                    ConfigParser.ParseAuthScheme(eventHandlerConfig.CallbackConfig, configurationSection, $"{path}:authenticationconfig");
-                    eventHandlerConfig.CallbackConfig.EventType = eventHandlerConfig.Type;
-                    webhookList.Add(eventHandlerConfig.CallbackConfig);
-                    ConfigParser.AddEndpoints(eventHandlerConfig.CallbackConfig, endpointList, configurationSection, path);
                 }
 
                 var settings = new ConfigurationSettings();

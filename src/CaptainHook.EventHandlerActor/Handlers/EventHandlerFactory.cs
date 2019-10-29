@@ -40,14 +40,14 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// </summary>
         /// <param name="eventType"></param>
         /// <returns></returns>
-        public IHandler CreateEventHandler(string eventType)
+        public IHandler CreateEventHandler(string eventType, string webhookName)
         {
-            if (!_eventHandlerConfig.TryGetValue(eventType.ToLower(), out var eventHandlerConfig))
+            if (!_eventHandlerConfig.TryGetValue(eventType.ToLowerInvariant(), out var eventHandlerConfig))
             {
                 throw new Exception($"Boom, handler event type {eventType} was not found, cannot process the message");
             }
 
-            if (eventHandlerConfig.CallBackEnabled)
+            if (eventHandlerConfig.CallbackConfig != null)
             {
                 return new WebhookResponseHandler(
                     this,
@@ -70,7 +70,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <returns></returns>
         public IHandler CreateWebhookHandler(string webHookName)
         {
-            if (!_webHookConfig.TryGetValue(webHookName.ToLower(), out var webhookConfig))
+            if (!_webHookConfig.TryGetValue(webHookName.ToLowerInvariant(), out var webhookConfig))
             {
                 throw new Exception("Boom, handler webhook not found cannot process the message");
             }

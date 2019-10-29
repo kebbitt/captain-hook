@@ -59,11 +59,43 @@ namespace CaptainHook.Common.Configuration
         public TimeSpan Timeout { get; set; } = new TimeSpan(0, 0, 100);
     }
 
+    public class SubscriberConfiguration : WebhookConfig
+    {
+        public WebhookConfig Callback { get; set; }
+
+        public static SubscriberConfiguration FromWebhookConfig(WebhookConfig webhookConfig, WebhookConfig callback)
+        {
+            return new SubscriberConfiguration
+            {
+                AuthenticationConfig = webhookConfig.AuthenticationConfig,
+                HttpMethod = webhookConfig.HttpMethod,
+                Name = webhookConfig.Name,
+                Timeout = webhookConfig.Timeout,
+                Uri = webhookConfig.Uri,
+                WebhookRequestRules = webhookConfig.WebhookRequestRules,
+                Callback = callback,
+            };
+        }
+    }
+
     /// <summary>
     /// Event handler config contains both details for the webhook call as well as any domain events and callback
     /// </summary>
     public class EventHandlerConfig
     {
+        public List<SubscriberConfiguration> Clients { get; } = new List<SubscriberConfiguration>();
+
+        public IEnumerable<SubscriberConfiguration> Subscriptions
+        {
+            get
+            {
+                if (WebhookConfig != null)
+                    yield return SubscriberConfiguration.FromWebhookConfig(WebhookConfig, CallbackConfig);
+                foreach (var conf in Clients)
+                    yield return conf;
+            }
+        }
+
         public WebhookConfig WebhookConfig { get; set; }
 
         public WebhookConfig CallbackConfig { get; set; }
@@ -71,8 +103,6 @@ namespace CaptainHook.Common.Configuration
         public string Name { get; set; }
 
         public string Type { get; set; }
-
-        public bool CallBackEnabled => CallbackConfig != null;
     }
 
     public class WebhookRequestRule

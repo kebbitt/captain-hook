@@ -9,8 +9,9 @@
         /// Create the custom handler such that we get a mapping from the webhook to the handler selected
         /// </summary>
         /// <param name="fullEventName"></param>
+        /// <param name="webhookName">The optional name of a sending webhook handler</param>
         /// <returns></returns>
-        IHandler CreateEventHandler(string fullEventName);
+        IHandler CreateEventHandler(string fullEventName, string webhookName);
 
         /// <summary>
         /// Used only for getting the callback handler
