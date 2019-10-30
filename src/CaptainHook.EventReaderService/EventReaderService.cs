@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Fabric;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -11,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
+using CaptainHook.Common.ServiceModels;
 using CaptainHook.Common.Telemetry.Service;
 using CaptainHook.Common.Telemetry.Service.EventReader;
 using CaptainHook.Interfaces;
@@ -24,6 +26,7 @@ using Microsoft.ServiceFabric.Data;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
+using Newtonsoft.Json;
 
 namespace CaptainHook.EventReaderService
 {
@@ -42,7 +45,8 @@ namespace CaptainHook.EventReaderService
         private readonly IServiceBusManager _serviceBusManager;
         private readonly IActorProxyFactory _proxyFactory;
         private readonly ConfigurationSettings _settings;
-        private readonly string _eventType;
+        private string _eventType;
+        private string _dispatchName; 
 
         internal ConcurrentDictionary<string, MessageDataHandle> _inflightMessages = new ConcurrentDictionary<string, MessageDataHandle>();
 
@@ -86,7 +90,21 @@ namespace CaptainHook.EventReaderService
             _serviceBusManager = serviceBusManager;
             _proxyFactory = proxyFactory;
             _settings = settings;
-            _eventType = Encoding.UTF8.GetString(context.InitializationData);
+            ParseOutInitData(context.InitializationData);
+        }
+
+        private void ParseOutInitData(byte[] initializationData)
+        {
+            if (initializationData == null || initializationData.Length == 0)
+                throw new ArgumentException("invalid initialization data structure", nameof(initializationData));
+
+            var json = JsonSerializer.CreateDefault().Deserialize<EventReaderInitData>(new JsonTextReader(new StringReader(Encoding.UTF8.GetString(initializationData))));
+
+            if (json == null)
+                throw new ArgumentException("failed to deserialize init data", nameof(initializationData));
+
+            _eventType = json.EventType;
+            _dispatchName = json.DispatchName;
         }
 
         /// <summary>
@@ -111,7 +129,7 @@ namespace CaptainHook.EventReaderService
             _serviceBusManager = serviceBusManager;
             _proxyFactory = proxyFactory;
             _settings = settings;
-            _eventType = Encoding.UTF8.GetString(context.InitializationData);
+            ParseOutInitData(context.InitializationData);
         }
 
         /// <summary>
