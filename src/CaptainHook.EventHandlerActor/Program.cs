@@ -47,24 +47,29 @@ namespace CaptainHook.EventHandlerActor
                     //temp work around until config comes in through the API
                     var eventHandlerConfig = configurationSection.Get<EventHandlerConfig>();
 
-                    foreach (var handler in eventHandlerConfig.AllSubscribers)
+                    foreach (var subscriber in eventHandlerConfig.AllSubscribers)
                     {
                         subscriberConfigurations.Add(
-                            SubscriberConfiguration.Key(eventHandlerConfig.Type, handler.Name),
-                            handler);
-                        var path = "webhookconfig";
-                        ConfigParser.ParseAuthScheme(eventHandlerConfig.WebhookConfig, configurationSection, $"{path}:authenticationconfig");
-                        eventHandlerConfig.WebhookConfig.EventType = eventHandlerConfig.Type;
-                        webhookList.Add(eventHandlerConfig.WebhookConfig);
-                        ConfigParser.AddEndpoints(eventHandlerConfig.WebhookConfig, endpointList, configurationSection, path);
+                            SubscriberConfiguration.Key(eventHandlerConfig.Type, subscriber.Name),
+                            subscriber);
 
-                        if (handler.Callback != null)
+                        // For compatibility proposes add the configuration without the handler's name.
+                        if(subscriber.IsMainConfiguration)
+                            subscriberConfigurations.Add(
+                                SubscriberConfiguration.Key(eventHandlerConfig.Type, null),
+                                subscriber);
+                        var path = "webhookconfig";
+                        ConfigParser.ParseAuthScheme(subscriber, configurationSection, $"{path}:authenticationconfig");
+                        subscriber.EventType = eventHandlerConfig.Type;
+                        ConfigParser.AddEndpoints(subscriber, endpointList, configurationSection, path);
+
+                        if (subscriber.Callback != null)
                         {
                             path = "callbackconfig";
-                            ConfigParser.ParseAuthScheme(eventHandlerConfig.CallbackConfig, configurationSection, $"{path}:authenticationconfig");
-                            eventHandlerConfig.CallbackConfig.EventType = eventHandlerConfig.Type;
-                            webhookList.Add(eventHandlerConfig.CallbackConfig);
-                            ConfigParser.AddEndpoints(eventHandlerConfig.CallbackConfig, endpointList, configurationSection, path);
+                            ConfigParser.ParseAuthScheme(subscriber.Callback, configurationSection, $"{path}:authenticationconfig");
+                            subscriber.Callback.EventType = eventHandlerConfig.Type;
+                            webhookList.Add(subscriber.Callback);
+                            ConfigParser.AddEndpoints(subscriber.Callback, endpointList, configurationSection, path);
                         }
                     }
                 }

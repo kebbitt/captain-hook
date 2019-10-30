@@ -256,7 +256,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             {
                 new object[]
                 {
-                    EventHandlerConfigWithSingleRoute,
+                    SubscriberConfigurationWithSingleRoute,
                     EventHandlerTestHelper.CreateMessageDataPayload().data,
                     "https://blah.blah.eshopworld.com/BB39357A-90E1-4B6A-9C94-14BD1A62465E",
                     "{\"TransportModel\":\"{\\\"Name\\\":\\\"Hello World\\\"}\"}"
@@ -268,7 +268,7 @@ namespace CaptainHook.Tests.Web.WebHooks
             {
                 new object[]
                 {
-                    EventHandlerConfigWithSingleRoute,
+                    SubscriberConfigurationWithSingleRoute,
                     EventHandlerTestHelper.CreateMessageDataPayload().data,
                     "https://blah.blah.eshopworld.com/BB39357A-90E1-4B6A-9C94-14BD1A62465E",
                     "https://callback.eshopworld.com/BB39357A-90E1-4B6A-9C94-14BD1A62465E",
@@ -300,7 +300,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                 }
             };
 
-        private static EventHandlerConfig EventHandlerConfigWithSingleRoute => new EventHandlerConfig
+        private static SubscriberConfiguration SubscriberConfigurationWithSingleRoute => new EventHandlerConfig
         {
             Name = "Event 1",
             Type = "blahblah",
@@ -395,9 +395,9 @@ namespace CaptainHook.Tests.Web.WebHooks
                     }
                 }
             }
-        };
+        }.AllSubscribers.First();
 
-        private static EventHandlerConfig EventHandlerConfigWithGoodMultiRoute => new EventHandlerConfig
+        private static SubscriberConfiguration EventHandlerConfigWithGoodMultiRoute => new EventHandlerConfig
         {
             Name = "Event 1",
             Type = "blahblah",
@@ -505,9 +505,9 @@ namespace CaptainHook.Tests.Web.WebHooks
                     }
                 }
             }
-        };
+        }.AllSubscribers.First();
 
-        private static EventHandlerConfig EventHandlerConfigWithBadMultiRoute => new EventHandlerConfig
+        private static SubscriberConfiguration EventHandlerConfigWithBadMultiRoute => new EventHandlerConfig
         {
             Name = "Event 1",
             Type = "blahblah",
@@ -626,6 +626,6 @@ namespace CaptainHook.Tests.Web.WebHooks
                     }
                 }
             }
-        };
+        }.AllSubscribers.First();
     }
 }
