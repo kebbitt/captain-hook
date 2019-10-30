@@ -58,24 +58,54 @@ namespace CaptainHook.Common.Configuration
         public TimeSpan Timeout { get; set; } = new TimeSpan(0, 0, 100);
     }
 
+    /// <summary>
+    /// Defines the configuration of the subscriber of a topic.
+    /// </summary>
     public class SubscriberConfiguration : WebhookConfig
     {
+        /// <summary>
+        /// Creates a key used to index the subscriber configurations.
+        /// </summary>
+        /// <param name="typeName">The full name of the type of the message.</param>
+        /// <param name="subscriberName">The optional name of the subsciber.</param>
+        /// <returns></returns>
         public static string Key(string typeName, string subscriberName)
             => $"{typeName};{subscriberName}".ToLowerInvariant();
 
+        /// <summary>
+        /// The configuration of the webhook which should receive the response message from
+        /// the main webhook.
+        /// </summary>
         public WebhookConfig Callback { get; set; }
 
+        /// <summary>
+        /// Specifies a configuration which should be used when the name has not been provided.
+        /// </summary>
+        /// <remarks>
+        /// It's for backward compatiblity only.
+        /// </remarks>
+        public bool IsMainConfiguration { get; private set; }
+
+        /// <summary>
+        /// Tranforms the old structure of configuration into the new one.
+        /// </summary>
+        /// <param name="webhookConfig">The webhook configuration.</param>
+        /// <param name="callback">The callback associated with <paramref name="webhookConfig"/>.</param>
+        /// <returns>The subscriber configuration consisting of the webhook configuration and its callback.</returns>
         public static SubscriberConfiguration FromWebhookConfig(WebhookConfig webhookConfig, WebhookConfig callback)
         {
             return new SubscriberConfiguration
             {
                 AuthenticationConfig = webhookConfig.AuthenticationConfig,
                 HttpMethod = webhookConfig.HttpMethod,
+                EventType = webhookConfig.EventType,
+                ContentType = webhookConfig.ContentType,
                 Name = webhookConfig.Name,
                 Timeout = webhookConfig.Timeout,
                 Uri = webhookConfig.Uri,
                 WebhookRequestRules = webhookConfig.WebhookRequestRules,
                 Callback = callback,
+                IsMainConfiguration = true,
             };
         }
     }
@@ -85,8 +115,14 @@ namespace CaptainHook.Common.Configuration
     /// </summary>
     public class EventHandlerConfig
     {
+        /// <summary>
+        /// The list of all subscibers of the topic handling the event type.
+        /// </summary>
         public List<SubscriberConfiguration> Subscribers { get; } = new List<SubscriberConfiguration>();
 
+        /// <summary>
+        /// Returns all subscribers defined in the old and new configuration schemas.
+        /// </summary>
         public IEnumerable<SubscriberConfiguration> AllSubscribers
         {
             get
@@ -98,8 +134,14 @@ namespace CaptainHook.Common.Configuration
             }
         }
 
+        /// <summary>
+        /// The webhook definition using the old schema of configuration.
+        /// </summary>
         public WebhookConfig WebhookConfig { get; set; }
 
+        /// <summary>
+        /// The callback of associated with <see cref="WebhookConfig"/> using the old schema of configuration.
+        /// </summary>
         public WebhookConfig CallbackConfig { get; set; }
 
         public string Name { get; set; }
