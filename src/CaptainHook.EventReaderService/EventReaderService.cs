@@ -37,8 +37,6 @@ namespace CaptainHook.EventReaderService
     /// </summary>
     public class EventReaderService : StatefulService, IEventReaderService
     {
-        private const string SubscriptionName = "captain-hook";
-
         private const int BatchSize = 1; // make this dynamic - based on the number of active handlers - more handlers, lower batch
 
         private readonly IBigBrother _bigBrother;
@@ -102,6 +100,12 @@ namespace CaptainHook.EventReaderService
 
             if (json == null)
                 throw new ArgumentException("failed to deserialize init data", nameof(initializationData));
+
+            if (string.IsNullOrWhiteSpace(json.DispatchName))
+                throw new ArgumentException($"invalid init data - {nameof(EventReaderInitData.DispatchName)} is empty");
+
+            if (string.IsNullOrWhiteSpace(json.EventType))
+                throw new ArgumentException($"invalid init data - {nameof(EventReaderInitData.EventType)} is empty");
 
             _eventType = json.EventType;
             _dispatchName = json.DispatchName;
@@ -169,15 +173,6 @@ namespace CaptainHook.EventReaderService
         }
 
         /// <summary>
-        /// Determines the number of handlers to have based on the number of messages which are inflight
-        /// </summary>
-        /// <returns></returns>
-        internal async Task GetHandlerCountsOnStartup()
-        {
-            _freeHandlers = Enumerable.Range(1, HandlerCount).ToConcurrentQueue();
-        }
-
-        /// <summary>
         /// Gets the count of the numbers of messages which are in flight at the moment
         /// </summary>
         internal int InFlightMessageCount => HandlerCount - _freeHandlers.Count;
@@ -186,9 +181,10 @@ namespace CaptainHook.EventReaderService
         {
             ServicePointManager.DefaultConnectionLimit = 100;
 
-            await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, SubscriptionName, _eventType);
+            var subName = _dispatchName.Length > 50 ? _dispatchName.Substring(0, 50) : _dispatchName;
+            await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, subName, _eventType);
             
-            var messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, SubscriptionName);
+            var messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, subName);
 
             //add new receiver and set is as primary
             var wrapper = new MessageReceiverWrapper { Receiver = messageReceiver, ReceiverId = Guid.NewGuid() };
@@ -250,7 +246,7 @@ namespace CaptainHook.EventReaderService
 
             try
             {
-                await GetHandlerCountsOnStartup();
+                _freeHandlers = Enumerable.Range(1, HandlerCount).ToConcurrentQueue();
                 await SetupServiceBus();
 
                 while (!cancellationToken.IsCancellationRequested)
@@ -280,7 +276,7 @@ namespace CaptainHook.EventReaderService
 
                         foreach (var message in messages)
                         {
-                            var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _eventType);
+                            var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _eventType, _dispatchName);
 
                             var handlerId = GetFreeHandlerId();
 
@@ -297,7 +293,7 @@ namespace CaptainHook.EventReaderService
 
                             await _proxyFactory.CreateActorProxy<IEventHandlerActor>(
                                     new ActorId(messageData.EventHandlerActorId),
-                                    serviceName: Constants.CaptainHookApplication.Services.EventHandlerServiceShortName)
+                                    serviceName: ServiceNaming.EventHandlerServiceShortName)
                                 .Handle(messageData);
                         }
                     }

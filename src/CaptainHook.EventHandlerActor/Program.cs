@@ -50,7 +50,8 @@ namespace CaptainHook.EventHandlerActor
                     foreach (var subscriber in eventHandlerConfig.AllSubscribers)
                     {
                         subscriberConfigurations.Add(
-                            SubscriberConfiguration.Key(eventHandlerConfig.Type, subscriber.Name),
+                            subscriber.Name,
+                            //SubscriberConfiguration.Key(eventHandlerConfig.Type, subscriber.Name),
                             subscriber);
 
                         // For compatibility proposes add the configuration without the handler's name.
@@ -61,6 +62,7 @@ namespace CaptainHook.EventHandlerActor
                         var path = "webhookconfig";
                         ConfigParser.ParseAuthScheme(subscriber, configurationSection, $"{path}:authenticationconfig");
                         subscriber.EventType = eventHandlerConfig.Type;
+                        webhookList.Add(eventHandlerConfig.WebhookConfig);
                         ConfigParser.AddEndpoints(subscriber, endpointList, configurationSection, path);
 
                         if (subscriber.Callback != null)
@@ -95,9 +97,9 @@ namespace CaptainHook.EventHandlerActor
                 builder.RegisterType<RequestBuilder>().As<IRequestBuilder>();
 
                 //Register each webhook authenticationConfig separately for injection
-                foreach (var subsciber in subscriberConfigurations)
+                foreach (var subscriber in subscriberConfigurations)
                 {
-                    builder.RegisterInstance(subsciber.Value).Named<SubscriberConfiguration>(subsciber.Key);
+                    builder.RegisterInstance(subscriber.Value).Named<SubscriberConfiguration>(subscriber.Key);
                 }
 
                 foreach (var webhookConfig in webhookList)

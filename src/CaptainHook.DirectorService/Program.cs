@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Fabric;
 using System.Threading;
@@ -35,7 +36,7 @@ namespace CaptainHook.DirectorService
 
                 var settings = new ConfigurationSettings();
                 config.Bind(settings);
-
+                
                 //Get configs from the Config Package
                 var activationContext = FabricRuntime.GetActivationContext();
                 var defaultServicesSettings = ConfigFabricCodePackage(activationContext);
@@ -44,6 +45,9 @@ namespace CaptainHook.DirectorService
                 bb.UseEventSourceSink().ForExceptions();
 
                 var builder = new ContainerBuilder();
+
+                builder.RegisterInstance(config.GetSection("event").Get<IEnumerable<EventHandlerConfig>>());
+
                 builder.RegisterInstance(bb)
                        .As<IBigBrother>()
                        .SingleInstance();
@@ -70,11 +74,11 @@ namespace CaptainHook.DirectorService
                 //builder.RegisterInstance(ruleContainer).SingleInstance();
 
                 builder.RegisterServiceFabricSupport();
-                builder.RegisterStatefulService<DirectorService>(Constants.CaptainHookApplication.Services.DirectorServiceType);
+                builder.RegisterStatefulService<DirectorService>(ServiceNaming.DirectorServiceType);
 
                 using (builder.Build())
                 {
-                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, Constants.CaptainHookApplication.Services.DirectorServiceShortName);
+                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, ServiceNaming.DirectorServiceShortName);
 
                     await Task.Delay(Timeout.Infinite);
                 }

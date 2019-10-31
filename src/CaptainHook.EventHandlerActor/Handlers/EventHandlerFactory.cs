@@ -9,7 +9,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
     public class EventHandlerFactory : IEventHandlerFactory
     {
         private readonly IBigBrother _bigBrother;
-        private readonly IIndex<string, SubscriberConfiguration> _subsciberConfigurations;
+        private readonly IIndex<string, SubscriberConfiguration> _subscriberConfigurations;
         private readonly IIndex<string, WebhookConfig> _webHookConfig;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IAuthenticationHandlerFactory _authenticationHandlerFactory;
@@ -26,7 +26,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
             IRequestBuilder requestBuilder)
         {
             _bigBrother = bigBrother;
-            _subsciberConfigurations = subsciberConfigurations;
+            _subscriberConfigurations = subsciberConfigurations;
             _httpClientFactory = httpClientFactory;
             _requestLogger = requestLogger;
             _requestBuilder = requestBuilder;
@@ -42,8 +42,8 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <returns></returns>
         public IHandler CreateEventHandler(string eventType, string webhookName)
         {
-            var key = SubscriberConfiguration.Key(eventType, webhookName);
-            if (!_subsciberConfigurations.TryGetValue(key, out var subscriberConfig))
+            //var key = SubscriberConfiguration.Key(eventType, webhookName);
+            if (!_subscriberConfigurations.TryGetValue(webhookName, out var subscriberConfig))
             {
                 throw new Exception($"Boom, handler event type {eventType} was not found, cannot process the message");
             }
