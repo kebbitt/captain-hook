@@ -105,7 +105,7 @@ namespace CaptainHook.EventHandlerActor
                     return;
                 }
 
-                var handler = _eventHandlerFactory.CreateEventHandler(messageData.Type, messageData.WebhookName);
+                var handler = _eventHandlerFactory.CreateEventHandler(messageData.Type, messageData.SubscriberName);
                 await handler.CallAsync(messageData, new Dictionary<string, object>(), CancellationToken.None);
             }
             catch (Exception e)
@@ -121,7 +121,7 @@ namespace CaptainHook.EventHandlerActor
                     try
                     {
                         await StateManager.RemoveStateAsync(messageData.HandlerId.ToString());
-                        var readerServiceNameUri = ServiceNaming.EventReaderServiceFullUri(messageData.Type, messageData.WebhookName);
+                        var readerServiceNameUri = ServiceNaming.EventReaderServiceFullUri(messageData.Type, messageData.SubscriberName);
 
                         await ServiceProxy.Create<IEventReaderService>(new Uri(readerServiceNameUri)).CompleteMessageAsync(messageData, messageDelivered);
 

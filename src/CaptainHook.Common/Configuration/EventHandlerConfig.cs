@@ -79,6 +79,11 @@ namespace CaptainHook.Common.Configuration
         public WebhookConfig Callback { get; set; }
 
         /// <summary>
+        /// intended name for the subscriber(and therefore subscription)
+        /// </summary>
+        public string SubscriberName { get; set; }
+
+        /// <summary>
         /// Specifies a configuration which should be used when the name has not been provided.
         /// </summary>
         /// <remarks>
@@ -98,9 +103,10 @@ namespace CaptainHook.Common.Configuration
             {
                 AuthenticationConfig = webhookConfig.AuthenticationConfig,
                 HttpMethod = webhookConfig.HttpMethod,
-                EventType = webhookConfig.EventType,
+                //EventType = webhookConfig.EventType,
                 ContentType = webhookConfig.ContentType,
                 Name = webhookConfig.Name,
+                SubscriberName = "captain-hook", //for the legacy config, assume the legacy name as well
                 Timeout = webhookConfig.Timeout,
                 Uri = webhookConfig.Uri,
                 WebhookRequestRules = webhookConfig.WebhookRequestRules,

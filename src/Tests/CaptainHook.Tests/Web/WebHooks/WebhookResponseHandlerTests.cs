@@ -300,25 +300,21 @@ namespace CaptainHook.Tests.Web.WebHooks
                 }
             };
 
-        private static SubscriberConfiguration SubscriberConfigurationWithSingleRoute => new EventHandlerConfig
+        private static SubscriberConfiguration SubscriberConfigurationWithSingleRoute => new SubscriberConfiguration
         {
-            Name = "Event 1",
-            Type = "blahblah",
-            WebhookConfig = new WebhookConfig
+            Name = "Webhook1",
+            HttpMethod = HttpMethod.Post,
+            Uri = "https://blah.blah.eshopworld.com",
+            EventType = "Event1Webhook",
+            AuthenticationConfig = new OidcAuthenticationConfig
             {
-                Name = "Webhook1",
-                HttpMethod = HttpMethod.Post,
-                Uri = "https://blah.blah.eshopworld.com",
-                EventType = "Event1Webhook",
-                AuthenticationConfig = new OidcAuthenticationConfig
-                {
-                    Type = AuthenticationType.OIDC,
-                    Uri = "https://blah-blah.sts.eshopworld.com",
-                    ClientId = "ClientId",
-                    ClientSecret = "ClientSecret",
-                    Scopes = new[] { "scope1", "scope2" }
-                },
-                WebhookRequestRules = new List<WebhookRequestRule>
+                Type = AuthenticationType.OIDC,
+                Uri = "https://blah-blah.sts.eshopworld.com",
+                ClientId = "ClientId",
+                ClientSecret = "ClientSecret",
+                Scopes = new[] { "scope1", "scope2" }
+            },
+            WebhookRequestRules = new List<WebhookRequestRule>
                 {
                     new WebhookRequestRule
                     {
@@ -344,9 +340,8 @@ namespace CaptainHook.Tests.Web.WebHooks
                             Type = DataType.String
                         }
                     }
-                }
-            },
-            CallbackConfig = new WebhookConfig
+                },
+            Callback = new WebhookConfig
             {
                 Name = "PutOrderConfirmationEvent",
                 HttpMethod = HttpMethod.Put,
@@ -395,17 +390,13 @@ namespace CaptainHook.Tests.Web.WebHooks
                     }
                 }
             }
-        }.AllSubscribers.First();
+        };
 
-        private static SubscriberConfiguration EventHandlerConfigWithGoodMultiRoute => new EventHandlerConfig
+        private static SubscriberConfiguration EventHandlerConfigWithGoodMultiRoute => new SubscriberConfiguration
         {
-            Name = "Event 1",
-            Type = "blahblah",
-            WebhookConfig = new WebhookConfig
-            {
-                Name = "Webhook1",
-                EventType = "Event1Webhook",
-                WebhookRequestRules = new List<WebhookRequestRule>
+            Name = "Webhook1",
+            EventType = "Event1Webhook",
+            WebhookRequestRules = new List<WebhookRequestRule>
                 {
                     new WebhookRequestRule
                     {
@@ -455,9 +446,8 @@ namespace CaptainHook.Tests.Web.WebHooks
                             Type = DataType.Model
                         }
                     }
-                }
-            },
-            CallbackConfig = new WebhookConfig
+                },
+            Callback = new WebhookConfig
             {
                 Name = "PutOrderConfirmationEvent",
                 EventType = "PutOrderConfirmationEvent",
@@ -505,7 +495,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                     }
                 }
             }
-        }.AllSubscribers.First();
+        };
 
         private static SubscriberConfiguration EventHandlerConfigWithBadMultiRoute => new EventHandlerConfig
         {

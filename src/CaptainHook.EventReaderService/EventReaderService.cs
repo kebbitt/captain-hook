@@ -44,7 +44,7 @@ namespace CaptainHook.EventReaderService
         private readonly IActorProxyFactory _proxyFactory;
         private readonly ConfigurationSettings _settings;
         private string _eventType;
-        private string _dispatchName; 
+        private string _subscriberName; 
 
         internal ConcurrentDictionary<string, MessageDataHandle> _inflightMessages = new ConcurrentDictionary<string, MessageDataHandle>();
 
@@ -101,14 +101,14 @@ namespace CaptainHook.EventReaderService
             if (json == null)
                 throw new ArgumentException("failed to deserialize init data", nameof(initializationData));
 
-            if (string.IsNullOrWhiteSpace(json.DispatchName))
-                throw new ArgumentException($"invalid init data - {nameof(EventReaderInitData.DispatchName)} is empty");
+            if (string.IsNullOrWhiteSpace(json.SuscriberName))
+                throw new ArgumentException($"invalid init data - {nameof(EventReaderInitData.SuscriberName)} is empty");
 
             if (string.IsNullOrWhiteSpace(json.EventType))
                 throw new ArgumentException($"invalid init data - {nameof(EventReaderInitData.EventType)} is empty");
 
             _eventType = json.EventType;
-            _dispatchName = json.DispatchName;
+            _subscriberName = json.SuscriberName;
         }
 
         /// <summary>
@@ -181,10 +181,9 @@ namespace CaptainHook.EventReaderService
         {
             ServicePointManager.DefaultConnectionLimit = 100;
 
-            var subName = _dispatchName.Length > 50 ? _dispatchName.Substring(0, 50) : _dispatchName;
-            await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, subName, _eventType);
+            await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, _subscriberName, _eventType);
             
-            var messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, subName);
+            var messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, _subscriberName);
 
             //add new receiver and set is as primary
             var wrapper = new MessageReceiverWrapper { Receiver = messageReceiver, ReceiverId = Guid.NewGuid() };
@@ -276,7 +275,7 @@ namespace CaptainHook.EventReaderService
 
                         foreach (var message in messages)
                         {
-                            var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _eventType, _dispatchName);
+                            var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _eventType, _subscriberName);
 
                             var handlerId = GetFreeHandlerId();
 

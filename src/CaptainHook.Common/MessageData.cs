@@ -5,11 +5,11 @@
         // ReSharper disable once UnusedMember.Local - Use by the data contract serializers
         private MessageData() { }
 
-        public MessageData(string payload, string type, string webHookName)
+        public MessageData(string payload, string type, string subscriberName)
         {
             Payload = payload;
             Type = type;
-            WebhookName = webHookName;
+            SubscriberName = subscriberName;
         }
 
         /// <summary>
@@ -34,7 +34,7 @@
         /// (for backward compatibility).
         /// The webhook must be top level (not a callback).
         /// </remarks>
-        public string WebhookName { get; set; }
+        public string SubscriberName { get; set; }
 
         public string EventHandlerActorId => $"{Type}-{HandlerId}";
 

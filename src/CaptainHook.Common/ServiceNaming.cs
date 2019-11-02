@@ -6,7 +6,7 @@ namespace CaptainHook.Common
     {
         public const string EventReaderServiceShortName = "EventReader";
 
-        public static string EventReaderServiceFullUri(string eventName, string despatchName) => $"fabric:/{CaptainHookApplication.ApplicationName}/{EventReaderServiceShortName}.{eventName}.{despatchName}";
+        public static string EventReaderServiceFullUri(string eventName, string subscriberName) => $"fabric:/{CaptainHookApplication.ApplicationName}/{EventReaderServiceShortName}.{eventName}-{subscriberName}";
 
         public const string EventReaderServiceType = "CaptainHook.EventReaderServiceType";
 

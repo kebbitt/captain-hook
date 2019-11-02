@@ -18,7 +18,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
         public EventHandlerFactory(
             IBigBrother bigBrother,
-            IIndex<string, SubscriberConfiguration> subsciberConfigurations,
+            IIndex<string, SubscriberConfiguration> subscriberConfigurations,
             IIndex<string, WebhookConfig> webHookConfig,
             IHttpClientFactory httpClientFactory,
             IAuthenticationHandlerFactory authenticationHandlerFactory,
@@ -26,7 +26,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
             IRequestBuilder requestBuilder)
         {
             _bigBrother = bigBrother;
-            _subscriberConfigurations = subsciberConfigurations;
+            _subscriberConfigurations = subscriberConfigurations;
             _httpClientFactory = httpClientFactory;
             _requestLogger = requestLogger;
             _requestBuilder = requestBuilder;
@@ -38,12 +38,13 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <summary>
         /// Create the custom handler such that we get a mapping from the webhook to the handler selected
         /// </summary>
-        /// <param name="eventType"></param>
-        /// <returns></returns>
-        public IHandler CreateEventHandler(string eventType, string webhookName)
+        /// <param name="eventType">type of event to process</param>
+        /// <param name="subscriberName">name of the subscriber that received the event</param>
+        /// <returns>handler instance</returns>
+        public IHandler CreateEventHandler(string eventType, string subscriberName)
         {
             //var key = SubscriberConfiguration.Key(eventType, webhookName);
-            if (!_subscriberConfigurations.TryGetValue(webhookName, out var subscriberConfig))
+            if (!_subscriberConfigurations.TryGetValue(SubscriberConfiguration.Key(eventType, subscriberName), out var subscriberConfig))
             {
                 throw new Exception($"Boom, handler event type {eventType} was not found, cannot process the message");
             }

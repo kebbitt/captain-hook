@@ -48,17 +48,11 @@ namespace CaptainHook.EventHandlerActor
                     var eventHandlerConfig = configurationSection.Get<EventHandlerConfig>();
 
                     foreach (var subscriber in eventHandlerConfig.AllSubscribers)
-                    {
+                    {                    
                         subscriberConfigurations.Add(
-                            subscriber.Name,
-                            //SubscriberConfiguration.Key(eventHandlerConfig.Type, subscriber.Name),
+                            SubscriberConfiguration.Key(eventHandlerConfig.Type, subscriber.SubscriberName),
                             subscriber);
 
-                        // For compatibility proposes add the configuration without the handler's name.
-                        if(subscriber.IsMainConfiguration)
-                            subscriberConfigurations.Add(
-                                SubscriberConfiguration.Key(eventHandlerConfig.Type, null),
-                                subscriber);
                         var path = "webhookconfig";
                         ConfigParser.ParseAuthScheme(subscriber, configurationSection, $"{path}:authenticationconfig");
                         subscriber.EventType = eventHandlerConfig.Type;

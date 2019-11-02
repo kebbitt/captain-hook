@@ -107,7 +107,7 @@ namespace CaptainHook.DirectorService
                     {
                         if (cancellationToken.IsCancellationRequested) return;
 
-                        var readerServiceNameUri = ServiceNaming.EventReaderServiceFullUri(@event.Name, sub.Name);
+                        var readerServiceNameUri = ServiceNaming.EventReaderServiceFullUri(@event.Type, sub.SubscriberName);
                         if (!serviceList.Contains(readerServiceNameUri))
                         {
                             await _fabricClient.ServiceManager.CreateServiceAsync(
@@ -120,7 +120,7 @@ namespace CaptainHook.DirectorService
                                     PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
                                     ServiceTypeName = ServiceNaming.EventReaderServiceType,
                                     ServiceName = new Uri(readerServiceNameUri),
-                                    InitializationData = Encoding.UTF8.GetBytes(EventReaderInitData.GetReaderInitDataAsString(@event.Name, sub.Name)),
+                                    InitializationData = Encoding.UTF8.GetBytes(EventReaderInitData.GetReaderInitDataAsString(@event.Type, sub.SubscriberName)),
                                     PlacementConstraints = _defaultServiceSettings.DefaultPlacementConstraints
                                 },
                                 TimeSpan.FromSeconds(30),
