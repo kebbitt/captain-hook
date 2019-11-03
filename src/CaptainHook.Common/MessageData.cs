@@ -36,7 +36,7 @@
         /// </remarks>
         public string SubscriberName { get; set; }
 
-        public string EventHandlerActorId => $"{Type}-{HandlerId}";
+        public string EventHandlerActorId => $"{Type}-{SubscriberName}-{HandlerId}";
 
     }
 }
