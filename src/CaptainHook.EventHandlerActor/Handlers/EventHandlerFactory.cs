@@ -43,7 +43,6 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <returns>handler instance</returns>
         public IHandler CreateEventHandler(string eventType, string subscriberName)
         {
-            //var key = SubscriberConfiguration.Key(eventType, webhookName);
             if (!_subscriberConfigurations.TryGetValue(SubscriberConfiguration.Key(eventType, subscriberName), out var subscriberConfig))
             {
                 throw new Exception($"Boom, handler event type {eventType} was not found, cannot process the message");

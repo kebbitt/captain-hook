@@ -53,31 +53,7 @@ namespace CaptainHook.DirectorService
             // TODO: Check fabric node topology - if running below Bronze, set min and target replicas to 1 instead of 3
 
             try
-            {
-                //todo this presents a few problems.
-                // - we need to ensure rules which are in the db are created
-                // - rules which are updated are updated in the handlers and dispatchers
-                // - rules which are deleted can only be soft deleted - cosmos change feed does not support hard deletes
-
-                //var iterator = RuleContainer.Items.GetItemIterator<RoutingRule>();
-                //while (iterator.HasMoreResults)
-                //{
-                //    Rules.AddRange(await iterator.FetchNextSetAsync(cancellationToken));
-                //}
-
-                //var uniqueEventTypes = Rules.Select(r => r.EventType).Distinct();
-
-                //var events = new[]
-                //{
-                //    "Core.Events.Test.TrackingDomainEvent",
-                //    "Checkout.Domain.Infrastructure.DomainEvents.RetailerOrderConfirmationDomainEvent",
-                //    "Checkout.Domain.Infrastructure.DomainEvents.PlatformOrderCreateDomainEvent",
-                //    "Nike.Snkrs.Core.Events.ProductRefreshEvent",
-                //    "Nike.Snkrs.Core.Events.ProductUpdatedEvent",
-                //    "Nike.Snkrs.ControlTowerApi.Models.Events.NikeLaunchDataReceivedEvent",
-                //    "Bullfrog.DomainEvents.ScaleChange",
-                //    "Eshopworld.Platform.Events.Logistics.ReturnOrderEvent"
-                //};
+            {                
 
                 var serviceList = (await _fabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}")))
                                   .Select(s => s.ServiceName.AbsoluteUri)

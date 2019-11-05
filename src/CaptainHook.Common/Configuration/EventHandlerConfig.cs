@@ -103,7 +103,7 @@ namespace CaptainHook.Common.Configuration
             {
                 AuthenticationConfig = webhookConfig.AuthenticationConfig,
                 HttpMethod = webhookConfig.HttpMethod,
-                //EventType = webhookConfig.EventType,
+                EventType = webhookConfig.EventType,
                 ContentType = webhookConfig.ContentType,
                 Name = webhookConfig.Name,
                 SubscriberName = "captain-hook", //for the legacy config, assume the legacy name as well
