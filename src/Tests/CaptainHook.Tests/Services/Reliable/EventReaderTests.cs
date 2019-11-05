@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
+using CaptainHook.Common.ServiceModels;
 using CaptainHook.EventReaderService;
 using CaptainHook.Interfaces;
 using Eshopworld.Core;
@@ -42,9 +43,9 @@ namespace CaptainHook.Tests.Services.Reliable
         public EventReaderTests()
         {
             _context = CustomMockStatefulServiceContextFactory.Create(
-                Constants.CaptainHookApplication.Services.EventReaderServiceType,
-                Constants.CaptainHookApplication.Services.EventReaderServiceFullName,
-                Encoding.UTF8.GetBytes("test.type"), replicaId:(new Random(int.MaxValue)).Next());
+                ServiceNaming.EventReaderServiceType,
+                ServiceNaming.EventReaderServiceFullUri("test.type", "subA"),
+                Encoding.UTF8.GetBytes(EventReaderInitData.GetReaderInitDataAsString("test.type", "subA")), replicaId:(new Random(int.MaxValue)).Next());
             _mockActorProxyFactory = new MockActorProxyFactory();
             _stateManager = new MockReliableStateManager();
             _config = new ConfigurationSettings();
@@ -259,7 +260,7 @@ namespace CaptainHook.Tests.Services.Reliable
             {
                 var messageDataHandle = await dictionary.TryGetValueAsync(tx, expectedHandlerId);
                 //reconstruct the message so we can call complete
-                messageData = new MessageData("Hello World 1", eventName);               
+                messageData = new MessageData("Hello World 1", eventName, "subA");               
             }
 
             await service.CompleteMessageAsync(messageData, messageDelivered, CancellationToken.None);
@@ -357,7 +358,7 @@ namespace CaptainHook.Tests.Services.Reliable
 
         private static IList<Message> CreateMessage(string eventName)
         {
-            return new List<Message> { new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new MessageData("Hello World 1", eventName)))) };
+            return new List<Message> { new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new MessageData("Hello World 1", eventName, "subA")))) };
         }
 
 

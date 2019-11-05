@@ -47,11 +47,11 @@ namespace CaptainHook.EventReaderService
                 //SF Deps
                 builder.Register<IActorProxyFactory>(_ => new ActorProxyFactory());
                 builder.RegisterServiceFabricSupport();
-                builder.RegisterStatefulService<EventReaderService>(Constants.CaptainHookApplication.Services.EventReaderServiceType);
+                builder.RegisterStatefulService<EventReaderService>(ServiceNaming.EventReaderServiceType);
 
                 using (builder.Build())
                 {
-                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, Constants.CaptainHookApplication.Services.EventReaderServiceType);
+                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, ServiceNaming.EventReaderServiceType);
                     await Task.Delay(Timeout.Infinite);
                 }
             }

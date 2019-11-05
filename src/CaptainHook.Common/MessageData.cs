@@ -5,10 +5,11 @@
         // ReSharper disable once UnusedMember.Local - Use by the data contract serializers
         private MessageData() { }
 
-        public MessageData(string payload, string type)
+        public MessageData(string payload, string type, string subscriberName)
         {
             Payload = payload;
             Type = type;
+            SubscriberName = subscriberName;
         }
 
         /// <summary>
@@ -20,9 +21,22 @@
 
         public string Payload { get; set; }
 
-        public string Type { get; set; }
+        /// <summary>
+        /// The full name of the type of the serialized payload.
+        /// </summary>
+        public string Type { get; set; }      
 
-        public string EventHandlerActorId => $"{Type}-{HandlerId}";
+        /// <summary>
+        /// The optional name of the webhook which should handle the message.
+        /// </summary>
+        /// <remarks>
+        /// If this property is not set the first handler should handle the message
+        /// (for backward compatibility).
+        /// The webhook must be top level (not a callback).
+        /// </remarks>
+        public string SubscriberName { get; set; }
+
+        public string EventHandlerActorId => $"{Type}-{SubscriberName}-{HandlerId}";
 
     }
 }

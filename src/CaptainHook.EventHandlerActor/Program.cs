@@ -36,10 +36,9 @@ namespace CaptainHook.EventHandlerActor
                     new DefaultKeyVaultSecretManager()).Build();
 
                 //autowire up configs in keyvault to webhooks
-                var section = config.GetSection("event");
-                var values = section.GetChildren().ToList();
+                var values = config.GetSection("event").GetChildren().ToList();
 
-                var eventHandlerList = new List<EventHandlerConfig>();
+                var subscriberConfigurations = new Dictionary<string, SubscriberConfiguration>();
                 var webhookList = new List<WebhookConfig>(values.Count);
                 var endpointList = new Dictionary<string, WebhookConfig>(values.Count);
 
@@ -47,27 +46,28 @@ namespace CaptainHook.EventHandlerActor
                 {
                     //temp work around until config comes in through the API
                     var eventHandlerConfig = configurationSection.Get<EventHandlerConfig>();
-                    eventHandlerList.Add(eventHandlerConfig);
 
-                    var path = "webhookconfig";
-                    if (eventHandlerConfig.WebhookConfig != null)
-                    {
-                        ConfigParser.ParseAuthScheme(eventHandlerConfig.WebhookConfig, configurationSection, $"{path}:authenticationconfig");
-                        eventHandlerConfig.WebhookConfig.EventType = eventHandlerConfig.Type;
-                        webhookList.Add(eventHandlerConfig.WebhookConfig);
-                        ConfigParser.AddEndpoints(eventHandlerConfig.WebhookConfig, endpointList, configurationSection, path);
+                    foreach (var subscriber in eventHandlerConfig.AllSubscribers)
+                    {                    
+                        subscriberConfigurations.Add(
+                            SubscriberConfiguration.Key(eventHandlerConfig.Type, subscriber.SubscriberName),
+                            subscriber);
+
+                        var path = "webhookconfig";
+                        ConfigParser.ParseAuthScheme(subscriber, configurationSection, $"{path}:authenticationconfig");
+                        subscriber.EventType = eventHandlerConfig.Type;
+                        webhookList.Add(subscriber);
+                        ConfigParser.AddEndpoints(subscriber, endpointList, configurationSection, path);
+
+                        if (subscriber.Callback != null)
+                        {
+                            path = "callbackconfig";
+                            ConfigParser.ParseAuthScheme(subscriber.Callback, configurationSection, $"{path}:authenticationconfig");
+                            subscriber.Callback.EventType = eventHandlerConfig.Type;
+                            webhookList.Add(subscriber.Callback);
+                            ConfigParser.AddEndpoints(subscriber.Callback, endpointList, configurationSection, path);
+                        }
                     }
-
-                    if (!eventHandlerConfig.CallBackEnabled)
-                    {
-                        continue;
-                    }
-
-                    path = "callbackconfig";
-                    ConfigParser.ParseAuthScheme(eventHandlerConfig.CallbackConfig, configurationSection, $"{path}:authenticationconfig");
-                    eventHandlerConfig.CallbackConfig.EventType = eventHandlerConfig.Type;
-                    webhookList.Add(eventHandlerConfig.CallbackConfig);
-                    ConfigParser.AddEndpoints(eventHandlerConfig.CallbackConfig, endpointList, configurationSection, path);
                 }
 
                 var settings = new ConfigurationSettings();
@@ -91,9 +91,9 @@ namespace CaptainHook.EventHandlerActor
                 builder.RegisterType<RequestBuilder>().As<IRequestBuilder>();
 
                 //Register each webhook authenticationConfig separately for injection
-                foreach (var setting in eventHandlerList)
+                foreach (var subscriber in subscriberConfigurations)
                 {
-                    builder.RegisterInstance(setting).Named<EventHandlerConfig>(setting.Name);
+                    builder.RegisterInstance(subscriber.Value).Named<SubscriberConfiguration>(subscriber.Key);
                 }
 
                 foreach (var webhookConfig in webhookList)

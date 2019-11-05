@@ -22,7 +22,7 @@ namespace CaptainHook.Tests.Services.Actors
 
             var eventHandlerActor = CreateEventHandlerActor(new ActorId(1), bigBrotherMock);
 
-            await eventHandlerActor.Handle(new MessageData(string.Empty, "test.type"));
+            await eventHandlerActor.Handle(new MessageData(string.Empty, "test.type", "subA"));
 
             var timers = eventHandlerActor.GetActorTimers();
             Assert.True(timers.Any());

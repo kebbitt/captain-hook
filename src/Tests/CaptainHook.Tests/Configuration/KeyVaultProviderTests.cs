@@ -40,23 +40,21 @@ namespace CaptainHook.Tests.Configuration
                 var eventHandlerConfig = configurationSection.Get<EventHandlerConfig>();
                 eventHandlerList.Add(eventHandlerConfig);
 
-                var path = "webhookconfig";
-                if (eventHandlerConfig.WebhookConfig != null)
+                foreach(var subscriber in eventHandlerConfig.AllSubscribers)
                 {
-                    ConfigParser.ParseAuthScheme(eventHandlerConfig.WebhookConfig, configurationSection, $"{path}:authenticationconfig");
-                    webhookList.Add(eventHandlerConfig.WebhookConfig);
-                    ConfigParser.AddEndpoints(eventHandlerConfig.WebhookConfig, endpointList, configurationSection, path);
-                }
+                    var path = "webhookconfig";
+                    ConfigParser.ParseAuthScheme(subscriber, configurationSection, $"{path}:authenticationconfig");
+                    webhookList.Add(subscriber);
+                    ConfigParser.AddEndpoints(subscriber, endpointList, configurationSection, path);
 
-                if (!eventHandlerConfig.CallBackEnabled)
-                {
-                    continue;
+                    if (subscriber.Callback != null)
+                    {
+                        path = "callbackconfig";
+                        ConfigParser.ParseAuthScheme(subscriber.Callback, configurationSection, $"{path}:authenticationconfig");
+                        webhookList.Add(subscriber.Callback);
+                        ConfigParser.AddEndpoints(subscriber.Callback, endpointList, configurationSection, path);
+                    }
                 }
-
-                path = "callbackconfig";
-                ConfigParser.ParseAuthScheme(eventHandlerConfig.CallbackConfig, configurationSection, $"{path}:authenticationconfig");
-                webhookList.Add(eventHandlerConfig.CallbackConfig);
-                ConfigParser.AddEndpoints(eventHandlerConfig.CallbackConfig, endpointList, configurationSection, path);
             }
 
             Assert.NotEmpty(eventHandlerList);

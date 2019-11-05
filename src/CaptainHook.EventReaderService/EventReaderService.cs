@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Fabric;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -11,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
+using CaptainHook.Common.ServiceModels;
 using CaptainHook.Common.Telemetry.Service;
 using CaptainHook.Common.Telemetry.Service.EventReader;
 using CaptainHook.Interfaces;
@@ -24,6 +26,7 @@ using Microsoft.ServiceFabric.Data;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
+using Newtonsoft.Json;
 
 namespace CaptainHook.EventReaderService
 {
@@ -34,15 +37,14 @@ namespace CaptainHook.EventReaderService
     /// </summary>
     public class EventReaderService : StatefulService, IEventReaderService
     {
-        private const string SubscriptionName = "captain-hook";
-
         private const int BatchSize = 1; // make this dynamic - based on the number of active handlers - more handlers, lower batch
 
         private readonly IBigBrother _bigBrother;
         private readonly IServiceBusManager _serviceBusManager;
         private readonly IActorProxyFactory _proxyFactory;
         private readonly ConfigurationSettings _settings;
-        private readonly string _eventType;
+        private string _eventType;
+        private string _subscriberName; 
 
         internal ConcurrentDictionary<string, MessageDataHandle> _inflightMessages = new ConcurrentDictionary<string, MessageDataHandle>();
 
@@ -86,7 +88,27 @@ namespace CaptainHook.EventReaderService
             _serviceBusManager = serviceBusManager;
             _proxyFactory = proxyFactory;
             _settings = settings;
-            _eventType = Encoding.UTF8.GetString(context.InitializationData);
+            ParseOutInitData(context.InitializationData);
+        }
+
+        private void ParseOutInitData(byte[] initializationData)
+        {
+            if (initializationData == null || initializationData.Length == 0)
+                throw new ArgumentException("invalid initialization data structure", nameof(initializationData));
+
+            var json = JsonSerializer.CreateDefault().Deserialize<EventReaderInitData>(new JsonTextReader(new StringReader(Encoding.UTF8.GetString(initializationData))));
+
+            if (json == null)
+                throw new ArgumentException("failed to deserialize init data", nameof(initializationData));
+
+            if (string.IsNullOrWhiteSpace(json.SuscriberName))
+                throw new ArgumentException($"invalid init data - {nameof(EventReaderInitData.SuscriberName)} is empty");
+
+            if (string.IsNullOrWhiteSpace(json.EventType))
+                throw new ArgumentException($"invalid init data - {nameof(EventReaderInitData.EventType)} is empty");
+
+            _eventType = json.EventType;
+            _subscriberName = json.SuscriberName;
         }
 
         /// <summary>
@@ -111,7 +133,7 @@ namespace CaptainHook.EventReaderService
             _serviceBusManager = serviceBusManager;
             _proxyFactory = proxyFactory;
             _settings = settings;
-            _eventType = Encoding.UTF8.GetString(context.InitializationData);
+            ParseOutInitData(context.InitializationData);
         }
 
         /// <summary>
@@ -151,15 +173,6 @@ namespace CaptainHook.EventReaderService
         }
 
         /// <summary>
-        /// Determines the number of handlers to have based on the number of messages which are inflight
-        /// </summary>
-        /// <returns></returns>
-        internal async Task GetHandlerCountsOnStartup()
-        {
-            _freeHandlers = Enumerable.Range(1, HandlerCount).ToConcurrentQueue();
-        }
-
-        /// <summary>
         /// Gets the count of the numbers of messages which are in flight at the moment
         /// </summary>
         internal int InFlightMessageCount => HandlerCount - _freeHandlers.Count;
@@ -168,9 +181,9 @@ namespace CaptainHook.EventReaderService
         {
             ServicePointManager.DefaultConnectionLimit = 100;
 
-            await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, SubscriptionName, _eventType);
+            await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, _subscriberName, _eventType);
             
-            var messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, SubscriptionName);
+            var messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, _subscriberName);
 
             //add new receiver and set is as primary
             var wrapper = new MessageReceiverWrapper { Receiver = messageReceiver, ReceiverId = Guid.NewGuid() };
@@ -232,7 +245,7 @@ namespace CaptainHook.EventReaderService
 
             try
             {
-                await GetHandlerCountsOnStartup();
+                _freeHandlers = Enumerable.Range(1, HandlerCount).ToConcurrentQueue();
                 await SetupServiceBus();
 
                 while (!cancellationToken.IsCancellationRequested)
@@ -262,7 +275,7 @@ namespace CaptainHook.EventReaderService
 
                         foreach (var message in messages)
                         {
-                            var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _eventType);
+                            var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _eventType, _subscriberName);
 
                             var handlerId = GetFreeHandlerId();
 
@@ -279,7 +292,7 @@ namespace CaptainHook.EventReaderService
 
                             await _proxyFactory.CreateActorProxy<IEventHandlerActor>(
                                     new ActorId(messageData.EventHandlerActorId),
-                                    serviceName: Constants.CaptainHookApplication.Services.EventHandlerServiceShortName)
+                                    serviceName: ServiceNaming.EventHandlerServiceShortName)
                                 .Handle(messageData);
                         }
                     }

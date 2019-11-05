@@ -9,7 +9,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
     public class EventHandlerFactory : IEventHandlerFactory
     {
         private readonly IBigBrother _bigBrother;
-        private readonly IIndex<string, EventHandlerConfig> _eventHandlerConfig;
+        private readonly IIndex<string, SubscriberConfiguration> _subscriberConfigurations;
         private readonly IIndex<string, WebhookConfig> _webHookConfig;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IAuthenticationHandlerFactory _authenticationHandlerFactory;
@@ -18,7 +18,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
 
         public EventHandlerFactory(
             IBigBrother bigBrother,
-            IIndex<string, EventHandlerConfig> eventHandlerConfig,
+            IIndex<string, SubscriberConfiguration> subscriberConfigurations,
             IIndex<string, WebhookConfig> webHookConfig,
             IHttpClientFactory httpClientFactory,
             IAuthenticationHandlerFactory authenticationHandlerFactory,
@@ -26,7 +26,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
             IRequestBuilder requestBuilder)
         {
             _bigBrother = bigBrother;
-            _eventHandlerConfig = eventHandlerConfig;
+            _subscriberConfigurations = subscriberConfigurations;
             _httpClientFactory = httpClientFactory;
             _requestLogger = requestLogger;
             _requestBuilder = requestBuilder;
@@ -38,16 +38,17 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <summary>
         /// Create the custom handler such that we get a mapping from the webhook to the handler selected
         /// </summary>
-        /// <param name="eventType"></param>
-        /// <returns></returns>
-        public IHandler CreateEventHandler(string eventType)
+        /// <param name="eventType">type of event to process</param>
+        /// <param name="subscriberName">name of the subscriber that received the event</param>
+        /// <returns>handler instance</returns>
+        public IHandler CreateEventHandler(string eventType, string subscriberName)
         {
-            if (!_eventHandlerConfig.TryGetValue(eventType.ToLower(), out var eventHandlerConfig))
+            if (!_subscriberConfigurations.TryGetValue(SubscriberConfiguration.Key(eventType, subscriberName), out var subscriberConfig))
             {
                 throw new Exception($"Boom, handler event type {eventType} was not found, cannot process the message");
             }
 
-            if (eventHandlerConfig.CallBackEnabled)
+            if (subscriberConfig.Callback != null)
             {
                 return new WebhookResponseHandler(
                     this,
@@ -56,10 +57,10 @@ namespace CaptainHook.EventHandlerActor.Handlers
                     _authenticationHandlerFactory,
                     _requestLogger,
                     _bigBrother,
-                    eventHandlerConfig);
+                    subscriberConfig);
             }
 
-            return CreateWebhookHandler(eventHandlerConfig.WebhookConfig.Name);
+            return CreateWebhookHandler(subscriberConfig.Name);
         }
 
         /// <summary>
@@ -70,7 +71,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
         /// <returns></returns>
         public IHandler CreateWebhookHandler(string webHookName)
         {
-            if (!_webHookConfig.TryGetValue(webHookName.ToLower(), out var webhookConfig))
+            if (!_webHookConfig.TryGetValue(webHookName.ToLowerInvariant(), out var webhookConfig))
             {
                 throw new Exception("Boom, handler webhook not found cannot process the message");
             }

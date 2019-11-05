@@ -7,6 +7,10 @@ namespace CaptainHook.EventHandlerActor.Handlers.Authentication
 {
     public abstract class AuthenticationHandler
     {
+        protected AuthenticationHandler()
+        {
+        }
+
         protected static void ReportTokenUpdateFailure(OidcAuthenticationConfig config, TokenResponse response)
         {
             if (!response.IsError)
