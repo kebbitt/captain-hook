@@ -43,14 +43,11 @@ namespace CaptainHook.EventReaderService
         private readonly IServiceBusManager _serviceBusManager;
         private readonly IActorProxyFactory _proxyFactory;
         private readonly ConfigurationSettings _settings;
-        //private string _eventType;
-        //private string _subscriberName;
         private EventReaderInitData _initData;
 
         internal ConcurrentDictionary<string, MessageDataHandle> _inflightMessages = new ConcurrentDictionary<string, MessageDataHandle>();
 
         private ConcurrentQueue<int> _freeHandlers = new ConcurrentQueue<int>();
-        private CancellationToken _cancellationToken;
         private IDisposable _diagSourceOuterSub;
         private IDisposable _diagSourceInnerSub;
 
@@ -242,8 +239,6 @@ namespace CaptainHook.EventReaderService
         /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
-            _cancellationToken = cancellationToken;
-
             try
             {
                 _freeHandlers = Enumerable.Range(1, HandlerCount).ToConcurrentQueue();

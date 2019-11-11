@@ -264,7 +264,7 @@ namespace CaptainHook.Tests.Services.Reliable
             {
                 var messageDataHandle = await dictionary.TryGetValueAsync(tx, expectedHandlerId);
                 //reconstruct the message so we can call complete
-                messageData = new MessageData("Hello World 1", eventName, "subA");               
+                messageData = new MessageData("Hello World 1", eventName, "subA", "service");               
             }
 
             await service.CompleteMessageAsync(messageData, messageDelivered, CancellationToken.None);
@@ -363,7 +363,7 @@ namespace CaptainHook.Tests.Services.Reliable
 
         private static IList<Message> CreateMessage(string eventName)
         {
-            return new List<Message> { new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new MessageData("Hello World 1", eventName, "subA")))) };
+            return new List<Message> { new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new MessageData("Hello World 1", eventName, "subA", "service")))) };
         }
 
 
