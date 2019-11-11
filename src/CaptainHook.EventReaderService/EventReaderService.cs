@@ -43,8 +43,9 @@ namespace CaptainHook.EventReaderService
         private readonly IServiceBusManager _serviceBusManager;
         private readonly IActorProxyFactory _proxyFactory;
         private readonly ConfigurationSettings _settings;
-        private string _eventType;
-        private string _subscriberName; 
+        //private string _eventType;
+        //private string _subscriberName;
+        private EventReaderInitData _initData;
 
         internal ConcurrentDictionary<string, MessageDataHandle> _inflightMessages = new ConcurrentDictionary<string, MessageDataHandle>();
 
@@ -96,19 +97,17 @@ namespace CaptainHook.EventReaderService
             if (initializationData == null || initializationData.Length == 0)
                 throw new ArgumentException("invalid initialization data structure", nameof(initializationData));
 
-            var json = JsonSerializer.CreateDefault().Deserialize<EventReaderInitData>(new JsonTextReader(new StringReader(Encoding.UTF8.GetString(initializationData))));
+            _initData = JsonSerializer.CreateDefault().Deserialize<EventReaderInitData>(new JsonTextReader(new StringReader(Encoding.UTF8.GetString(initializationData))));
 
-            if (json == null)
+            if (_initData == null)
                 throw new ArgumentException("failed to deserialize init data", nameof(initializationData));
 
-            if (string.IsNullOrWhiteSpace(json.SuscriberName))
-                throw new ArgumentException($"invalid init data - {nameof(EventReaderInitData.SuscriberName)} is empty");
+            if (string.IsNullOrWhiteSpace(_initData.SubscriberName))
+                throw new ArgumentException($"invalid init data - {nameof(EventReaderInitData.SubscriberName)} is empty");
 
-            if (string.IsNullOrWhiteSpace(json.EventType))
+            if (string.IsNullOrWhiteSpace(_initData.EventType))
                 throw new ArgumentException($"invalid init data - {nameof(EventReaderInitData.EventType)} is empty");
 
-            _eventType = json.EventType;
-            _subscriberName = json.SuscriberName;
         }
 
         /// <summary>
@@ -181,9 +180,9 @@ namespace CaptainHook.EventReaderService
         {
             ServicePointManager.DefaultConnectionLimit = 100;
 
-            await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, _subscriberName, _eventType);
-            
-            var messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _eventType, _subscriberName);
+            await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, _initData.SubscriptionName, _initData.EventType);
+
+            var messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _initData.EventType, _initData.SubscriptionName, _initData.DLQMode!=null);
 
             //add new receiver and set is as primary
             var wrapper = new MessageReceiverWrapper { Receiver = messageReceiver, ReceiverId = Guid.NewGuid() };
@@ -200,36 +199,38 @@ namespace CaptainHook.EventReaderService
                     if (listener.Name == "Microsoft.Azure.ServiceBus")
                     {
                         // receive event from Service Bus DiagnosticSource
-                        _diagSourceInnerSub = listener.Subscribe(delegate (KeyValuePair<string, object> evnt)
-                            {
-                            // Log operation details once it's done
-                            if (evnt.Key.EndsWith("Stop"))
-                                {
-                                    Activity currentActivity = Activity.Current;
-                                    var opName = currentActivity.OperationName;
-                                    TaskStatus status = (TaskStatus)evnt.Value.GetProperty("Status");
-                                    var entity = (string)evnt.Value.GetProperty("Entity");
-
-                                    if (opName.EndsWith("Exception", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        var excp = (Exception)evnt.Value.GetProperty("Exception");
-                                        _bigBrother.Publish(excp.ToExceptionEvent());
-                                    }
-
-                                    _bigBrother.Publish(new ServiceBusDiagnosticEvent
-                                    {
-                                        OperationName = opName,
-                                        Status = status.ToString(),
-                                        Value = evnt.Value.ToString(),
-                                        Entity = entity,
-                                        Duration = currentActivity.Duration.TotalMilliseconds,
-                                        ReplicaId = Context.ReplicaId,
-                                        PollGuid = Guid.NewGuid().ToString(),
-                                        PollProcessTime = DateTime.UtcNow
-                                    });
-                                }
-                            });
+                        _diagSourceInnerSub = listener.Subscribe(ProcessReceiverTelemetry);
                     }
+                });
+            }
+        }
+
+        private void ProcessReceiverTelemetry(KeyValuePair<string, object> evnt)
+        {
+            // Log operation details once it's done
+            if (evnt.Key.EndsWith("Stop"))
+            {
+                Activity currentActivity = Activity.Current;
+                var opName = currentActivity.OperationName;
+                TaskStatus status = (TaskStatus)evnt.Value.GetProperty("Status");
+                var entity = (string)evnt.Value.GetProperty("Entity");
+
+                if (opName.EndsWith("Exception", StringComparison.OrdinalIgnoreCase))
+                {
+                    var excp = (Exception)evnt.Value.GetProperty("Exception");
+                    _bigBrother.Publish(excp.ToExceptionEvent());
+                }
+
+                _bigBrother.Publish(new ServiceBusDiagnosticEvent
+                {
+                    OperationName = opName,
+                    Status = status.ToString(),
+                    Value = evnt.Value.ToString(),
+                    Entity = entity,
+                    Duration = currentActivity.Duration.TotalMilliseconds,
+                    ReplicaId = Context.ReplicaId,
+                    PollGuid = Guid.NewGuid().ToString(),
+                    PollProcessTime = DateTime.UtcNow
                 });
             }
         }
@@ -275,7 +276,7 @@ namespace CaptainHook.EventReaderService
 
                         foreach (var message in messages)
                         {
-                            var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _eventType, _subscriberName);
+                            var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _initData.EventType, _initData.SubscriberName, Context.ServiceName.ToString());
 
                             var handlerId = GetFreeHandlerId();
 

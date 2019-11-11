@@ -84,6 +84,18 @@ namespace CaptainHook.Common.Configuration
         public string SubscriberName { get; set; }
 
         /// <summary>
+        /// signals that subscriber is in DLQ mode and what processing mode is used for incoming message
+        /// </summary>
+        public SubscriberDLQMode? DLQMode { get; set; } = null;
+
+        /// <summary>
+        /// source subscription for the this instance of subscription
+        /// 
+        /// in DLQ mode this is the source subscription to hook DLQ under
+        /// </summary>
+        public string SourceSubscriptionName { get; set; }
+
+        /// <summary>
         /// Specifies a configuration which should be used when the name has not been provided.
         /// </summary>
         /// <remarks>
@@ -254,5 +266,13 @@ namespace CaptainHook.Common.Configuration
         /// Special case to get the status code of the webhook request and add it to the call back body
         /// </summary>
         HttpContent = 5,
+    }
+
+    /// <summary>
+    /// indicates that subscriber is in DLQ mode and what it is expected to do with incoming message
+    /// </summary>
+    public enum SubscriberDLQMode
+    {
+        WebHookMode = 1
     }
 }

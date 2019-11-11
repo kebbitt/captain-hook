@@ -7,26 +7,30 @@ namespace CaptainHook.EventReaderService
     public class MessageProviderFactory : IMessageProviderFactory
     {
         private ServiceBusConnection conn;
-        public IMessageReceiver Create(string serviceBusConnectionString, string topicName, string subscriptionName)
+        public IMessageReceiver Create(string serviceBusConnectionString, string topicName, string subscriptionName, bool dlqMode)
         {
             Validate(subscriptionName);
             Validate(serviceBusConnectionString);
             Validate(topicName);
 
-            if (conn==null)
+            if (conn == null)
             {
                 conn = new ServiceBusConnection(new ServiceBusConnectionStringBuilder(serviceBusConnectionString));
             }
 
-                return new MessageReceiver(
-                conn,
-                EntityNameHelper.FormatSubscriptionPath(topicName, subscriptionName),
-                ReceiveMode.PeekLock,
-                new RetryExponential(
-                    BackoffMin,
-                    BackoffMax,
-                    ReceiverBatchSize),
-                ReceiverBatchSize);
+            var path = EntityNameHelper.FormatSubscriptionPath(topicName, subscriptionName);
+            if (dlqMode)
+                path += "/$deadletterqueue";
+
+            return new MessageReceiver(
+            conn,
+            path,
+            ReceiveMode.PeekLock,
+            new RetryExponential(
+                BackoffMin,
+                BackoffMax,
+                ReceiverBatchSize),
+            ReceiverBatchSize);
         }
 
         /// <summary>

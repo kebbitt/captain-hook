@@ -121,9 +121,8 @@ namespace CaptainHook.EventHandlerActor
                     try
                     {
                         await StateManager.RemoveStateAsync(messageData.HandlerId.ToString());
-                        var readerServiceNameUri = ServiceNaming.EventReaderServiceFullUri(messageData.Type, messageData.SubscriberName);
 
-                        await ServiceProxy.Create<IEventReaderService>(new Uri(readerServiceNameUri)).CompleteMessageAsync(messageData, messageDelivered);
+                        await ServiceProxy.Create<IEventReaderService>(new Uri(messageData.ReplyTo)).CompleteMessageAsync(messageData, messageDelivered);
 
                     }
                     catch (Exception e)

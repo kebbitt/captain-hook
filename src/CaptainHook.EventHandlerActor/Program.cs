@@ -98,7 +98,7 @@ namespace CaptainHook.EventHandlerActor
 
                 foreach (var webhookConfig in webhookList)
                 {
-                    builder.RegisterInstance(webhookConfig).Named<WebhookConfig>(webhookConfig.Name);
+                    builder.RegisterInstance(webhookConfig).Named<WebhookConfig>(webhookConfig.Name.ToLowerInvariant());
                 }
 
                 ////creates a list of unique endpoint and the corresponding http client for each which can be selected at runtime
