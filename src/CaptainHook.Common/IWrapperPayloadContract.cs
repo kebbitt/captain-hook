@@ -5,12 +5,12 @@ namespace CaptainHook.Common
 {
     public interface IWrapperPayloadContract
     {
-        public JObject Payload { get; set; }
-        public string MessageId { get; set; }
-        public string EventType { get; set; }
-        public HttpStatusCode? StatusCode { get; set; }
-        public string StatusUri { get; set; }
-        public CallbackTypeEnum CallbackType { get; set; }
+        JObject Payload { get; set; }
+        string MessageId { get; set; }
+        string EventType { get; set; }
+        HttpStatusCode? StatusCode { get; set; }
+        string StatusUri { get; set; }
+        CallbackTypeEnum CallbackType { get; set; }
     }
 
     public enum CallbackTypeEnum
