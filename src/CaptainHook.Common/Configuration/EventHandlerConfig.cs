@@ -56,6 +56,15 @@ namespace CaptainHook.Common.Configuration
         /// Left at 100 seconds as the default value for the http client timeout
         /// </summary>
         public TimeSpan Timeout { get; set; } = new TimeSpan(0, 0, 100);
+
+        public PayloadContractTypeEnum PayloadTransformation { get; set; } = PayloadContractTypeEnum.Raw;
+    }
+
+    //signifies what kind of contract to use for webhook
+    public enum PayloadContractTypeEnum
+    {
+        Raw =0, // use payload directly
+        WrapperContract = 1 // use wrapper contract
     }
 
     /// <summary>

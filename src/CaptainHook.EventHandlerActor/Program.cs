@@ -56,6 +56,8 @@ namespace CaptainHook.EventHandlerActor
                         var path = "webhookconfig";
                         ConfigParser.ParseAuthScheme(subscriber, configurationSection, $"{path}:authenticationconfig");
                         subscriber.EventType = eventHandlerConfig.Type;
+                        subscriber.PayloadTransformation = subscriber.DLQMode != null ? PayloadContractTypeEnum.WrapperContract : PayloadContractTypeEnum.Raw;
+
                         webhookList.Add(subscriber);
                         ConfigParser.AddEndpoints(subscriber, endpointList, configurationSection, path);
 

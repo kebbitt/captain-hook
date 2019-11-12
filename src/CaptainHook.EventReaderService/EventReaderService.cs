@@ -271,7 +271,7 @@ namespace CaptainHook.EventReaderService
 
                         foreach (var message in messages)
                         {
-                            var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _initData.EventType, _initData.SubscriberName, Context.ServiceName.ToString());
+                            var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _initData.EventType, _initData.SubscriberName, Context.ServiceName.ToString(), _initData.DLQMode!=null);
 
                             var handlerId = GetFreeHandlerId();
 

@@ -5,12 +5,13 @@
         // ReSharper disable once UnusedMember.Local - Use by the data contract serializers
         private MessageData() { }
 
-        public MessageData(string payload, string type, string subscriberName, string replyTo)
+        public MessageData(string payload, string type, string subscriberName, string replyTo, bool isDLQ = false)
         {
             Payload = payload;
             Type = type;
             SubscriberName = subscriberName;
             ReplyTo = replyTo;
+            IsDLQ = isDLQ;
         }
 
         /// <summary>
@@ -32,6 +33,7 @@
         /// </summary>
         public string ReplyTo { get; set; }
 
+        public bool IsDLQ { get; set; }
         /// <summary>
         /// The optional name of the webhook which should handle the message.
         /// </summary>
