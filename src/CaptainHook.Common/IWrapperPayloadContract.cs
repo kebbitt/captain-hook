@@ -6,6 +6,7 @@ namespace CaptainHook.Common
     public interface IWrapperPayloadContract
     {
         JObject Payload { get; set; }
+        JObject WebhookResponsePayload { get; set; }
         string MessageId { get; set; }
         string EventType { get; set; }
         HttpStatusCode? StatusCode { get; set; }
@@ -15,7 +16,7 @@ namespace CaptainHook.Common
 
     public enum CallbackTypeEnum
     {
-        PartialFailure,
-        CompleteFailure
+        Callback,
+        DeliveryFailure
     }
 }

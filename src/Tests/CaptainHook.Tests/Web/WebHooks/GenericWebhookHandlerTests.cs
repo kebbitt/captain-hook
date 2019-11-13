@@ -85,7 +85,7 @@ namespace CaptainHook.Tests.Web.WebHooks
 
         [IsLayer0]
         [Fact]
-        public async Task ExecuteHappyPathWrapperContract()
+        public async Task ExecuteDeliveryFailurePath()
         {
             var (messageData, metaData) = EventHandlerTestHelper.CreateMessageDataPayload();
 
@@ -125,7 +125,7 @@ namespace CaptainHook.Tests.Web.WebHooks
                         using (var jr = new JsonTextReader(sr))
                         {
                             var wrapperObj = JsonSerializer.CreateDefault().Deserialize<WrapperPayloadContract>(jr);
-                            return JToken.DeepEquals(wrapperObj.Payload, JObject.Parse(messageData.Payload)) && wrapperObj.CallbackType == CallbackTypeEnum.CompleteFailure;
+                            return JToken.DeepEquals(wrapperObj.Payload, JObject.Parse(messageData.Payload)) && wrapperObj.CallbackType == CallbackTypeEnum.DeliveryFailure;
                         }
                     }
                 })

@@ -89,7 +89,7 @@ namespace CaptainHook.EventHandlerActor.Handlers
         {
             var source = new WrapperPayloadContract
             {
-                CallbackType = messageData.IsDLQ ? CallbackTypeEnum.CompleteFailure : CallbackTypeEnum.PartialFailure,
+                CallbackType = messageData.IsDLQ ? CallbackTypeEnum.DeliveryFailure : CallbackTypeEnum.Callback,
                 EventType = webhookConfig.EventType,
                 MessageId = messageData.CorrelationId,
                 StatusCode = null, //this is never specified for non callback
