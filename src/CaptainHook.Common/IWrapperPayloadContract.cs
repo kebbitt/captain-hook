@@ -5,8 +5,7 @@ namespace CaptainHook.Common
 {
     public interface IWrapperPayloadContract
     {
-        JObject Payload { get; set; }
-        JObject WebhookResponsePayload { get; set; }
+        JObject Payload { get; set; }        
         string MessageId { get; set; }
         string EventType { get; set; }
         HttpStatusCode? StatusCode { get; set; }
