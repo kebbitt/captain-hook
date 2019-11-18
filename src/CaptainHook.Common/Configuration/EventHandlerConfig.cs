@@ -108,7 +108,7 @@ namespace CaptainHook.Common.Configuration
         /// <summary>
         /// signals that subscriber is in DLQ mode and what processing mode is used for incoming message
         /// </summary>
-        public SubscriberDLQMode? DLQMode { get; set; } = null;
+        public SubscriberDlqMode? DLQMode { get; set; }
 
         /// <summary>
         /// source subscription for the this instance of subscription
@@ -296,7 +296,7 @@ namespace CaptainHook.Common.Configuration
     /// <remarks>
     /// other modes will follow
     /// </remarks>
-    public enum SubscriberDLQMode
+    public enum SubscriberDlqMode
     {
         /// <summary>
         /// call webhook when DLQ message received

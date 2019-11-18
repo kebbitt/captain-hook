@@ -19,8 +19,11 @@ namespace CaptainHook.EventReaderService
             }
 
             var path = EntityNameHelper.FormatSubscriptionPath(topicName, subscriptionName);
+
             if (dlqMode)
+            {
                 path += "/$deadletterqueue";
+            }
 
             return new MessageReceiver(
             conn,

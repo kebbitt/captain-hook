@@ -8,13 +8,13 @@ namespace CaptainHook.Common.ServiceModels
     {
         public string EventType { get; set; }
         public string SubscriberName { get; set; }
-        public SubscriberDLQMode? DLQMode { get; set; }
+        public SubscriberDlqMode? DlqMode { get; set; }
         /// <summary>
-        /// source subscription for DQL receiver
+        /// source subscription for DLQ receiver
         /// </summary>
         public string SourceSubscription { get; set; }
 
-        public string SubscriptionName => DLQMode!=null ? SourceSubscription : SubscriberName;
+        public string SubscriptionName => DlqMode!=null ? SourceSubscription : SubscriberName;
 
         public static string GetReaderInitDataAsString(string eventType, string subName)            
         {
@@ -31,7 +31,7 @@ namespace CaptainHook.Common.ServiceModels
                     {
                         SubscriberName = sub.SubscriberName,
                         EventType = sub.EventType,
-                        DLQMode = sub.DLQMode,
+                        DlqMode = sub.DLQMode,
                         SourceSubscription = sub.DLQMode!=null? sub.SourceSubscriptionName : null
                     };
 

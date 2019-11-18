@@ -179,7 +179,7 @@ namespace CaptainHook.EventReaderService
 
             await _serviceBusManager.CreateAsync(_settings.AzureSubscriptionId, _settings.ServiceBusNamespace, _initData.SubscriptionName, _initData.EventType);
 
-            var messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _initData.EventType, _initData.SubscriptionName, _initData.DLQMode!=null);
+            var messageReceiver = _serviceBusManager.CreateMessageReceiver(_settings.ServiceBusConnectionString, _initData.EventType, _initData.SubscriptionName, _initData.DlqMode!=null);
 
             //add new receiver and set is as primary
             var wrapper = new MessageReceiverWrapper { Receiver = messageReceiver, ReceiverId = Guid.NewGuid() };
@@ -271,7 +271,7 @@ namespace CaptainHook.EventReaderService
 
                         foreach (var message in messages)
                         {
-                            var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _initData.EventType, _initData.SubscriberName, Context.ServiceName.ToString(), _initData.DLQMode!=null);
+                            var messageData = new MessageData(Encoding.UTF8.GetString(message.Body), _initData.EventType, _initData.SubscriberName, Context.ServiceName.ToString(), _initData.DlqMode!=null);
 
                             var handlerId = GetFreeHandlerId();
 

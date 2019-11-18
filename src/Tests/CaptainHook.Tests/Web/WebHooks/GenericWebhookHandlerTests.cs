@@ -89,7 +89,7 @@ namespace CaptainHook.Tests.Web.WebHooks
         {
             var (messageData, metaData) = EventHandlerTestHelper.CreateMessageDataPayload();
 
-            messageData.IsDLQ = true;
+            messageData.IsDlq = true;
 
             var config = new WebhookConfig
             {
