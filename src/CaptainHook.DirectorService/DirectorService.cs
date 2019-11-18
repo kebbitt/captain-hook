@@ -53,7 +53,7 @@ namespace CaptainHook.DirectorService
             // TODO: Check fabric node topology - if running below Bronze, set min and target replicas to 1 instead of 3
 
             try
-            {                
+            {
 
                 var serviceList = (await _fabricClient.QueryManager.GetServiceListAsync(new Uri($"fabric:/{Constants.CaptainHookApplication.ApplicationName}")))
                                   .Select(s => s.ServiceName.AbsoluteUri)
@@ -81,9 +81,10 @@ namespace CaptainHook.DirectorService
                 {
                     foreach (var sub in @event.AllSubscribers)
                     {
+                        sub.EventType = @event.Type;
                         if (cancellationToken.IsCancellationRequested) return;
 
-                        var readerServiceNameUri = ServiceNaming.EventReaderServiceFullUri(@event.Type, sub.SubscriberName);
+                        var readerServiceNameUri = ServiceNaming.EventReaderServiceFullUri(@event.Type, sub.SubscriberName, sub.DLQMode != null);
                         if (!serviceList.Contains(readerServiceNameUri))
                         {
                             await _fabricClient.ServiceManager.CreateServiceAsync(
@@ -96,7 +97,7 @@ namespace CaptainHook.DirectorService
                                     PartitionSchemeDescription = new SingletonPartitionSchemeDescription(),
                                     ServiceTypeName = ServiceNaming.EventReaderServiceType,
                                     ServiceName = new Uri(readerServiceNameUri),
-                                    InitializationData = Encoding.UTF8.GetBytes(EventReaderInitData.GetReaderInitDataAsString(@event.Type, sub.SubscriberName)),
+                                    InitializationData = Encoding.UTF8.GetBytes(EventReaderInitData.GetReaderInitDataAsString(sub)),
                                     PlacementConstraints = _defaultServiceSettings.DefaultPlacementConstraints
                                 },
                                 TimeSpan.FromSeconds(30),

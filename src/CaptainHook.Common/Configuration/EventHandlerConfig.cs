@@ -17,22 +17,22 @@ namespace CaptainHook.Common.Configuration
         }
 
         /// <summary>
-        /// 
+        /// authentication config for this instance of webhook
         /// </summary>
         public AuthenticationConfig AuthenticationConfig { get; set; }
 
         /// <summary>
-        /// 
+        /// target URL
         /// </summary>
         public string Uri { get; set; }
 
         /// <summary>
-        /// 
+        /// webhook name
         /// </summary>
         public string Name { get; set; }
 
         /// <summary>
-        /// 
+        /// HTTP method to use when executing the call
         /// </summary>
         public HttpMethod HttpMethod { get; set; } = HttpMethod.Post;
 
@@ -47,7 +47,7 @@ namespace CaptainHook.Common.Configuration
         public string ContentType { get; set; } = Constants.Headers.DefaultContentType;
 
         /// <summary>
-        /// 
+        /// associated rules for the callback
         /// </summary>
         public List<WebhookRequestRule> WebhookRequestRules { get; set; }
 
@@ -56,6 +56,28 @@ namespace CaptainHook.Common.Configuration
         /// Left at 100 seconds as the default value for the http client timeout
         /// </summary>
         public TimeSpan Timeout { get; set; } = new TimeSpan(0, 0, 100);
+
+        /// <summary>
+        /// type of transformation to perform onto payload
+        /// 
+        /// pertains to new callback/DLQ contract designed
+        /// </summary>
+        public PayloadContractTypeEnum PayloadTransformation { get; set; } = PayloadContractTypeEnum.Raw;
+    }
+
+    /// <summary>
+    /// signifies what kind of contract to use for webhook
+    /// </summary>
+    public enum PayloadContractTypeEnum
+    {
+        /// <summary>
+        /// use payload directly
+        /// </summary>
+        Raw = 0,
+        /// <summary>
+        /// use wrapper contract
+        /// </summary>
+        WrapperContract = 1
     }
 
     /// <summary>
@@ -82,6 +104,18 @@ namespace CaptainHook.Common.Configuration
         /// intended name for the subscriber(and therefore subscription)
         /// </summary>
         public string SubscriberName { get; set; }
+
+        /// <summary>
+        /// signals that subscriber is in DLQ mode and what processing mode is used for incoming message
+        /// </summary>
+        public SubscriberDlqMode? DLQMode { get; set; }
+
+        /// <summary>
+        /// source subscription for the this instance of subscription
+        /// 
+        /// in DLQ mode this is the source subscription to hook DLQ under
+        /// </summary>
+        public string SourceSubscriptionName { get; set; }
 
         /// <summary>
         /// Specifies a configuration which should be used when the name has not been provided.
@@ -254,5 +288,19 @@ namespace CaptainHook.Common.Configuration
         /// Special case to get the status code of the webhook request and add it to the call back body
         /// </summary>
         HttpContent = 5,
+    }
+
+    /// <summary>
+    /// indicates that subscriber is in DLQ mode and what it is expected to do with incoming message
+    /// </summary>
+    /// <remarks>
+    /// other modes will follow
+    /// </remarks>
+    public enum SubscriberDlqMode
+    {
+        /// <summary>
+        /// call webhook when DLQ message received
+        /// </summary>
+        WebHookMode = 1
     }
 }

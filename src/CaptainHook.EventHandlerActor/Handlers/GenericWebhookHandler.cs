@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using CaptainHook.Common;
@@ -7,6 +8,8 @@ using CaptainHook.Common.Authentication;
 using CaptainHook.Common.Configuration;
 using CaptainHook.EventHandlerActor.Handlers.Authentication;
 using Eshopworld.Core;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace CaptainHook.EventHandlerActor.Handlers
 {
@@ -58,7 +61,11 @@ namespace CaptainHook.EventHandlerActor.Handlers
                 //todo refactor into a single call and a dto
                 var uri = RequestBuilder.BuildUri(WebhookConfig, messageData.Payload);
                 var httpMethod = RequestBuilder.SelectHttpMethod(WebhookConfig, messageData.Payload);
-                var payload = RequestBuilder.BuildPayload(this.WebhookConfig, messageData.Payload, metadata);
+                var originalPayload = RequestBuilder.BuildPayload(WebhookConfig, messageData.Payload, metadata);
+                var payload = WebhookConfig.PayloadTransformation == PayloadContractTypeEnum.WrapperContract 
+                    ? WrapPayload(originalPayload, WebhookConfig, messageData) 
+                    : originalPayload;
+
                 var config = RequestBuilder.SelectWebhookConfig(WebhookConfig, messageData.Payload);
                 var headers = RequestBuilder.GetHttpHeaders(WebhookConfig, messageData);
                 var authenticationConfig = RequestBuilder.GetAuthenticationConfig(WebhookConfig, messageData.Payload);
@@ -75,6 +82,29 @@ namespace CaptainHook.EventHandlerActor.Handlers
             {
                 BigBrother.Publish(e.ToExceptionEvent());
                 throw;
+            }
+        }
+
+        private string WrapPayload(string originalPayload, WebhookConfig webhookConfig, MessageData messageData)
+        {
+            var source = new WrapperPayloadContract
+            {
+                CallbackType = messageData.IsDlq ? CallbackTypeEnum.DeliveryFailure : CallbackTypeEnum.Callback,
+                EventType = webhookConfig.EventType,
+                MessageId = messageData.CorrelationId,
+                StatusCode = null, //this is never specified for non callback
+                Payload = JObject.Parse(originalPayload),
+                StatusUri = null //for now
+            };
+
+            using (var sw = new StringWriter())
+            {
+                using (var writer = new JsonTextWriter(sw))
+                {
+                    JsonSerializer.CreateDefault().Serialize(writer, source);
+                    writer.Flush();
+                    return sw.ToString();
+                }
             }
         }
 

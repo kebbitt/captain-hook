@@ -25,8 +25,9 @@ namespace CaptainHook.EventReaderService
         /// <param name="serviceBusConnectionString"></param>
         /// <param name="topicName"></param>
         /// <param name="subscriptionName"></param>
+        /// <param name="dlqMode">true if meant to subscribe to DLQ messages</param>
         /// <returns></returns>
-        IMessageReceiver CreateMessageReceiver(string serviceBusConnectionString, string topicName, string subscriptionName);
+        IMessageReceiver CreateMessageReceiver(string serviceBusConnectionString, string topicName, string subscriptionName, bool dlqMode);
 
         /// <summary>
         /// Abstraction around the ServiceBusMessage to get lock token

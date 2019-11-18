@@ -56,6 +56,8 @@ namespace CaptainHook.EventHandlerActor
                         var path = "webhookconfig";
                         ConfigParser.ParseAuthScheme(subscriber, configurationSection, $"{path}:authenticationconfig");
                         subscriber.EventType = eventHandlerConfig.Type;
+                        subscriber.PayloadTransformation = subscriber.DLQMode != null ? PayloadContractTypeEnum.WrapperContract : PayloadContractTypeEnum.Raw;
+
                         webhookList.Add(subscriber);
                         ConfigParser.AddEndpoints(subscriber, endpointList, configurationSection, path);
 
@@ -98,7 +100,7 @@ namespace CaptainHook.EventHandlerActor
 
                 foreach (var webhookConfig in webhookList)
                 {
-                    builder.RegisterInstance(webhookConfig).Named<WebhookConfig>(webhookConfig.Name);
+                    builder.RegisterInstance(webhookConfig).Named<WebhookConfig>(webhookConfig.Name.ToLowerInvariant());
                 }
 
                 ////creates a list of unique endpoint and the corresponding http client for each which can be selected at runtime
