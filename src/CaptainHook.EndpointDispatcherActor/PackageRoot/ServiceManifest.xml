@@ -10,7 +10,7 @@
             <ReplicatorConfigSection Name="EndpointDispatcherActorServiceReplicatorConfig" />
             <ReplicatorSecurityConfigSection Name="EndpointDispatcherActorServiceReplicatorSecurityConfig" />
             <StoreConfigSection Name="EndpointDispatcherActorServiceLocalStoreConfig" />
-            <ServiceEndpointV2_1 Name="EndpointDispatcherActorServiceEndpointV2_1" />
+            <ServiceEndpointV2 Name="EndpointDispatcherActorServiceEndpointV2" />
           </GeneratedNames>
         </Extension>
       </Extensions>
@@ -33,6 +33,7 @@
       <Endpoint Name="CaptainHook.EndpointDispatcherActorServiceEndpointV2_1" />
       <Endpoint Name="EndpointDispatcherActorServiceEndpointV2_1" />
       <Endpoint Name="EndpointDispatcherActorServiceReplicatorEndpoint" />
+      <Endpoint Name="EndpointDispatcherActorServiceEndpointV2" />
     </Endpoints>
   </Resources>
   <!-- The content will be generated during build -->

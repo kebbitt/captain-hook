@@ -8,8 +8,9 @@ using Autofac.Integration.ServiceFabric;
 using CaptainHook.Common.Configuration;
 using CaptainHook.EventHandlerActor.Handlers;
 using CaptainHook.EventHandlerActor.Handlers.Authentication;
-using Eshopworld.Core;
+using Eshopworld.DevOps;
 using Eshopworld.Telemetry;
+using Eshopworld.Telemetry.Configuration;
 using Microsoft.Azure.KeyVault;
 using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Extensions.Configuration;
@@ -75,16 +76,23 @@ namespace CaptainHook.EventHandlerActor
                 var settings = new ConfigurationSettings();
                 config.Bind(settings);
 
-                var bb = new BigBrother(settings.InstrumentationKey, settings.InstrumentationKey);
-                bb.UseEventSourceSink().ForExceptions();
+                //var bb = new BigBrother(settings.InstrumentationKey, settings.InstrumentationKey);
+                //bb.UseEventSourceSink().ForExceptions();
 
                 var builder = new ContainerBuilder();
-                builder.RegisterInstance(bb)
-                    .As<IBigBrother>()
-                    .SingleInstance();
+                //builder.RegisterInstance(bb)
+                //    .As<IBigBrother>()
+                //    .SingleInstance();
+                builder.RegisterInstance(
+                    new Eshopworld.Telemetry.Configuration.TelemetrySettings { InstrumentationKey = "d9bda9b7-afd9-4b88-80c7-c6a9f918e682", InternalKey = "d9bda9b7-afd9-4b88-80c7-c6a9f918e682" });
 
                 builder.RegisterInstance(settings)
                     .SingleInstance();
+
+                builder.AddStatefullServiceTelemetry();
+
+                builder.RegisterModule<TelemetryModule>();
+                builder.RegisterModule<ServiceFabricModule>();
 
                 builder.RegisterType<EventHandlerFactory>().As<IEventHandlerFactory>().SingleInstance();
                 builder.RegisterType<AuthenticationHandlerFactory>().As<IAuthenticationHandlerFactory>().SingleInstance();
