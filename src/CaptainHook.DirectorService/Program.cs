@@ -70,7 +70,7 @@ namespace CaptainHook.DirectorService
                 //var ruleContainer = (await database.Containers.CreateContainerIfNotExistsAsync(nameof(RoutingRule), RoutingRule.PartitionKeyPath)).Container;
                 //builder.RegisterInstance(ruleContainer).SingleInstance();
 
-                builder.SetupFullTelemetry();
+                builder.SetupFullTelemetry(settings.InstrumentationKey);
                 builder.RegisterStatefulService<DirectorService>(ServiceNaming.DirectorServiceType);
 
                 using (builder.Build())
