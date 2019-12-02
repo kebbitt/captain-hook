@@ -1,4 +1,3 @@
-﻿using Microsoft.ServiceFabric.Actors.Remoting.FabricTransport;
-using Microsoft.ServiceFabric.Services.Remoting;
+﻿using Eshopworld.Telemetry;
 
-[assembly: FabricTransportActorRemotingProvider(RemotingListenerVersion = RemotingListenerVersion.V2, RemotingClientVersion = RemotingClientVersion.V2)]
+[assembly: FabricTransportActorRemotingProviderWithTelemetry()]

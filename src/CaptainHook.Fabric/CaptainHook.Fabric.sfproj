@@ -42,7 +42,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CaptainHook.DirectorService\CaptainHook.DirectorService.csproj" />
-    <ProjectReference Include="..\CaptainHook.EndpointDispatcherActor\CaptainHook.EndpointDispatcherActor.csproj" />
     <ProjectReference Include="..\CaptainHook.EventHandlerActor\CaptainHook.EventHandlerActor.csproj" />
     <ProjectReference Include="..\CaptainHook.EventReaderService\CaptainHook.EventReaderService.csproj" />
   </ItemGroup>

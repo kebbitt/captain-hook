@@ -1,13 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Integration.ServiceFabric;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
-using Eshopworld.Core;
+using CaptainHook.Common.Telemetry;
 using Eshopworld.Telemetry;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.KeyVault;
 using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Extensions.Configuration;
@@ -35,22 +38,21 @@ namespace CaptainHook.EventReaderService
                 var settings = new ConfigurationSettings();
                 config.Bind(settings);
 
-                var bigBrother = new BigBrother(settings.InstrumentationKey, settings.InstrumentationKey);
-                bigBrother.UseEventSourceSink().ForExceptions();
 
                 var builder = new ContainerBuilder();
-                builder.RegisterInstance(bigBrother).As<IBigBrother>().SingleInstance();
                 builder.RegisterInstance(settings).SingleInstance();
                 builder.RegisterType<MessageProviderFactory>().As<IMessageProviderFactory>().SingleInstance();
                 builder.RegisterType<ServiceBusManager>().As<IServiceBusManager>();
 
                 //SF Deps
                 builder.Register<IActorProxyFactory>(_ => new ActorProxyFactory());
-                builder.RegisterServiceFabricSupport();
+
+                builder.SetupFullTelemetry();
                 builder.RegisterStatefulService<EventReaderService>(ServiceNaming.EventReaderServiceType);
 
-                using (builder.Build())
+                using (var container = builder.Build())
                 {
+                    var initializers = container.Resolve<IEnumerable<ITelemetryInitializer>>().ToList();
                     ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, ServiceNaming.EventReaderServiceType);
                     await Task.Delay(Timeout.Infinite);
                 }
