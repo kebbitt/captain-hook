@@ -52,7 +52,6 @@ namespace CaptainHook.EventReaderService
 
                 using (var container = builder.Build())
                 {
-                    var initializers = container.Resolve<IEnumerable<ITelemetryInitializer>>().ToList();
                     ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, ServiceNaming.EventReaderServiceType);
                     await Task.Delay(Timeout.Infinite);
                 }
