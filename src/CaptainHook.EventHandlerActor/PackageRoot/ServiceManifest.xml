@@ -10,7 +10,7 @@
             <ReplicatorConfigSection Name="EventHandlerActorServiceReplicatorConfig" />
             <ReplicatorSecurityConfigSection Name="EventHandlerActorServiceReplicatorSecurityConfig" />
             <StoreConfigSection Name="EventHandlerActorServiceLocalStoreConfig" />
-            <ServiceEndpointV2_1 Name="EventHandlerActorServiceEndpointV2_1" />
+            <ServiceEndpointV2 Name="EventHandlerActorServiceEndpointV2" />
           </GeneratedNames>
         </Extension>
       </Extensions>
@@ -30,7 +30,7 @@
   <ConfigPackage Name="Config" Version="1.0.0" />
   <Resources>
     <Endpoints>
-      <Endpoint Name="EventHandlerActorServiceEndpointV2_1" />
+      <Endpoint Name="EventHandlerActorServiceEndpointV2" />
       <Endpoint Name="EventHandlerActorServiceReplicatorEndpoint" />
     </Endpoints>
   </Resources>

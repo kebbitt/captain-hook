@@ -8,7 +8,7 @@ using Autofac;
 using Autofac.Integration.ServiceFabric;
 using CaptainHook.Common;
 using CaptainHook.Common.Configuration;
-using Eshopworld.Core;
+using CaptainHook.Common.Telemetry;
 using Eshopworld.Telemetry;
 using Microsoft.Azure.KeyVault;
 using Microsoft.Azure.Services.AppAuthentication;
@@ -48,9 +48,6 @@ namespace CaptainHook.DirectorService
 
                 builder.RegisterInstance(config.GetSection("event").Get<IEnumerable<EventHandlerConfig>>());
 
-                builder.RegisterInstance(bb)
-                       .As<IBigBrother>()
-                       .SingleInstance();
 
                 builder.RegisterInstance(settings)
                        .SingleInstance();
@@ -73,7 +70,7 @@ namespace CaptainHook.DirectorService
                 //var ruleContainer = (await database.Containers.CreateContainerIfNotExistsAsync(nameof(RoutingRule), RoutingRule.PartitionKeyPath)).Container;
                 //builder.RegisterInstance(ruleContainer).SingleInstance();
 
-                builder.RegisterServiceFabricSupport();
+                builder.SetupFullTelemetry(settings.InstrumentationKey);
                 builder.RegisterStatefulService<DirectorService>(ServiceNaming.DirectorServiceType);
 
                 using (builder.Build())

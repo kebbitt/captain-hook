@@ -47,7 +47,7 @@ namespace CaptainHook.EventHandlerActor
             _eventHandlerFactory = eventHandlerFactory;
             _bigBrother = bigBrother;
         }
-
+        
         /// <summary>
         /// This method is called whenever an actor is activated.
         /// An actor is activated the first time any of its methods are invoked.

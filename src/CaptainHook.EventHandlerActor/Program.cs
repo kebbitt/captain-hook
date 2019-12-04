@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using Autofac;
 using Autofac.Integration.ServiceFabric;
 using CaptainHook.Common.Configuration;
+using CaptainHook.Common.Telemetry;
 using CaptainHook.EventHandlerActor.Handlers;
 using CaptainHook.EventHandlerActor.Handlers.Authentication;
-using Eshopworld.Core;
 using Eshopworld.Telemetry;
 using Microsoft.Azure.KeyVault;
 using Microsoft.Azure.Services.AppAuthentication;
@@ -75,20 +75,16 @@ namespace CaptainHook.EventHandlerActor
                 var settings = new ConfigurationSettings();
                 config.Bind(settings);
 
-                var bb = new BigBrother(settings.InstrumentationKey, settings.InstrumentationKey);
-                bb.UseEventSourceSink().ForExceptions();
-
                 var builder = new ContainerBuilder();
-                builder.RegisterInstance(bb)
-                    .As<IBigBrother>()
-                    .SingleInstance();
+
+                builder.SetupFullTelemetry(settings.InstrumentationKey);
 
                 builder.RegisterInstance(settings)
                     .SingleInstance();
 
                 builder.RegisterType<EventHandlerFactory>().As<IEventHandlerFactory>().SingleInstance();
                 builder.RegisterType<AuthenticationHandlerFactory>().As<IAuthenticationHandlerFactory>().SingleInstance();
-                builder.RegisterType<HttpClientFactory>().As<Handlers.IHttpClientFactory>();
+                builder.RegisterType<HttpClientFactory>().As<IHttpClientFactory>();
                 builder.RegisterType<RequestLogger>().As<IRequestLogger>();
                 builder.RegisterType<RequestBuilder>().As<IRequestBuilder>();
 
@@ -103,14 +99,7 @@ namespace CaptainHook.EventHandlerActor
                     builder.RegisterInstance(webhookConfig).Named<WebhookConfig>(webhookConfig.Name.ToLowerInvariant());
                 }
 
-                ////creates a list of unique endpoint and the corresponding http client for each which can be selected at runtime
-                //foreach (var (key, value) in endpointList)
-                //{
-                //    builder.RegisterInstance(value).Named<WebhookConfig>(key).SingleInstance();
-                //}
-
-                builder.RegisterServiceFabricSupport();
-                builder.RegisterActor<EventHandlerActor>();
+                builder.RegisterActor<EventHandlerActor>();             
 
                 using (builder.Build())
                 {

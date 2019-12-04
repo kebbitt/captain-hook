@@ -12,8 +12,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Eshopworld.Core" Version="2.1.3" />
+    <PackageReference Include="Autofac.ServiceFabric" Version="2.2.0" />
+    <PackageReference Include="Eshopworld.Telemetry" Version="2.3.0-telemetry-beta4" />
     <PackageReference Include="IdentityModel" Version="3.10.10" />
-    <PackageReference Include="Microsoft.ServiceFabric.Actors" Version="3.4.658" />
+    <PackageReference Include="Microsoft.ServiceFabric.Actors" Version="3.4.677" />
   </ItemGroup>
 </Project>
