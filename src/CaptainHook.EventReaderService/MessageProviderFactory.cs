@@ -32,14 +32,14 @@ namespace CaptainHook.EventReaderService
             new RetryExponential(
                 BackoffMin,
                 BackoffMax,
-                ReceiverBatchSize),
+                ReceiverRetryCount),
             ReceiverBatchSize);
         }
 
         /// <summary>
         /// Batch size for the receiver to consume from the ServiceBus. Defaults to 10
         /// </summary>
-        public int ReceiverBatchSize { get; set; } = 10;
+        public int ReceiverBatchSize { get; set; } = 0; //do not use pre-fetch mode
 
         /// <summary>
         /// Minimum backoff time for the ServiceBus retry calls in milliseconds. Defaults to 100ms
@@ -50,6 +50,8 @@ namespace CaptainHook.EventReaderService
         /// Maximum backoff time for the ServiceBus retry calls in milliseconds. Defaults to 500ms
         /// </summary>
         public TimeSpan BackoffMax { get; set; } = TimeSpan.FromMilliseconds(500);
+
+        public const int ReceiverRetryCount = 3;
 
         public IMessageReceiver MessageReceiver { get; private set; }
 
