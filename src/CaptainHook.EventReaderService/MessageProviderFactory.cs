@@ -58,6 +58,9 @@ namespace CaptainHook.EventReaderService
         /// </summary>
         public TimeSpan BackoffMax { get; set; } = TimeSpan.FromMilliseconds(500);
 
+        /// <summary>
+        /// retry count for inner SB receiver policy
+        /// </summary>
         public const int ReceiverRetryCount = 3;
 
         public IMessageReceiver MessageReceiver { get; private set; }
