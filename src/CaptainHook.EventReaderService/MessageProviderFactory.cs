@@ -37,9 +37,16 @@ namespace CaptainHook.EventReaderService
         }
 
         /// <summary>
-        /// Batch size for the receiver to consume from the ServiceBus. Defaults to 10
+        /// Batch size for the receiver to consume from the ServiceBus. Defaults to 0
+        /// 
+        /// NOTE that at the moment this is disabled due to following concerns experienced during runtime
+        /// likely in conjuction with the connection reset (to mitigate polling dips) 
+        /// messages would normally be pre-fetched and this counts as delivery attempts, when the lock expires, it is again pre-fetched
+        /// https://docs.microsoft.com/en-us/azure/service-bus-messaging/service-bus-prefetch#if-it-is-faster-why-is-prefetch-not-the-default-option
+        /// so at times messages would go to DLQ without being actually processed 
+        /// or would get lower than designed-for retry count
         /// </summary>
-        public int ReceiverBatchSize { get; set; } = 0; //do not use pre-fetch mode
+        public int ReceiverBatchSize { get; set; } = 0; 
 
         /// <summary>
         /// Minimum backoff time for the ServiceBus retry calls in milliseconds. Defaults to 100ms

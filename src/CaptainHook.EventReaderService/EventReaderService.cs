@@ -306,8 +306,6 @@ namespace CaptainHook.EventReaderService
             else
                 _activeMessageReader.ConsecutiveLongPollCount = 0;
 
-            _bigBrother.Publish(new MessagePollingEvent { FabricId = $"{Context.ServiceName}:{Context.ReplicaId}", MessageCount = messages != null ? messages.Count : 0, ConsecutiveLongPolls = _activeMessageReader.ConsecutiveLongPollCount });
-
             return (messages, _activeMessageReader.ReceiverId);
         }
 
