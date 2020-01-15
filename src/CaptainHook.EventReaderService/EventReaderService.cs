@@ -48,8 +48,6 @@ namespace CaptainHook.EventReaderService
         internal ConcurrentDictionary<string, MessageDataHandle> _inflightMessages = new ConcurrentDictionary<string, MessageDataHandle>();
 
         private ConcurrentQueue<int> _freeHandlers = new ConcurrentQueue<int>();
-        private IDisposable _diagSourceOuterSub;
-        private IDisposable _diagSourceInnerSub;
 
         //todo move this to config driven in the code package
         internal int HandlerCount = 10;
@@ -186,50 +184,6 @@ namespace CaptainHook.EventReaderService
             _activeMessageReader = wrapper;
 
             _messageReceivers.TryAdd(wrapper.ReceiverId, wrapper); //this will always succeed (key is a new guid)
-
-            if (_diagSourceInnerSub == null && _diagSourceOuterSub == null)
-            {
-                //set up diagnostic source
-                _diagSourceOuterSub = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
-                {
-                    // subscribe to the Service Bus DiagnosticSource
-                    if (listener.Name == "Microsoft.Azure.ServiceBus")
-                    {
-                        // receive event from Service Bus DiagnosticSource
-                        _diagSourceInnerSub = listener.Subscribe(ProcessReceiverTelemetry);
-                    }
-                });
-            }
-        }
-
-        private void ProcessReceiverTelemetry(KeyValuePair<string, object> evnt)
-        {
-            // Log operation details once it's done
-            if (evnt.Key.EndsWith("Stop"))
-            {
-                Activity currentActivity = Activity.Current;
-                var opName = currentActivity.OperationName;
-                TaskStatus status = (TaskStatus)evnt.Value.GetProperty("Status");
-                var entity = (string)evnt.Value.GetProperty("Entity");
-
-                if (opName.EndsWith("Exception", StringComparison.OrdinalIgnoreCase))
-                {
-                    var excp = (Exception)evnt.Value.GetProperty("Exception");
-                    _bigBrother.Publish(excp.ToExceptionEvent());
-                }
-
-                _bigBrother.Publish(new ServiceBusDiagnosticEvent
-                {
-                    OperationName = opName,
-                    Status = status.ToString(),
-                    Value = evnt.Value.ToString(),
-                    Entity = entity,
-                    Duration = currentActivity.Duration.TotalMilliseconds,
-                    ReplicaId = Context.ReplicaId,
-                    PollGuid = Guid.NewGuid().ToString(),
-                    PollProcessTime = DateTime.UtcNow
-                });
-            }
         }
 
         /// <summary>
@@ -303,17 +257,8 @@ namespace CaptainHook.EventReaderService
                     }
                 }
 
-                _bigBrother.Publish(new Common.Telemetry.CancellationRequestedEvent { FabricId = $"{this.Context.ServiceName}:{this.Context.ReplicaId}" });
-
-                //shutdown all kinds of things
-                if (_diagSourceInnerSub != null)
-                {
-                    _diagSourceInnerSub.Dispose();
-                }
-                if (_diagSourceOuterSub != null)
-                {
-                    _diagSourceOuterSub.Dispose();
-                }
+                _bigBrother.Publish(new Common.Telemetry.CancellationRequestedEvent { FabricId = $"{Context.ServiceName}:{Context.ReplicaId}" });
+             
             }
             catch (Exception e)
             {
@@ -360,8 +305,6 @@ namespace CaptainHook.EventReaderService
                 _activeMessageReader.ConsecutiveLongPollCount++;
             else
                 _activeMessageReader.ConsecutiveLongPollCount = 0;
-
-            _bigBrother.Publish(new MessagePollingEvent { FabricId = $"{Context.ServiceName}:{Context.ReplicaId}", MessageCount = messages != null ? messages.Count : 0, ConsecutiveLongPolls = _activeMessageReader.ConsecutiveLongPollCount });
 
             return (messages, _activeMessageReader.ReceiverId);
         }
