@@ -31,7 +31,7 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
     <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="4.3.0" />
     <PackageReference Include="Microsoft.ServiceFabric.Actors" Version="3.4.677" />
-    <PackageReference Include="Platform.Events" Version="1.2.3" />
+    <PackageReference Include="Platform.Events" Version="1.3.0" />
     <PackageReference Include="Polly" Version="7.1.0" />
   </ItemGroup>
 
